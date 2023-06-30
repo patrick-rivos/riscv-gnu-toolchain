@@ -81,7 +81,7 @@ jobs:
 
       - name: bump gcc
         run: |
-          cd gcc && git pull && cd ..
+          cd gcc && git checkout master && git pull && cd ..
 
       - name: make build directory
         run: |
