@@ -11,6 +11,7 @@ on:
 jobs:
   init-submodules:
     runs-on: ubuntu-22.04
+
     steps:
       - uses: actions/checkout@v2
 
@@ -56,10 +57,18 @@ jobs:
             qemu
           key: submodules
 
+      - name: Get gcc hash to test
+        id: gcc-hash
+        run: |
+          export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
+          echo "GCCHASH=$GCCHASH" >> "$GITHUB_OUTPUT"
+
+    outputs:
+      GCCHASH: ${{ steps.gcc-hash.outputs.GCCHASH }}
+
   use-submodules:
     runs-on: ubuntu-22.04
     needs: [init-submodules]
-
     steps:
       - uses: actions/checkout@v2
 
@@ -78,6 +87,10 @@ jobs:
             pk
             qemu
           key: submodules
+
+      - name: print gcc
+        run: |
+          echo "GCC HASH ${{ needs.init-submodules.outputs.GCCHASH }}"
 
       - name: bump gcc
         run: |
