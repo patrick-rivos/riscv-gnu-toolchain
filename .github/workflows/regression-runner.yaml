@@ -39,7 +39,9 @@ jobs:
 
       - name: Checkout gcc hash
         run: |
-          cd gcc && git fetch && git checkout ${{ inputs.gcchash }} && cd ..
+          cd gcc
+          git fetch
+          git checkout ${{ inputs.gcchash }}
 
       - name: Install dependencies
         run: sudo ./.github/setup-apt.sh
@@ -102,7 +104,9 @@ jobs:
 
       - name: Checkout gcc hash
         run: |
-          cd gcc && git fetch && git checkout ${{ inputs.gcchash }} && cd ..
+          cd gcc
+          git fetch
+          git checkout ${{ inputs.gcchash }}
 
       - name: Install dependencies
         run: sudo ./.github/setup-apt.sh
@@ -120,14 +124,20 @@ jobs:
           fi
 
       - name: Restore binaries
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}
 
       - name: Restore stage2
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-stage2
+
+      - name: Debug artifact download
+        run: |
+          ls
+          cd build
+          ls
 
       - name: Fake stamps
         run: |
