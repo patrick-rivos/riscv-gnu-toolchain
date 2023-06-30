@@ -35,6 +35,8 @@ jobs:
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
         run: |
           git submodule init
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
           git submodule update --recursive --progress --recommend-shallow
 
       - name: Save submodules
