@@ -1,12 +1,12 @@
 on:
   workflow_call:
-    # inputs:
-    #   mode:
-    #     required: true
-    #     type: string
-    #   target:
-    #     required: true
-    #     type: string
+    inputs:
+      mode:
+        required: true
+        type: string
+      target:
+        required: true
+        type: string
 
 jobs:
   build:
