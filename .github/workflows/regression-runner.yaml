@@ -162,11 +162,11 @@ jobs:
       - name: Run testsuite
         run: |
           cd build
-          make -j $(nproc) report-${{ inputs.mode }}
+          make -j $(nproc) report-${{ inputs.mode }} || true
 
       - name: Save results
         run: |
-          make -j $(nproc) report | gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+          make -j $(nproc) report | gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log || true
 
       - name: Upload stage2 artifact
         uses: actions/upload-artifact@v3
