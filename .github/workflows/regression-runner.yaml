@@ -66,7 +66,7 @@ jobs:
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
           path: |
             build/bin
           retention-days: 5
@@ -74,7 +74,7 @@ jobs:
       - name: Upload stage2 artifact
         uses: actions/upload-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-stage2
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
           path: |
             build/build-gcc-${{ inputs.mode }}-stage2
           retention-days: 5
@@ -126,12 +126,12 @@ jobs:
       - name: Restore binaries
         uses: actions/download-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
 
       - name: Restore stage2
         uses: actions/download-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-stage2
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
 
       - name: Debug artifact download
         run: |
@@ -151,9 +151,21 @@ jobs:
       - name: build test
         run: |
           cd build
-          make ${{ inputs.mode }}
+          make -j $(nproc) ${{ inputs.mode }}
 
       - name: Run testsuite
         run: |
           cd build
-          make report-${{ inputs.mode }}
+          make -j $(nproc) report-${{ inputs.mode }}
+
+      - name: Save results
+        run: |
+          make -j $(nproc) report | gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+
+      - name: Upload stage2 artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+          retention-days: 90
