@@ -9,7 +9,7 @@ on:
         type: string
 
 jobs:
-  print-username:
+  testsuite:
     runs-on: ubuntu-22.04
 
     steps:
