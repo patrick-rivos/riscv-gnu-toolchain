@@ -7,6 +7,9 @@ on:
   pull_request:
     branches:
       - daily-ci
+  schedule:
+    # Run daily
+    - cron: 0 0 * * *
 
 jobs:
   init-submodules:
