@@ -83,6 +83,9 @@ jobs:
         run: |
           cd gcc && git checkout master && git pull && cd ..
 
+      - name: install dependencies
+        run: sudo ./.github/setup-apt.sh
+
       - name: make build directory
         run: |
           mkdir build
@@ -91,4 +94,4 @@ jobs:
 
       - name: build gcc
         run: |
-          make build-gcc
+          make -j $(nproc) newlib
