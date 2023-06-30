@@ -1,0 +1,70 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - daily-ci
+  pull_request:
+    branches:
+      - daily-ci
+
+jobs:
+  init-submodules:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Get gcc hash to test
+        id: gcc-hash
+        run: |
+          export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
+          echo "GCCHASH=$GCCHASH" >> "$GITHUB_OUTPUT"
+          echo $GCCHASH
+
+      - name: Pretend to do something
+        run: echo "hello"
+
+    outputs:
+      GCCHASH: ${{ steps.gcc-hash.outputs.GCCHASH }}
+
+  build-gcc:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        mode:   [newlib, linux, musl]
+        target: [rv32gc-ilp32d, rv64gc-lp64d]
+        exclude:
+          - mode: musl
+            target: rv32gc-ilp32d
+    needs: [init-submodules]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Hello
+        run: echo "Hey there!"
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          TARGET_TUPLE=($(echo ${{ matrix.target }} | tr "-" "\n"))
+          CONFIGURE_TOOLCHAIN="../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}"
+          $CONFIGURE_TOOLCHAIN
+
+      - name: Make gcc
+        run: |
+          cd build
+          mkdir bin
+          mkdir build-gcc-${{ matrix.mode }}-stage2
+          touch bin/hi
+          touch build-gcc-${{ matrix.mode }}-stage2/hello
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ matrix.mode }}-${{ matrix.target }}-${{ needs.init-submodules.outputs.GCCHASH }}
+          path: |
+            build/bin
+            build/build-gcc-${{ matrix.mode }}-stage2
+          retention-days: 5

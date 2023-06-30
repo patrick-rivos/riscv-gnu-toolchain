@@ -1,12 +1,12 @@
 name: Build
 
-on:
-  push:
-    branches:
-      - daily-ci
-  pull_request:
-    branches:
-      - daily-ci
+# on:
+#   push:
+#     branches:
+#       - daily-ci
+#   pull_request:
+#     branches:
+#       - daily-ci
 
 jobs:
   init-submodules:
@@ -68,8 +68,14 @@ jobs:
       GCCHASH: ${{ steps.gcc-hash.outputs.GCCHASH }}
 
   build-gcc:
-    #if: ${{ false }} # Use artifact
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        mode:   [newlib, linux, musl]
+        target: [rv32gc-ilp32d, rv64gc-lp64d]
+        exclude:
+          - mode: musl
+            target: rv32gc-ilp32d
     needs: [init-submodules]
     steps:
       - uses: actions/checkout@v2
@@ -102,73 +108,20 @@ jobs:
         run: |
           mkdir build
           cd build
-          ../configure --prefix=$(pwd)
+          TARGET_TUPLE=($(echo ${{ matrix.target }} | tr "-" "\n"))
+          CONFIGURE_TOOLCHAIN="../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}"
+          $CONFIGURE_TOOLCHAIN
 
       - name: Make gcc
         run: |
           cd build
-          make -j $(nproc) newlib
+          make -j $(nproc) ${{ matrix.mode }}
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
         with:
-          name: gcc-newlib-hash
+          name: gcc-${{ matrix.mode }}-${{ matrix.target }}-${{ needs.init-submodules.outputs.GCCHASH }}
           path: |
             build/bin
-            build/build-gcc-newlib-stage2
+            build/build-gcc-${{ matrix.mode }}-stage2
           retention-days: 5
-
-  run-testsuite:
-    runs-on: ubuntu-22.04
-    needs: [init-submodules]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Load submodules from cache
-        uses: actions/cache@v3
-        id: restore-build
-        with:
-          path: |
-            binutils
-            dejagnu
-            gcc
-            gdb
-            glibc
-            llvm
-            musl
-            newlib
-            pk
-            qemu
-          key: submodules
-
-      - name: Checkout gcc hash
-        run: |
-          cd gcc && git fetch && git checkout ${{ needs.init-submodules.outputs.GCCHASH }} && cd ..
-
-      - name: Install dependencies
-        run: sudo ./.github/setup-apt.sh
-
-      - name: Configure
-        run: |
-          mkdir build
-          cd build
-          ../configure --prefix=$(pwd)
-
-      - name: Restore artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: gcc-newlib-hash
-
-      - name: Fake stamps
-        run: |
-          mkdir build/stamps
-          cd build/stamps
-          touch build-gcc-newlib-stage1 build-gcc-newlib-stage2 \
-          check-write-permission build-binutils-newlib \
-          build-gdb-newlib build-newlib build-newlib-nano \
-          merge-newlib-nano
-
-      - name: build newlib test
-        run: |
-          cd build
-          make newlib

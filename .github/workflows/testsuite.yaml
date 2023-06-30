@@ -1,0 +1,63 @@
+name: Run testsuite
+
+on:
+  testsuite:
+    runs-on: ubuntu-22.04
+    inputs:
+      mode:
+        required: true
+        type: string
+      target:
+        required: true
+        type: string
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Load submodules from cache
+        uses: actions/cache@v3
+        id: restore-build
+        with:
+          path: |
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            llvm
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Checkout gcc hash
+        run: |
+          cd gcc && git fetch && git checkout ${{ needs.init-submodules.outputs.GCCHASH }} && cd ..
+
+      - name: Install dependencies
+        run: sudo ./.github/setup-apt.sh
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          ../configure --prefix=$(pwd)
+
+      - name: Restore artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: gcc-newlib-hash
+
+      - name: Fake stamps
+        run: |
+          mkdir build/stamps
+          cd build/stamps
+          touch build-gcc-newlib-stage1 build-gcc-newlib-stage2 \
+          check-write-permission build-binutils-newlib \
+          build-gdb-newlib build-newlib build-newlib-nano \
+          merge-newlib-nano
+
+      - name: build newlib test
+        run: |
+          cd build
+          make newlib
