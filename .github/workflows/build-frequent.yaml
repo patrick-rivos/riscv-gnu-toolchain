@@ -90,7 +90,7 @@ jobs:
 
       - name: checkout gcc hash
         run: |
-          cd gcc && git pull && git checkout ${{ needs.init-submodules.outputs.GCCHASH }} && cd ..
+          cd gcc && git fetch && git checkout ${{ needs.init-submodules.outputs.GCCHASH }} && cd ..
 
       - name: install dependencies
         run: sudo ./.github/setup-apt.sh
