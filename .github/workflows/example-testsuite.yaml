@@ -1,12 +1,12 @@
 on:
   workflow_call:
-    inputs:
-      mode:
-        required: true
-        type: string
-      target:
-        required: true
-        type: string
+    # inputs:
+    #   mode:
+    #     required: true
+    #     type: string
+    #   target:
+    #     required: true
+    #     type: string
 
 jobs:
   build:
@@ -14,7 +14,7 @@ jobs:
 
     steps:
       - name: Print the input name to STDOUT
-        run: echo The username is ${{ inputs.mode }}, ${{ inputs.target }}
+        run: echo hi
 
   testsuite-run:
     needs: [build]
