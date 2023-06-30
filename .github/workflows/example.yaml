@@ -29,7 +29,7 @@ jobs:
       GCCHASH: ${{ steps.gcc-hash.outputs.GCCHASH }}
 
   build-gcc:
-    runs-on: ubuntu-22.04
+    needs: [init-submodules]
     strategy:
       matrix:
         mode:   [newlib, linux, musl]
@@ -37,43 +37,7 @@ jobs:
         exclude:
           - mode: musl
             target: rv32gc-ilp32d
-    needs: [init-submodules]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Hello
-        run: echo "Hey there!"
-
-      - name: Configure
-        run: |
-          mkdir build
-          cd build
-          TARGET_TUPLE=($(echo ${{ matrix.target }} | tr "-" "\n"))
-          CONFIGURE_TOOLCHAIN="../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}"
-          $CONFIGURE_TOOLCHAIN
-
-      - name: Make gcc
-        run: |
-          cd build
-          mkdir bin
-          mkdir build-gcc-${{ matrix.mode }}-stage2
-          touch bin/hi
-          touch build-gcc-${{ matrix.mode }}-stage2/hello
-
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: gcc-${{ matrix.mode }}-${{ matrix.target }}-${{ needs.init-submodules.outputs.GCCHASH }}
-          path: |
-            build/bin
-            build/build-gcc-${{ matrix.mode }}-stage2
-          retention-days: 5
-
-      - name: Upload binary artifact
-        run: ls .github && ls .github/workflows
-
-      - name: Pass artifact name to testsuite
-        uses: ./.github/workflows/example-testsuite.yaml@main
-        with:
-          mode: ${{ matrix.mode }}
-          target: ${{ matrix.target }}
+    uses: ./.github/workflows/example-testsuite.yaml
+    with:
+      mode: ${{ matrix.mode }}
+      target: ${{ matrix.target }}

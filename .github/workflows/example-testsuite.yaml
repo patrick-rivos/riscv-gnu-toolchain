@@ -9,7 +9,15 @@ on:
         type: string
 
 jobs:
-  testsuite:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Print the input name to STDOUT
+        run: echo The username is ${{ inputs.mode }}, ${{ inputs.target }}
+
+  testsuite-run:
+    needs: [build]
     runs-on: ubuntu-22.04
 
     steps:
