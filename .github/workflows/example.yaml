@@ -1,4 +1,4 @@
-name: Build
+# name: Build
 
 # on:
 #   push:
@@ -8,36 +8,36 @@ name: Build
 #     branches:
 #       - daily-ci
 
-jobs:
-  init-submodules:
-    runs-on: ubuntu-22.04
+# jobs:
+#   init-submodules:
+#     runs-on: ubuntu-22.04
 
-    steps:
-      - uses: actions/checkout@v2
+#     steps:
+#       - uses: actions/checkout@v2
 
-      - name: Get gcc hash to test
-        id: gcc-hash
-        run: |
-          export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
-          echo "GCCHASH=$GCCHASH" >> "$GITHUB_OUTPUT"
-          echo $GCCHASH
+#       - name: Get gcc hash to test
+#         id: gcc-hash
+#         run: |
+#           export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
+#           echo "GCCHASH=$GCCHASH" >> "$GITHUB_OUTPUT"
+#           echo $GCCHASH
 
-      - name: Pretend to do something
-        run: echo "hello"
+#       - name: Pretend to do something
+#         run: echo "hello"
 
-    outputs:
-      GCCHASH: ${{ steps.gcc-hash.outputs.GCCHASH }}
+#     outputs:
+#       GCCHASH: ${{ steps.gcc-hash.outputs.GCCHASH }}
 
-  build-gcc:
-    needs: [init-submodules]
-    strategy:
-      matrix:
-        mode:   [newlib, linux, musl]
-        target: [rv32gc-ilp32d, rv64gc-lp64d]
-        exclude:
-          - mode: musl
-            target: rv32gc-ilp32d
-    uses: ./.github/workflows/example-testsuite.yaml
-    with:
-      mode: ${{ matrix.mode }}
-      target: ${{ matrix.target }}
+#   build-gcc:
+#     needs: [init-submodules]
+#     strategy:
+#       matrix:
+#         mode:   [newlib, linux, musl]
+#         target: [rv32gc-ilp32d, rv64gc-lp64d]
+#         exclude:
+#           - mode: musl
+#             target: rv32gc-ilp32d
+#     uses: ./.github/workflows/example-testsuite.yaml
+#     with:
+#       mode: ${{ matrix.mode }}
+#       target: ${{ matrix.target }}
