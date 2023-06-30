@@ -7,9 +7,12 @@ on:
       target:
         required: true
         type: string
-      GCCHASH:
+      gcchash:
         required: true
         type: string
+      multilib:
+        required: true
+        type: boolean
 
 jobs:
   build:
@@ -36,7 +39,7 @@ jobs:
 
       - name: Checkout gcc hash
         run: |
-          cd gcc && git fetch && git checkout ${{ inputs.GCCHASH }} && cd ..
+          cd gcc && git fetch && git checkout ${{ inputs.gcchash }} && cd ..
 
       - name: Install dependencies
         run: sudo ./.github/setup-apt.sh
@@ -47,7 +50,11 @@ jobs:
           cd build
           TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
           CONFIGURE_TOOLCHAIN="../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}"
-          $CONFIGURE_TOOLCHAIN
+          if [ ${{ inputs.multilib }} ]; then
+            $CONFIGURE_TOOLCHAIN --enable-multilib
+          else
+            $CONFIGURE_TOOLCHAIN
+          fi
 
       - name: Make gcc
         run: |
@@ -57,7 +64,7 @@ jobs:
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.GCCHASH }}
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}
           path: |
             build/bin
           retention-days: 5
@@ -65,7 +72,7 @@ jobs:
       - name: Upload stage2 artifact
         uses: actions/upload-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.GCCHASH }}-stage2
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-stage2
           path: |
             build/build-gcc-${{ inputs.mode }}-stage2
           retention-days: 5
@@ -95,7 +102,7 @@ jobs:
 
       - name: Checkout gcc hash
         run: |
-          cd gcc && git fetch && git checkout ${{ inputs.GCCHASH }} && cd ..
+          cd gcc && git fetch && git checkout ${{ inputs.gcchash }} && cd ..
 
       - name: Install dependencies
         run: sudo ./.github/setup-apt.sh
@@ -109,13 +116,12 @@ jobs:
       - name: Restore binaries
         uses: actions/download-artifact@v2
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.GCCHASH }}
-
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}
 
       - name: Restore stage2
         uses: actions/download-artifact@v2
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.GCCHASH }}-stage2
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-stage2
 
       - name: Fake stamps
         run: |

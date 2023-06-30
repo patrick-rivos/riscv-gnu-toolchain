@@ -19,7 +19,7 @@ jobs:
         id: gcc-hash
         run: |
           export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
-          echo "GCCHASH=$GCCHASH" >> "$GITHUB_OUTPUT"
+          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
           echo $GCCHASH
 
       - name: Retrieve cache
@@ -65,7 +65,7 @@ jobs:
           key: submodules
 
     outputs:
-      GCCHASH: ${{ steps.gcc-hash.outputs.GCCHASH }}
+      gcchash: ${{ steps.gcc-hash.outputs.gcchash }}
 
   check-regressions:
     needs: [init-submodules]
@@ -73,11 +73,25 @@ jobs:
       matrix:
         mode:   [newlib, linux, musl]
         target: [rv32gc-ilp32d, rv64gc-lp64d]
+        multilib: [true, false]
         exclude:
           - mode: musl
             target: rv32gc-ilp32d
+          - mode: musl
+            multilib: true
+          - target: rv32gc-ilp32d
+            multilib: true
     uses: ./.github/workflows/regression-runner.yaml
     with:
       mode: ${{ matrix.mode }}
       target: ${{ matrix.target }}
-      GCCHASH: ${{ needs.init-submodules.outputs.GCCHASH }}
+      gcchash: ${{ needs.init-submodules.outputs.gcchash }}
+      multilib: ${{ matrix.multilib }}
+
+  generate-issues:
+    runs-on: ubuntu-22.04
+    needs: [check-regressions]
+    steps:
+      - name: Generate summary
+        run: |
+          echo Filing issue...
