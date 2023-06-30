@@ -106,11 +106,10 @@ jobs:
           cd build
           make -j $(nproc) newlib
 
-        - name: 'Upload Artifact'
-          uses: actions/upload-artifact@v3
-          with:
-            name: gcc-newlib-hash
-            path: |
-              build/bin
-              stamps/build-gcc-newlib-stage2
-            retention-days: 5
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-newlib-hash
+          path: |
+            build/bin
+          retention-days: 5
