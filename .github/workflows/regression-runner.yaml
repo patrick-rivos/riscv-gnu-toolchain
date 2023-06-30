@@ -58,17 +58,30 @@ jobs:
             $CONFIGURE_TOOLCHAIN
           fi
 
-      - name: Make gcc
+      # - name: Make gcc
+      #   run: |
+      #     cd build
+      #     make -j $(nproc) ${{ inputs.mode }}
+
+      - name: Fake make gcc
         run: |
           cd build
-          make -j $(nproc) ${{ inputs.mode }}
+          mkdir bin
+          touch bin/test.txt
+          mkdir build-gcc-${{ inputs.mode }}-stage2
+          touch build-gcc-${{ inputs.mode }}-stage2/hi.txt
+
+      - name: Zip files
+        run: |
+          zip -r bin.zip build/bin
+          zip -r stage2.zip build/build-gcc-${{ inputs.mode }}-stage2
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
           path: |
-            build/bin
+            bin.zip
           retention-days: 5
 
       - name: Upload stage2 artifact
@@ -76,7 +89,7 @@ jobs:
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
           path: |
-            build/build-gcc-${{ inputs.mode }}-stage2
+            stage2.zip
           retention-days: 5
 
   test:
@@ -133,11 +146,10 @@ jobs:
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
 
-      - name: Debug artifact download
+      - name: Unzip artifacts
         run: |
-          ls
-          cd build
-          ls
+          unzip bin.zip
+          unzip stage2.zip
 
       - name: Fake stamps
         run: |
