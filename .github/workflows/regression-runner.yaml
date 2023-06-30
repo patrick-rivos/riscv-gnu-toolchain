@@ -58,18 +58,10 @@ jobs:
             $CONFIGURE_TOOLCHAIN
           fi
 
-      # - name: Make gcc
-      #   run: |
-      #     cd build
-      #     make -j $(nproc) ${{ inputs.mode }}
-
-      - name: Fake make gcc
+      - name: Make gcc
         run: |
           cd build
-          mkdir bin
-          touch bin/test.txt
-          mkdir build-gcc-${{ inputs.mode }}-stage2
-          touch build-gcc-${{ inputs.mode }}-stage2/hi.txt
+          make -j $(nproc) ${{ inputs.mode }}
 
       - name: Zip files
         run: |
@@ -160,7 +152,7 @@ jobs:
           build-gdb-${{ inputs.mode }} build-${{ inputs.mode }} build-${{ inputs.mode }}-nano \
           merge-${{ inputs.mode }}-nano
 
-      - name: build test
+      - name: Build test (should be instant)
         run: |
           cd build
           make -j $(nproc) ${{ inputs.mode }}
