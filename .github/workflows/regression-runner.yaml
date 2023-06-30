@@ -12,7 +12,7 @@ on:
         type: string
       multilib:
         required: true
-        type: boolean
+        type: string
 
 jobs:
   build:
@@ -50,7 +50,7 @@ jobs:
           cd build
           TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
           CONFIGURE_TOOLCHAIN="../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}"
-          if [ ${{ inputs.multilib }} ]; then
+          if [ "${{ inputs.multilib }}" == "multilib" ]; then
             $CONFIGURE_TOOLCHAIN --enable-multilib
           else
             $CONFIGURE_TOOLCHAIN
@@ -111,7 +111,13 @@ jobs:
         run: |
           mkdir build
           cd build
-          ../configure --prefix=$(pwd)
+          TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
+          CONFIGURE_TOOLCHAIN="../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}"
+          if [ "${{ inputs.multilib }}" == "multilib" ]; then
+            $CONFIGURE_TOOLCHAIN --enable-multilib
+          else
+            $CONFIGURE_TOOLCHAIN
+          fi
 
       - name: Restore binaries
         uses: actions/download-artifact@v2
