@@ -150,7 +150,8 @@ jobs:
           touch build-gcc-${{ inputs.mode }}-stage1 build-gcc-${{ inputs.mode }}-stage2 \
           check-write-permission build-binutils-${{ inputs.mode }} \
           build-gdb-${{ inputs.mode }} build-${{ inputs.mode }} build-${{ inputs.mode }}-nano \
-          merge-${{ inputs.mode }}-nano
+          merge-${{ inputs.mode }}-nano build-linux-headers build-${{ inputs.mode }}-linux \
+          build-${{ inputs.mode }}-linux-headers
 
       - name: Build test (should be instant)
         run: |
