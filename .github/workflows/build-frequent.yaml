@@ -15,6 +15,12 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Get gcc hash to test
+        id: gcc-hash
+        run: |
+          export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
+          echo "GCCHASH=$GCCHASH" >> "$GITHUB_OUTPUT"
+
       - name: Retrieve cache
         id: retrieve-cache
         uses: actions/cache@v3
@@ -57,12 +63,6 @@ jobs:
             qemu
           key: submodules
 
-      - name: Get gcc hash to test
-        id: gcc-hash
-        run: |
-          export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
-          echo "GCCHASH=$GCCHASH" >> "$GITHUB_OUTPUT"
-
     outputs:
       GCCHASH: ${{ steps.gcc-hash.outputs.GCCHASH }}
 
@@ -88,13 +88,9 @@ jobs:
             qemu
           key: submodules
 
-      - name: print gcc
+      - name: checkout gcc hash
         run: |
-          echo "GCC HASH ${{ needs.init-submodules.outputs.GCCHASH }}"
-
-      - name: bump gcc
-        run: |
-          cd gcc && git checkout master && git pull && cd ..
+          cd gcc && git checkout ${{ needs.init-submodules.outputs.GCCHASH }} && git pull && cd ..
 
       - name: install dependencies
         run: sudo ./.github/setup-apt.sh
@@ -109,3 +105,12 @@ jobs:
         run: |
           cd build
           make -j $(nproc) newlib
+
+        - name: 'Upload Artifact'
+          uses: actions/upload-artifact@v3
+          with:
+            name: gcc-newlib-hash
+            path: |
+              build/bin
+              stamps/build-gcc-newlib-stage2
+            retention-days: 5
