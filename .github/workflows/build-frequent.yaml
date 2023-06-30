@@ -80,3 +80,4 @@ jobs:
     with:
       mode: ${{ matrix.mode }}
       target: ${{ matrix.target }}
+      GCCHASH: ${{ needs.init-submodules.outputs.GCCHASH }}
