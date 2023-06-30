@@ -68,3 +68,9 @@ jobs:
             build/bin
             build/build-gcc-${{ matrix.mode }}-stage2
           retention-days: 5
+
+      - name: Pass artifact name to testsuite
+        uses: ./.github/workflows/example-testsuite.yaml
+        with:
+          mode: ${{ matrix.mode }}
+          target: ${{ matrix.target }}

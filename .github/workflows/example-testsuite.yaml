@@ -1,0 +1,17 @@
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      target:
+        required: true
+        type: string
+
+jobs:
+  print-username:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Print the input name to STDOUT
+        run: echo The username is ${{ inputs.mode }}, ${{ inputs.target }}
