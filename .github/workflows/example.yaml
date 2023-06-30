@@ -1,12 +1,12 @@
 name: Build
 
-on:
-  push:
-    branches:
-      - daily-ci
-  pull_request:
-    branches:
-      - daily-ci
+# on:
+#   push:
+#     branches:
+#       - daily-ci
+#   pull_request:
+#     branches:
+#       - daily-ci
 
 jobs:
   init-submodules:

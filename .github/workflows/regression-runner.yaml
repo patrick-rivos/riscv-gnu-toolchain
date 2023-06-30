@@ -1,0 +1,134 @@
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      target:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Load submodules from cache
+        uses: actions/cache@v3
+        id: restore-build
+        with:
+          path: |
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            llvm
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Checkout gcc hash
+        run: |
+          cd gcc && git fetch && git checkout ${{ inputs.GCCHASH }} && cd ..
+
+      - name: Install dependencies
+        run: sudo ./.github/setup-apt.sh
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
+          CONFIGURE_TOOLCHAIN="../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}"
+          $CONFIGURE_TOOLCHAIN
+
+      - name: Make gcc
+        run: |
+          cd build
+          make -j $(nproc) ${{ inputs.mode }}
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.GCCHASH }}
+          path: |
+            build/bin
+          retention-days: 5
+
+      - name: Upload stage2 artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.GCCHASH }}-stage2
+          path: |
+            build/build-gcc-${{ inputs.mode }}-stage2
+          retention-days: 5
+
+  test:
+    runs-on: ubuntu-22.04
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Load submodules from cache
+        uses: actions/cache@v3
+        id: restore-build
+        with:
+          path: |
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            llvm
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Checkout gcc hash
+        run: |
+          cd gcc && git fetch && git checkout ${{ inputs.GCCHASH }} && cd ..
+
+      - name: Install dependencies
+        run: sudo ./.github/setup-apt.sh
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          ../configure --prefix=$(pwd)
+
+      - name: Restore binaries
+        uses: actions/download-artifact@v2
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.GCCHASH }}
+
+
+      - name: Restore stage2
+        uses: actions/download-artifact@v2
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.GCCHASH }}-stage2
+
+      - name: Fake stamps
+        run: |
+          mkdir build/stamps
+          cd build/stamps
+          touch build-gcc-${{ inputs.mode }}-stage1 build-gcc-${{ inputs.mode }}-stage2 \
+          check-write-permission build-binutils-${{ inputs.mode }} \
+          build-gdb-${{ inputs.mode }} build-${{ inputs.mode }} build-${{ inputs.mode }}-nano \
+          merge-${{ inputs.mode }}-nano
+
+      - name: build test
+        run: |
+          cd build
+          make ${{ inputs.mode }}
+
+      - name: Run testsuite
+        run: |
+          cd build
+          make report-${{ inputs.mode }}
