@@ -78,3 +78,17 @@ jobs:
             pk
             qemu
           key: submodules
+
+      - name: bump gcc
+        run: |
+          cd gcc && git pull && cd ..
+
+      - name: make build directory
+        run: |
+          mkdir build
+          cd build
+          ../configure --prefix=$(pwd)
+
+      - name: build gcc
+        run: |
+          make build-gcc
