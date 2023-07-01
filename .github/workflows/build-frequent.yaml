@@ -53,7 +53,8 @@ jobs:
           echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
           echo $GCCHASH
 
-      - name: Save updated submodules
+      - name: Cache submodules
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v3
         with:
           path: |
