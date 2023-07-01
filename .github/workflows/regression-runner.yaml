@@ -158,7 +158,6 @@ jobs:
 
       - name: Fake stamps
         run: |
-          touch ${{ inputs.mode }}
           mkdir build/stamps
           cd build/stamps
           touch build-gcc-${{ inputs.mode }}-stage1 build-gcc-${{ inputs.mode }}-stage2 \
@@ -167,10 +166,10 @@ jobs:
           merge-${{ inputs.mode }}-nano build-linux-headers build-${{ inputs.mode }}-linux \
           build-${{ inputs.mode }}-linux-headers
 
-      - name: Build test (should be instant)
+      - name: Build stamp (should be instant)
         run: |
           cd build
-          make --debug=b ${{ inputs.mode }}
+          make --debug=b stamps/build-gcc-${{ inputs.mode }}-stage2
 
       - name: Run testsuite
         run: |
