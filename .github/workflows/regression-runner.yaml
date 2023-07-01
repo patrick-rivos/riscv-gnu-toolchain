@@ -113,7 +113,7 @@ jobs:
           
       - name: Submodule init
         run: |
-          submodule update --init --recursive
+          git submodule update --init --recursive
 
       - name: Checkout gcc hash
         run: |
