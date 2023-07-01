@@ -160,11 +160,14 @@ jobs:
         run: |
           mkdir build/stamps
           cd build/stamps
-          touch build-gcc-${{ inputs.mode }}-stage1 build-gcc-${{ inputs.mode }}-stage2 \
-          check-write-permission build-binutils-${{ inputs.mode }} \
-          build-gdb-${{ inputs.mode }} build-${{ inputs.mode }} build-${{ inputs.mode }}-nano \
-          merge-${{ inputs.mode }}-nano build-linux-headers build-${{ inputs.mode }}-linux \
-          build-${{ inputs.mode }}-linux-headers
+          touch check-write-permission
+          touch build-binutils-${{ inputs.mode }}
+          touch build-gcc-${{ inputs.mode }}-stage1
+          touch build-gcc-${{ inputs.mode }}-stage2
+          touch build-gdb-${{ inputs.mode }}
+          touch build-${{ inputs.mode }}-nano
+          touch build-${{ inputs.mode }}
+          touch merge-${{ inputs.mode }}-nano
 
       - name: Print timestamps
         run: |
