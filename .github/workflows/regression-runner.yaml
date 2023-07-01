@@ -16,7 +16,6 @@ on:
 
 jobs:
   build:
-    if: ${{ false }}
     runs-on: ubuntu-22.04
     environment: production
     steps:
@@ -90,7 +89,7 @@ jobs:
     if: ${{ inputs.mode != 'musl' }}
     runs-on: ubuntu-22.04
     environment: production
-    # needs: [build]
+    needs: [build]
     steps:
       - uses: actions/checkout@v2
 
