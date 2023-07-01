@@ -110,10 +110,6 @@ jobs:
             pk
             qemu
           key: submodules
-          
-      - name: Submodule init
-        run: |
-          git submodule update --init --recursive
 
       - name: Checkout gcc hash
         run: |
@@ -169,7 +165,7 @@ jobs:
       - name: Build test (should be instant)
         run: |
           cd build
-          make -j $(nproc) ${{ inputs.mode }}
+          make --debug=b ${{ inputs.mode }}
 
       - name: Run testsuite
         run: |
