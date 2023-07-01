@@ -134,7 +134,7 @@ jobs:
       - name: Touch sources
         run: |
           cd gcc
-          find . -exec touch {} +
+          find . -exec touch -d "2 days ago" {} +
 
       - name: Restore binaries
         uses: actions/download-artifact@v3
@@ -166,10 +166,14 @@ jobs:
           merge-${{ inputs.mode }}-nano build-linux-headers build-${{ inputs.mode }}-linux \
           build-${{ inputs.mode }}-linux-headers
 
+      - name: Print timestamps
+        run: |
+          ls -la .
+
       - name: Build stamp (should be instant)
         run: |
           cd build
-          make --debug=b stamps/build-gcc-${{ inputs.mode }}-stage2
+          make -d stamps/build-gcc-${{ inputs.mode }}-stage2
 
       - name: Run testsuite
         run: |
