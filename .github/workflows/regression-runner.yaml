@@ -86,7 +86,7 @@ jobs:
           retention-days: 5
 
   test:
-    if: ${{ inputs.mode }} != "musl"
+    if: ${{ inputs.mode != "musl" }}
     runs-on: ubuntu-22.04
     environment: production
     needs: [build]
@@ -146,14 +146,9 @@ jobs:
           unzip bin.zip
           unzip stage2.zip
 
-      - name: Touch source
+      - name: Touch build
         run: |
-          cd build/build-gcc-${{ inputs.mode }}-stage2
-          find . -exec touch {} +
-
-      - name: Touch binaries
-        run: |
-          cd build/bin
+          cd build
           find . -exec touch {} +
 
       - name: Fake stamps
