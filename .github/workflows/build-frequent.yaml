@@ -72,7 +72,7 @@ jobs:
     outputs:
       gcchash: ${{ steps.gcc-hash.outputs.gcchash }}
 
-  check-regressions:
+  creg: # Check Regressions. Short name so I can see the matrix string in github
     needs: [init-submodules]
     strategy:
       matrix:
@@ -95,7 +95,7 @@ jobs:
 
   generate-issues:
     runs-on: ubuntu-22.04
-    needs: [check-regressions]
+    needs: [creg]
     steps:
       - name: Generate summary
         run: |
