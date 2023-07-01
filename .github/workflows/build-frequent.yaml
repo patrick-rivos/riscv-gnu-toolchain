@@ -18,13 +18,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Get gcc hash to test
-        id: gcc-hash
-        run: |
-          export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
-          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
-          echo $GCCHASH
-
       - name: Retrieve cache
         id: retrieve-cache
         uses: actions/cache@v3
@@ -50,8 +43,17 @@ jobs:
           git clone git://gcc.gnu.org/git/gcc.git
           git submodule update --recursive --progress --recommend-shallow
 
-      - name: Save submodules
-        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+      - name: Bump GCC
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+          export GCCHASH=$(git rev-parse --short HEAD)
+          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+          echo $GCCHASH
+
+      - name: Save updated submodules
         uses: actions/cache/save@v3
         with:
           path: |
