@@ -146,6 +146,16 @@ jobs:
           unzip bin.zip
           unzip stage2.zip
 
+      - name: Touch source
+        run: |
+          cd build/build-gcc-${{ inputs.mode }}-stage2
+          find . -exec touch {} +
+
+      - name: Touch binaries
+        run: |
+          cd build/bin
+          find . -exec touch {} +
+
       - name: Fake stamps
         run: |
           mkdir build/stamps
