@@ -16,6 +16,7 @@ on:
 
 jobs:
   build:
+    if: ${{ false }}
     runs-on: ubuntu-22.04
     environment: production
     steps:
@@ -89,7 +90,7 @@ jobs:
     if: ${{ inputs.mode != 'musl' }}
     runs-on: ubuntu-22.04
     environment: production
-    needs: [build]
+    # needs: [build]
     steps:
       - uses: actions/checkout@v2
 
@@ -109,6 +110,10 @@ jobs:
             pk
             qemu
           key: submodules
+          
+      - name: Submodule init
+        run: |
+          submodule update --init --recursive
 
       - name: Checkout gcc hash
         run: |
