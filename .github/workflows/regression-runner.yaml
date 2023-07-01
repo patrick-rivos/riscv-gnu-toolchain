@@ -16,6 +16,7 @@ on:
 
 jobs:
   build:
+    if: ${{ false }}
     runs-on: ubuntu-22.04
     environment: production
     steps:
@@ -130,6 +131,11 @@ jobs:
           else
             $CONFIGURE_TOOLCHAIN
           fi
+          
+      - name: Touch sources
+        run: |
+          cd gcc
+          find . -exec touch {} +
 
       - name: Restore binaries
         uses: actions/download-artifact@v3
