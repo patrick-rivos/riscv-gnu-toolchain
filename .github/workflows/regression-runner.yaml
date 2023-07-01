@@ -158,6 +158,7 @@ jobs:
 
       - name: Fake stamps
         run: |
+          touch ${{ inputs.mode }}
           mkdir build/stamps
           cd build/stamps
           touch build-gcc-${{ inputs.mode }}-stage1 build-gcc-${{ inputs.mode }}-stage2 \
