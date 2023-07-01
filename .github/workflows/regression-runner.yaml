@@ -86,7 +86,7 @@ jobs:
           retention-days: 5
 
   test:
-    if: ${{ inputs.mode != "musl" }}
+    if: ${{ inputs.mode != 'musl' }}
     runs-on: ubuntu-22.04
     environment: production
     needs: [build]
