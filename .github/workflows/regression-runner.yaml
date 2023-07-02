@@ -156,6 +156,11 @@ jobs:
         run: |
           cd build
           find . -exec touch {} +
+          
+      - name: Touch makefile
+        run: |
+          cd build
+          touch Makefile
 
       - name: Fake stamps
         run: |
