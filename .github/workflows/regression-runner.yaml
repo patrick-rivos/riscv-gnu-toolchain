@@ -178,6 +178,15 @@ jobs:
       - name: Print timestamps
         run: |
           ls -la .
+      
+      - name: Print GCC timestamps
+        run: |
+          cd gcc && ls -la .
+          
+      - name: Print build timestamps
+        run: |
+          cd build && ls -la .
+          cd stamps && ls -la .
 
       - name: Build stamp (should be instant)
         run: |
