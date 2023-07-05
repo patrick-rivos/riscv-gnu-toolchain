@@ -130,12 +130,12 @@ jobs:
           else
             $CONFIGURE_TOOLCHAIN
           fi
-          
+
       - name: Touch sources
         run: |
           cd gcc
-          find . -exec touch -d "2 days ago" {} +
-          touch -d "2 days ago" .git
+          find . -exec touch {} +
+          touch .git
 
       - name: Restore binaries
         uses: actions/download-artifact@v3
@@ -155,34 +155,34 @@ jobs:
       - name: Touch build
         run: |
           cd build
-          find . -exec touch {} +
-          
+          find . -exec touch -d "+2 days" {} +
+
       - name: Touch makefile
         run: |
           cd build
-          touch Makefile
+          touch -d "+2 days" Makefile
 
       - name: Fake stamps
         run: |
           mkdir build/stamps
           cd build/stamps
-          touch check-write-permission
-          touch build-binutils-${{ inputs.mode }}
-          touch build-gcc-${{ inputs.mode }}-stage1
-          touch build-gcc-${{ inputs.mode }}-stage2
-          touch build-gdb-${{ inputs.mode }}
-          touch build-${{ inputs.mode }}-nano
-          touch build-${{ inputs.mode }}
-          touch merge-${{ inputs.mode }}-nano
+          touch -d "+2 days" check-write-permission
+          touch -d "+2 days" build-binutils-${{ inputs.mode }}
+          touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage1
+          touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage2
+          touch -d "+2 days" build-gdb-${{ inputs.mode }}
+          touch -d "+2 days" build-${{ inputs.mode }}-nano
+          touch -d "+2 days" build-${{ inputs.mode }}
+          touch -d "+2 days" merge-${{ inputs.mode }}-nano
 
       - name: Print timestamps
         run: |
           ls -la .
-      
+
       - name: Print GCC timestamps
         run: |
           cd gcc && ls -la .
-          
+
       - name: Print build timestamps
         run: |
           cd build && ls -la .
