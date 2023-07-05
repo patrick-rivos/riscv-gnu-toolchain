@@ -38,6 +38,11 @@ jobs:
             qemu
           key: submodules
 
+      - name: Init submodules
+        run: |
+          git submodule init
+          git submodule update --recursive --progress
+
       - name: Checkout gcc hash
         run: |
           cd gcc
