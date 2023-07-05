@@ -1,0 +1,104 @@
+name: Build - On Demand
+
+on:
+  workflow_dispatch:
+    inputs:
+      gcchash:
+        description: 'GCC Hash'
+        required: true
+        default: 'Head'
+
+jobs:
+  init-submodules:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Retrieve cache
+        id: retrieve-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            llvm
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Initalize submodules cache
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          git submodule init
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+          git submodule update --recursive --progress --recommend-shallow
+
+      - name: Bump GCC
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+          if [ "${{ inputs.gcchash }}" == "Head" ]; then
+            export GCCHASH=$(git rev-parse --short HEAD)
+          else
+            export GCCHASH=${{ inputs.gcchash }}
+          fi
+          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+          echo $GCCHASH
+
+      - name: Cache submodules
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            llvm
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+    outputs:
+      gcchash: ${{ steps.gcc-hash.outputs.gcchash }}
+
+  creg: # Check Regressions. Short name so I can see the matrix string in github
+    needs: [init-submodules]
+    strategy:
+      matrix:
+        mode:   [newlib, linux, musl]
+        target: [rv32gc-ilp32d, rv64gc-lp64d]
+        multilib: [multilib, non-multilib]
+        exclude:
+          - mode: musl
+            target: rv32gc-ilp32d
+          - mode: musl
+            multilib: multilib
+          - target: rv32gc-ilp32d
+            multilib: multilib
+    uses: ./.github/workflows/regression-runner.yaml
+    with:
+      mode: ${{ matrix.mode }}
+      target: ${{ matrix.target }}
+      gcchash: ${{ needs.init-submodules.outputs.gcchash }}
+      multilib: ${{ matrix.multilib }}
+
+  generate-issues:
+    runs-on: ubuntu-22.04
+    needs: [creg]
+    steps:
+      - name: Generate summary
+        run: |
+          echo Filing issue...
