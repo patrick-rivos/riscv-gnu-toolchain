@@ -84,7 +84,7 @@ jobs:
       - name: Save results
         run: |
           cd build
-          make -j $(nproc) report | gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log || true
+          (make -j $(nproc) report > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log) || true
 
       - name: Upload results artifact
         uses: actions/upload-artifact@v3
