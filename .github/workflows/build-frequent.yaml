@@ -49,8 +49,7 @@ jobs:
           cd gcc
           git checkout master
           git pull
-          # export GCCHASH=$(git rev-parse --short HEAD) # Use fixed hash for debugging
-          export GCCHASH=69d3015ad10078b2ee643b8e5102c3f02e4864f2
+          export GCCHASH=$(git rev-parse --short HEAD)
           echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
           echo $GCCHASH
 
