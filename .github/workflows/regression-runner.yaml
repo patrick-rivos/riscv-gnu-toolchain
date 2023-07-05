@@ -67,7 +67,6 @@ jobs:
       - name: Zip files
         run: |
           zip -r bin.zip build/bin
-          zip -r stage2.zip build/build-gcc-${{ inputs.mode }}-stage2
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
@@ -77,13 +76,23 @@ jobs:
             bin.zip
           retention-days: 5
 
-      - name: Upload stage2 artifact
+      - name: Run testsuite
+        run: |
+          cd build
+          make -j $(nproc) report-${{ inputs.mode }} || true
+
+      - name: Save results
+        run: |
+          cd build
+          make -j $(nproc) report | gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log || true
+
+      - name: Upload results artifact
         uses: actions/upload-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report
           path: |
-            stage2.zip
-          retention-days: 5
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+          retention-days: 90
 
   test:
     if: ${{ inputs.mode != 'musl' }}
@@ -131,82 +140,16 @@ jobs:
             $CONFIGURE_TOOLCHAIN
           fi
 
-      - name: Touch sources
-        run: |
-          cd gcc
-          find . -exec touch {} +
-          touch .git
-
       - name: Restore binaries
         uses: actions/download-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
 
-      - name: Restore stage2
-        uses: actions/download-artifact@v3
-        with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
-
       - name: Unzip artifacts
         run: |
           unzip bin.zip
-          unzip stage2.zip
 
-      - name: Touch build
+      - name: Make report
         run: |
-          cd build
-          find . -exec touch -d "+2 days" {} +
+          echo "TODO: Seperate build/test flows"
 
-      - name: Touch makefile
-        run: |
-          cd build
-          touch -d "+2 days" Makefile
-
-      - name: Fake stamps
-        run: |
-          mkdir build/stamps
-          cd build/stamps
-          touch -d "+2 days" check-write-permission
-          touch -d "+2 days" build-binutils-${{ inputs.mode }}
-          touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage1
-          touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage2
-          touch -d "+2 days" build-gdb-${{ inputs.mode }}
-          touch -d "+2 days" build-${{ inputs.mode }}-nano
-          touch -d "+2 days" build-${{ inputs.mode }}
-          touch -d "+2 days" merge-${{ inputs.mode }}-nano
-
-      - name: Print timestamps
-        run: |
-          ls -la .
-
-      - name: Print GCC timestamps
-        run: |
-          cd gcc && ls -la .
-
-      - name: Print build timestamps
-        run: |
-          cd build && ls -la .
-          cd stamps && ls -la .
-
-      - name: Build stamp (should be instant)
-        run: |
-          cd build
-          make -d stamps/build-gcc-${{ inputs.mode }}-stage2
-
-      - name: Run testsuite
-        run: |
-          cd build
-          make -j $(nproc) report-${{ inputs.mode }} || true
-
-      - name: Save results
-        run: |
-          cd build
-          make -j $(nproc) report | gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log || true
-
-      - name: Upload stage2 artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report
-          path: |
-            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
-          retention-days: 90
