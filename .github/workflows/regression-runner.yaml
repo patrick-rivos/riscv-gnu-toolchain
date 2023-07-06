@@ -38,6 +38,19 @@ jobs:
             qemu
           key: submodules
 
+      - name: Remove .git files
+        run: |
+          rm -rf binutils/.git
+          rm -rf dejagnu/.git
+          rm -rf gcc/.git
+          rm -rf gdb/.git
+          rm -rf glibc/.git
+          rm -rf llvm/.git
+          rm -rf musl/.git
+          rm -rf newlib/.git
+          rm -rf pk/.git
+          rm -rf qemu/.git
+
       - name: Init submodules
         run: |
           git submodule init
