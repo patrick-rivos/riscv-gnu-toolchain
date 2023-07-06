@@ -34,6 +34,7 @@ jobs:
             binutils
             dejagnu
             gcc
+            gdb
             glibc
             musl
             newlib
@@ -72,6 +73,7 @@ jobs:
             binutils
             dejagnu
             gcc
+            gdb
             glibc
             musl
             newlib
