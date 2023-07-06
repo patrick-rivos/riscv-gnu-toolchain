@@ -150,13 +150,17 @@ jobs:
           mkdir build/stamps
           cd build/stamps
           touch -d "+2 days" check-write-permission
-          touch -d "+2 days" build-gdb-newlib
-          touch -d "+2 days" build-binutils-newlib
-          touch -d "+2 days" build-gcc-newlib-stage1
+          touch -d "+2 days" build-gdb-${{ inputs.mode }}
+          touch -d "+2 days" build-binutils-${{ inputs.mode }}
+          touch -d "+2 days" build-linux-headers
+          touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage1
+          touch -d "+2 days" build-glibc-linux-headers
+          touch -d "+2 days" build-glibc-linux-rv32gc-ilp32d
+          touch -d "+2 days" build-glibc-linux-rv64gc-ilp64d
           touch -d "+2 days" build-newlib-nano
-          touch -d "+2 days" build-newlib
+          touch -d "+2 days" build-${{ inputs.mode }}
           touch -d "+2 days" merge-newlib-nano
-          touch -d "+2 days" build-gcc-newlib-stage2
+          touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage2
 
       - name: Build sanity check (should be instant)
         run: |
