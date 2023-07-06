@@ -1,5 +1,3 @@
-name: Build
-
 on:
   push:
     branches:
@@ -10,6 +8,11 @@ on:
   schedule:
     # Run daily
     - cron: 0 0 * * *
+  workflow_dispatch:
+    inputs:
+      gcchash:
+        description: 'GCC Hash'
+        required: true
 
 jobs:
   init-submodules:
@@ -50,7 +53,12 @@ jobs:
           git checkout master
           git pull
           export GCCHASH=$(git rev-parse --short HEAD)
-          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+          echo "User provided gcc hash: ${{ github.event.inputs.gcchash }}"
+          if [ "${{ github.event.inputs.gcchash }}" == "" ]; then
+            echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+          else
+            export GCCHASH=${{ github.event.inputs.gcchash }}
+          fi
           echo $GCCHASH
 
       - name: Cache submodules
