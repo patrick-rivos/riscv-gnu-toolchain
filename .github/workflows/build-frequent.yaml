@@ -58,6 +58,7 @@ jobs:
         uses: actions/cache/save@v3
         with:
           path: |
+            .git
             binutils
             dejagnu
             gcc
