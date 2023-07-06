@@ -1,4 +1,5 @@
 name: Build-Frequent
+run-name: Build GCC hash ${{ github.event.inputs.gcchash }} by @${{ github.actor }}
 
 on:
   push:
