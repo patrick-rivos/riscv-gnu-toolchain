@@ -40,6 +40,8 @@ jobs:
             newlib
             pk
             qemu
+            spike
+            gdb
           key: submodules
 
       - name: Initalize submodules cache

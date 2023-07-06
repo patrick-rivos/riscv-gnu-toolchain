@@ -160,6 +160,7 @@ jobs:
 
       - name: Build sanity check (should be instant)
         run: |
+          cd build
           make ${{ inputs.mode }}
 
       - name: Run testsuite
