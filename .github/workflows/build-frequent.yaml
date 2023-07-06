@@ -30,6 +30,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: |
+            .git
             binutils
             dejagnu
             gcc
@@ -82,6 +83,8 @@ jobs:
             newlib
             pk
             qemu
+            spike
+            gdb
           key: submodules
 
     outputs:

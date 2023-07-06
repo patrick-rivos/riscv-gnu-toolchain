@@ -26,6 +26,7 @@ jobs:
         id: restore-build
         with:
           path: |
+            .git
             binutils
             dejagnu
             gcc
@@ -36,6 +37,8 @@ jobs:
             newlib
             pk
             qemu
+            spike
+            gdb
           key: submodules
 
       - name: Checkout gcc hash
@@ -103,6 +106,7 @@ jobs:
         id: restore-build
         with:
           path: |
+            .git
             binutils
             dejagnu
             gcc
@@ -113,6 +117,8 @@ jobs:
             newlib
             pk
             qemu
+            spike
+            gdb
           key: submodules
 
       - name: Checkout gcc hash
