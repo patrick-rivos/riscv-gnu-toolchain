@@ -58,7 +58,6 @@ jobs:
           git checkout master
           git pull
           export GCCHASH=$(git rev-parse --short HEAD)
-          echo "User provided gcc hash: ${{ github.event.inputs.gcchash }}"
           if [ "${{ github.event.inputs.gcchash }}" == "" ]; then
             echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
           else

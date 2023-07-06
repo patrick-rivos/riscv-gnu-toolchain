@@ -77,10 +77,12 @@ jobs:
           retention-days: 5
 
       - name: Zip stage2
+        if: inputs.mode != 'musl'
         run: |
           zip -r stage2.zip build/build-gcc-${{ inputs.mode }}-stage2
 
       - name: Upload stage2 artifact
+        if: inputs.mode != 'musl'
         uses: actions/upload-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
