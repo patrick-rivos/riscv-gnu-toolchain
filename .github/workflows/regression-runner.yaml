@@ -32,13 +32,10 @@ jobs:
             gcc
             gdb
             glibc
-            llvm
             musl
             newlib
             pk
             qemu
-            spike
-            gdb
           key: submodules
 
       - name: Checkout gcc hash
@@ -112,13 +109,10 @@ jobs:
             gcc
             gdb
             glibc
-            llvm
             musl
             newlib
             pk
             qemu
-            spike
-            gdb
           key: submodules
 
       - name: Checkout gcc hash

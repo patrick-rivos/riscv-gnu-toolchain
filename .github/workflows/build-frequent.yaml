@@ -34,15 +34,11 @@ jobs:
             binutils
             dejagnu
             gcc
-            gdb
             glibc
-            llvm
             musl
             newlib
             pk
             qemu
-            spike
-            gdb
           key: submodules
 
       - name: Initalize submodules cache
@@ -76,15 +72,11 @@ jobs:
             binutils
             dejagnu
             gcc
-            gdb
             glibc
-            llvm
             musl
             newlib
             pk
             qemu
-            spike
-            gdb
           key: submodules
 
     outputs:
