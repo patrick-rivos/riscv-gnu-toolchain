@@ -38,24 +38,6 @@ jobs:
             qemu
           key: submodules
 
-      # - name: Remove .git files
-      #   run: |
-      #     rm -rf binutils/.git
-      #     rm -rf dejagnu/.git
-      #     rm -rf gcc/.git
-      #     rm -rf gdb/.git
-      #     rm -rf glibc/.git
-      #     rm -rf llvm/.git
-      #     rm -rf musl/.git
-      #     rm -rf newlib/.git
-      #     rm -rf pk/.git
-      #     rm -rf qemu/.git
-
-      - name: Init submodules
-        run: |
-          git submodule init
-          git submodule update --recursive --progress
-
       - name: Checkout gcc hash
         run: |
           cd gcc
@@ -94,23 +76,17 @@ jobs:
             bin.zip
           retention-days: 5
 
-      - name: Run testsuite
+      - name: Zip stage2
         run: |
-          cd build
-          make -j $(nproc) report-${{ inputs.mode }} || true
+          zip -r stage2.zip build/build-gcc-${{ inputs.mode }}-stage2
 
-      - name: Save results
-        run: |
-          cd build
-          (make -j $(nproc) report > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log) || true
-
-      - name: Upload results artifact
+      - name: Upload stage2 artifact
         uses: actions/upload-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
           path: |
-            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
-          retention-days: 90
+            stage2.zip
+          retention-days: 5
 
   test:
     if: ${{ inputs.mode != 'musl' }}
@@ -158,16 +134,47 @@ jobs:
             $CONFIGURE_TOOLCHAIN
           fi
 
-      - name: Restore binaries
+      - name: Restore stage2
         uses: actions/download-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
 
       - name: Unzip artifacts
         run: |
-          unzip bin.zip
+          unzip stage2.zip
 
-      - name: Make report
+      - name: Generate fake stamps to prevent rebuilding
         run: |
-          echo "TODO: Seperate build/test flows"
+          mkdir build/stamps
+          cd build/stamps
+          touch -d "+2 days" check-write-permission
+          touch -d "+2 days" build-gdb-newlib
+          touch -d "+2 days" build-binutils-newlib
+          touch -d "+2 days" build-gcc-newlib-stage1
+          touch -d "+2 days" build-newlib-nano
+          touch -d "+2 days" build-newlib
+          touch -d "+2 days" merge-newlib-nano
+          touch -d "+2 days" build-gcc-newlib-stage2
+
+      - name: Build sanity check (should be instant)
+        run: |
+          make ${{ inputs.mode }}
+
+      - name: Run testsuite
+        run: |
+          cd build
+          make -j $(nproc) report-${{ inputs.mode }} || true
+
+      - name: Save results
+        run: |
+          cd build
+          (make -j $(nproc) report > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log) || true
+
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+          retention-days: 90
 
