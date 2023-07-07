@@ -43,14 +43,6 @@ jobs:
           key: submodules
           lookup-only: true
 
-      - name: Initalize submodules cache
-        if: steps.retrieve-cache.outputs.cache-hit != 'true'
-        run: |
-          git submodule init
-          rm -rf gcc
-          git clone git://gcc.gnu.org/git/gcc.git
-          git submodule update --recursive --progress --recommend-shallow
-
       - name: Get GCC hash
         id: gcc-hash
         run: |
@@ -61,6 +53,14 @@ jobs:
           fi
           echo $GCCHASH
           echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+
+      - name: Initalize submodules cache
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          git submodule init
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+          git submodule update --recursive --progress --recommend-shallow
 
       - name: Cache submodules
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
