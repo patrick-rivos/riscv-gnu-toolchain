@@ -41,6 +41,7 @@ jobs:
             pk
             qemu
           key: submodules
+          lookup-only: true
 
       - name: Initalize submodules cache
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
@@ -50,19 +51,16 @@ jobs:
           git clone git://gcc.gnu.org/git/gcc.git
           git submodule update --recursive --progress --recommend-shallow
 
-      - name: Bump GCC
+      - name: Get GCC hash
         id: gcc-hash
         run: |
-          cd gcc
-          git checkout master
-          git pull
-          export GCCHASH=$(git rev-parse --short HEAD)
           if [ "${{ github.event.inputs.gcchash }}" == "" ]; then
-            echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+            export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
           else
             export GCCHASH=${{ github.event.inputs.gcchash }}
           fi
           echo $GCCHASH
+          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
 
       - name: Cache submodules
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
