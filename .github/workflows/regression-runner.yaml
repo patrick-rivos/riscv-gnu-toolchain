@@ -155,8 +155,8 @@ jobs:
           touch -d "+2 days" build-linux-headers
           touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage1
           touch -d "+2 days" build-glibc-linux-headers
-          touch -d "+2 days" build-glibc-linux-rv32gc-ilp32d
-          touch -d "+2 days" build-glibc-linux-rv64gc-ilp64d
+          touch -d "+2 days" build-glibc-linux-rv32gc-lp32d
+          touch -d "+2 days" build-glibc-linux-rv64gc-lp64d
           touch -d "+2 days" build-newlib-nano
           touch -d "+2 days" build-${{ inputs.mode }}
           touch -d "+2 days" merge-newlib-nano
