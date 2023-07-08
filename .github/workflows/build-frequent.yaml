@@ -88,7 +88,7 @@ jobs:
       matrix:
         mode:   [newlib, linux, musl]
         target: [rv32gc-ilp32d, rv64gc-lp64d]
-        multilib: [multilib, non-multilib]
+        multilib: [non-multilib]
         exclude:
           - mode: musl
             target: rv32gc-ilp32d
