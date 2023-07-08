@@ -26,6 +26,11 @@ jobs:
         with:
           name: gcc-sources-${{ inputs.gcchash }}
 
+      - name: Restore submodules
+        run: |
+          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          unzip cache.zip
+
       - name: Checkout gcc hash
         run: |
           cd gcc
@@ -89,6 +94,11 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: gcc-sources-${{ inputs.gcchash }}
+
+      - name: Restore submodules
+        run: |
+          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          unzip cache.zip
 
       - name: Checkout gcc hash
         run: |

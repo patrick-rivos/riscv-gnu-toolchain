@@ -81,21 +81,16 @@ jobs:
             qemu
           key: submodules
 
+      - name: Make cache zip
+        run: |
+          zip -r cache.zip .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+
       - name: Upload git cache
         uses: actions/upload-artifact@v3
         with:
           name: gcc-sources-${{ inputs.gcchash }}
           path: |
-            .git
-            binutils
-            dejagnu
-            gcc
-            gdb
-            glibc
-            musl
-            newlib
-            pk
-            qemu
+            cache.zip
           retention-days: 5
 
     outputs:
