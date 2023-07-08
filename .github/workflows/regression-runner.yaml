@@ -158,8 +158,12 @@ jobs:
 
       - name: Save results
         run: |
-          cd build
-          make -j $(nproc) report | tee gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+          if [ "${{ inputs.mode }}" == "newlib" ]; then
+            PARSE_EXISTING_REPORT="./scripts/testsuite-filter gcc newlib test/allowlist `find build-gcc-newlib-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`"
+          else
+            PARSE_EXISTING_REPORT="./scripts/testsuite-filter gcc glibc test/allowlist `find build-gcc-linux-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`"
+          fi
+          $PARSE_EXISTING_REPORT | tee gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
 
       - name: Upload results artifact
         uses: actions/upload-artifact@v3
