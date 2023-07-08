@@ -52,11 +52,10 @@ jobs:
           mkdir build
           cd build
           TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
-          CONFIGURE_TOOLCHAIN="../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}"
           if [ "${{ inputs.multilib }}" == "multilib" ]; then
-            $CONFIGURE_TOOLCHAIN --enable-multilib
+            ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--"
           else
-            $CONFIGURE_TOOLCHAIN
+            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}
           fi
 
       - name: Make gcc
@@ -129,11 +128,10 @@ jobs:
           mkdir build
           cd build
           TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
-          CONFIGURE_TOOLCHAIN="../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}"
           if [ "${{ inputs.multilib }}" == "multilib" ]; then
-            $CONFIGURE_TOOLCHAIN --enable-multilib
+            ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--"
           else
-            $CONFIGURE_TOOLCHAIN
+            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}
           fi
 
       - name: Restore stage2
