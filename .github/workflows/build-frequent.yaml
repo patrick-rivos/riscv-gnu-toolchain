@@ -104,6 +104,7 @@ jobs:
   creg: # Check Regressions. Short name so I can see the matrix string in github
     needs: [init-submodules]
     strategy:
+      fail-fast: false
       matrix:
         mode:   [newlib, linux, musl]
         target: [rv32gc-ilp32d, rv64gc-lp64d]
