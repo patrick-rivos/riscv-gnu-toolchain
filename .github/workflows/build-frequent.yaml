@@ -41,18 +41,6 @@ jobs:
             pk
             qemu
           key: submodules
-          lookup-only: true
-
-      - name: Get GCC hash
-        id: gcc-hash
-        run: |
-          if [ "${{ github.event.inputs.gcchash }}" == "" ]; then
-            export GCCHASH=$(git ls-remote git://gcc.gnu.org/git/gcc.git --heads refs/heads/master  | cut -f1)
-          else
-            export GCCHASH=${{ github.event.inputs.gcchash }}
-          fi
-          echo $GCCHASH
-          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
 
       - name: Initalize submodules cache
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
@@ -61,6 +49,20 @@ jobs:
           rm -rf gcc
           git clone git://gcc.gnu.org/git/gcc.git
           git submodule update --recursive --progress --recommend-shallow
+
+      - name: Get GCC hash
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+          if [ "${{ github.event.inputs.gcchash }}" == "" ]; then
+            export GCCHASH=$(git rev-parse --short HEAD)
+          else
+            export GCCHASH=${{ github.event.inputs.gcchash }}
+          fi
+          echo $GCCHASH
+          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
 
       - name: Cache submodules
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
@@ -78,6 +80,23 @@ jobs:
             pk
             qemu
           key: submodules
+
+      - name: Upload git cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-sources-${{ inputs.gcchash }}
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          retention-days: 5
 
     outputs:
       gcchash: ${{ steps.gcc-hash.outputs.gcchash }}
@@ -104,6 +123,7 @@ jobs:
       multilib: ${{ matrix.multilib }}
 
   generate-issues:
+    if: always()
     runs-on: ubuntu-22.04
     needs: [creg]
     steps:

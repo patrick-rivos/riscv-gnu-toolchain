@@ -21,22 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Load submodules from cache
-        uses: actions/cache@v3
-        id: restore-build
+      - name: Restore submodules from cache
+        uses: actions/download-artifact@v3
         with:
-          path: |
-            .git
-            binutils
-            dejagnu
-            gcc
-            gdb
-            glibc
-            musl
-            newlib
-            pk
-            qemu
-          key: submodules
+          name: gcc-sources-${{ inputs.gcchash }}
 
       - name: Checkout gcc hash
         run: |
@@ -97,22 +85,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Load submodules from cache
-        uses: actions/cache@v3
-        id: restore-build
+      - name: Restore submodules from cache
+        uses: actions/download-artifact@v3
         with:
-          path: |
-            .git
-            binutils
-            dejagnu
-            gcc
-            gdb
-            glibc
-            musl
-            newlib
-            pk
-            qemu
-          key: submodules
+          name: gcc-sources-${{ inputs.gcchash }}
 
       - name: Checkout gcc hash
         run: |
