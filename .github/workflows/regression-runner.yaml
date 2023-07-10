@@ -68,6 +68,7 @@ jobs:
             bin.zip
           retention-days: 5
 
+      # Running testsuite (stamps/check-gcc-*) only uses stage2
       - name: Zip stage2
         if: inputs.mode != 'musl'
         run: |
@@ -129,6 +130,8 @@ jobs:
         run: |
           unzip stage2.zip
 
+      # We need to use future timestamps since some stamps are generated during build process and invalidate the stamps here.
+      # Future timestamps prevent that invalidation.
       - name: Generate fake stamps to prevent rebuilding
         run: |
           mkdir build/stamps
@@ -146,6 +149,7 @@ jobs:
           touch -d "+2 days" merge-newlib-nano
           touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage2
 
+      # Checks that the cache has been properly setup (make doesn't try rebuilding)
       - name: Build sanity check (should be instant)
         run: |
           cd build
@@ -168,8 +172,7 @@ jobs:
       - name: Upload results artifact
         uses: actions/upload-artifact@v3
         with:
-          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
           path: |
             gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
           retention-days: 90
-

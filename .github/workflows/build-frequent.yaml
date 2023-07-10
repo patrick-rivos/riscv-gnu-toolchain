@@ -85,6 +85,9 @@ jobs:
         run: |
           zip -r cache.zip .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
 
+      # Use artifact rather than cache since cache downloads are flaky/hang.
+      # Artifacts are reliable but ~30 min slower to set up.
+      # Setup is done on one runner, so this isn't a show stopper.
       - name: Upload git cache
         uses: actions/upload-artifact@v3
         with:
@@ -109,6 +112,9 @@ jobs:
             target: rv32gc-ilp32d
           - mode: musl
             multilib: multilib
+          # Multilib ignores the target.
+          # Aribtrarily use rv64 as the single multilib runner.
+          # If we add more targets in the future, just exclude those cases from the multilib case.
           - target: rv32gc-ilp32d
             multilib: multilib
     uses: ./.github/workflows/regression-runner.yaml
@@ -119,7 +125,7 @@ jobs:
       multilib: ${{ matrix.multilib }}
 
   generate-issues:
-    if: always()
+    if: always() # Generate github issues even when some (or all) targets fail to build
     runs-on: ubuntu-22.04
     needs: [creg]
     steps:
