@@ -42,3 +42,9 @@ jobs:
             -chash a0cb65d34cc \
             -o out.md
           cat out.md
+
+      - uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: out.md
