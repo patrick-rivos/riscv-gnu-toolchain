@@ -39,7 +39,8 @@ jobs:
 
       - name: Search for most recent valid hash
         run: |
-          ./scripts/get-most-recent-ci-hash.py -hash ef3bbc69d15707e4db6e2f198c621effb636cc26 -token ${{ secrets.GITHUB_TOKEN }}
+          pip install pygithub
+          python ./scripts/get-most-recent-ci-hash.py -hash ef3bbc69d15707e4db6e2f198c621effb636cc26 -token ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download artifact
         id: download-artifact
