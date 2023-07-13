@@ -329,7 +329,7 @@ def failures_to_markdown(
 ) -> str:
     assignees = ["patrick-rivos", "kevinl-rivosinc"]
     result = f"""---
-title: `{previous_hash}`->`{current_hash}`
+title: \\`{previous_hash}\\`->\\`{current_hash}\\`
 assignees: {", ".join(assignees)}
 labels: bug
 ---\n"""

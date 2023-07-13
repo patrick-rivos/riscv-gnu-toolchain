@@ -46,7 +46,7 @@ jobs:
 
       - name: trim script output
         run: |
-          head -20 out.md | test.md
+          head -20 out.md > test.md
 
       - uses: JasonEtco/create-an-issue@v2
         env:
