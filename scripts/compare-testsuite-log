@@ -328,8 +328,8 @@ def failures_to_markdown(
     failures: ClassifedGccFailures, previous_hash, current_hash
 ) -> str:
     assignees = ["patrick-rivos", "kevinl-rivosinc"]
-    result = f"""---
-title: \\`{previous_hash}\\`->\\`{current_hash}\\`
+    result = fr"""---
+title: \`{previous_hash}\`->\`{current_hash}\`
 assignees: {", ".join(assignees)}
 labels: bug
 ---\n"""
