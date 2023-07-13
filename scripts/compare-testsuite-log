@@ -111,7 +111,7 @@ class ClassifedGccFailures:
     new: Dict[LibName, GccFailure] = field(default_factory=dict)
 
     def failure_dict_to_string(
-        self, failure_dict: Dict[LibName, GccFailure], failure_name
+        self, failure_dict: Dict[LibName, GccFailure], failure_name: str
     ):
         result = f"# {failure_name}\n"
         for libname, gccfailure in failure_dict.items():
@@ -120,9 +120,9 @@ class ClassifedGccFailures:
         return result
 
     def __str__(self):
-        result = self.failure_dict_to_string(self.resolved, "Resolved Failures")
-        result += self.failure_dict_to_string(self.unresolved, "Unresolved Failures")
-        result += self.failure_dict_to_string(self.new, "New Failures")
+        result = self.failure_dict_to_string(self.new, "New Failures")
+        result += self.failure_dict_to_string(self.resolved, "Resolved Failures")
+        # result += self.failure_dict_to_string(self.unresolved, "Unresolved Failures")
         return result
 
 
@@ -200,7 +200,7 @@ def parse_failure_name(failure_line: str) -> str:
     return failure_components[1]
 
 
-def parse_testsuite_failures(log_path) -> Dict[Description, Set[str]]:
+def parse_testsuite_failures(log_path: str) -> Dict[Description, Set[str]]:
     """
     parse testsuite failures from the log in the path
     """
@@ -325,7 +325,7 @@ def failures_to_summary(failures: ClassifedGccFailures):
 
 
 def failures_to_markdown(
-    failures: ClassifedGccFailures, previous_hash, current_hash
+    failures: ClassifedGccFailures, previous_hash: str, current_hash: str
 ) -> str:
     assignees = ["patrick-rivos", "kevinl-rivosinc"]
     result = f"""---
@@ -353,7 +353,7 @@ def is_result_valid(log_path: str):
             ):
                 summary_flag = True
                 break
-        if summary_flag == False:
+        if summary_flag is False:
             return False
         # Directly read the case line
         file.readline()
