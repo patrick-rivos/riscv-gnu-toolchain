@@ -17,6 +17,7 @@ jobs:
         uses: dawidd6/action-download-artifact@v2
         with:
           workflow: build-frequent.yaml
+          workflow_conclusion: ""
           branch: daily-ci
           name: gcc-linux-rv32gc-ilp32d-a0cb65d34cc-non-multilib-report.log
           search_artifacts: true
