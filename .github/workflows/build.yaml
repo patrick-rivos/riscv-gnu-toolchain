@@ -24,7 +24,7 @@ jobs:
           workflow: build-frequent.yaml
           workflow_conclusion: ""
           branch: daily-ci
-          name: gcc-linux-rv32gc-ilp32d-a0cb65d34cc-non-multilib-report.log
+          name: gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log
           search_artifacts: true
           if_no_artifact_found: fail
 
@@ -35,22 +35,22 @@ jobs:
           workflow: build-frequent.yaml
           workflow_conclusion: ""
           branch: daily-ci
-          name: gcc-linux-rv32gc-ilp32d-cc035c5d8672f87dc8c2756d9f8367903aa72d93-non-multilib-report.log
+          name: gcc-linux-rv32gc-ilp32d-b621883620b127caf20e88e59fa73e666960013e-non-multilib-report.log
           search_artifacts: true
           if_no_artifact_found: fail
 
       - name: run script
         run: |
-          ./scripts/compare-testsuite-log -plog gcc-linux-rv32gc-ilp32d-cc035c5d8672f87dc8c2756d9f8367903aa72d93-non-multilib-report.log \
-            -phash cc035c5d8672f87dc8c2756d9f8367903aa72d93 \
-            -clog gcc-linux-rv32gc-ilp32d-a0cb65d34cc-non-multilib-report.log \
-            -chash a0cb65d34cc \
+          ./scripts/compare-testsuite-log -plog gcc-linux-rv32gc-ilp32d-b621883620b127caf20e88e59fa73e666960013e-non-multilib-report.log \
+            -phash b621883620b127caf20e88e59fa73e666960013e \
+            -clog gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log \
+            -chash ef3bbc69d15707e4db6e2f198c621effb636cc26 \
             -o out.md
           cat out.md
 
       - name: trim script output
         run: |
-          head -50 out.md > test.md
+          head -100 out.md > test.md
 
       - uses: JasonEtco/create-an-issue@v2
         env:
@@ -62,16 +62,16 @@ jobs:
       - name: run script (same hash)
         run: |
           ./scripts/compare-testsuite-log \
-            -plog gcc-linux-rv32gc-ilp32d-a0cb65d34cc-non-multilib-report.log \
-            -phash a0cb65d34cc-same \
-            -clog gcc-linux-rv32gc-ilp32d-a0cb65d34cc-non-multilib-report.log \
-            -chash a0cb65d34cc-same \
+            -plog gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log \
+            -phash ef3bbc69d15707e4db6e2f198c621effb636cc26-same \
+            -clog gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log \
+            -chash ef3bbc69d15707e4db6e2f198c621effb636cc26-same \
             -o out.md
           cat out.md
 
       - name: trim script output (same hash)
         run: |
-          head -50 out.md > test.md
+          head -100 out.md > test.md
 
       - uses: JasonEtco/create-an-issue@v2
         env:
