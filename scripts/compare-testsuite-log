@@ -328,11 +328,14 @@ def failures_to_markdown(
     failures: ClassifedGccFailures, previous_hash, current_hash
 ) -> str:
     assignees = ["patrick-rivos", "kevinl-rivosinc"]
-    result = fr"""---
-title: \`{previous_hash}\`->\`{current_hash}\`
+    result = f"""---
+title: Testsuite Status {current_hash}
 assignees: {", ".join(assignees)}
 labels: bug
----\n"""
+---\n
+Prior hash: `{previous_hash}`\n
+Current hash: `{current_hash}`\n
+"""
     result += failures_to_summary(failures)
     result += str(failures)
     return result
