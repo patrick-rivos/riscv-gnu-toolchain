@@ -47,7 +47,6 @@ jobs:
         with:
           workflow: build-frequent.yaml
           workflow_conclusion: ""
-          branch: build-frequent
           name: gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log
           search_artifacts: true
           if_no_artifact_found: fail
@@ -58,7 +57,6 @@ jobs:
         with:
           workflow: build-frequent.yaml
           workflow_conclusion: ""
-          branch: build-frequent
           name: gcc-linux-rv32gc-ilp32d-b621883620b127caf20e88e59fa73e666960013e-non-multilib-report.log
           search_artifacts: true
           if_no_artifact_found: fail
