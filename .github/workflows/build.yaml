@@ -41,16 +41,6 @@ jobs:
           pip install pygithub
           python ./scripts/get-most-recent-ci-hash.py -hash ef3bbc69d15707e4db6e2f198c621effb636cc26 -token ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download artifact
-        id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: build-frequent.yaml
-          workflow_conclusion: ""
-          name: gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log
-          search_artifacts: true
-          if_no_artifact_found: fail
-
       - name: Old artifact
         id: download-old-artifact
         uses: dawidd6/action-download-artifact@v2
@@ -58,6 +48,16 @@ jobs:
           workflow: build-frequent.yaml
           workflow_conclusion: ""
           name: gcc-linux-rv32gc-ilp32d-b621883620b127caf20e88e59fa73e666960013e-non-multilib-report.log
+          search_artifacts: true
+          if_no_artifact_found: fail
+
+      - name: Download artifact
+        id: download-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build-frequent.yaml
+          workflow_conclusion: ""
+          name: gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log
           search_artifacts: true
           if_no_artifact_found: fail
 
