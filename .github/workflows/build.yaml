@@ -47,7 +47,6 @@ jobs:
         with:
           workflow: build-frequent.yaml
           workflow_conclusion: ""
-          branch: daily-ci
           name: gcc-newlib-rv32gc-ilp32d-71a907abdb4c03d4a3419190dbaad15c308ac8c7-non-multilib-report.log
           search_artifacts: true
           if_no_artifact_found: fail
