@@ -39,17 +39,7 @@ jobs:
       - name: Search for most recent valid hash
         run: |
           pip install pygithub
-          python ./scripts/get-most-recent-ci-hash.py -hash ef3bbc69d15707e4db6e2f198c621effb636cc26 -token ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Old artifact
-        id: download-old-artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: build-frequent.yaml
-          workflow_conclusion: ""
-          name: gcc-linux-rv32gc-ilp32d-b621883620b127caf20e88e59fa73e666960013e-non-multilib-report.log
-          search_artifacts: true
-          if_no_artifact_found: fail
+          python ./scripts/get-most-recent-ci-hash.py -hash 71a907abdb4c03d4a3419190dbaad15c308ac8c7 -token ${{ secrets.GITHUB_TOKEN }}
 
       - name: Download artifact
         id: download-artifact
@@ -57,16 +47,27 @@ jobs:
         with:
           workflow: build-frequent.yaml
           workflow_conclusion: ""
-          name: gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log
+          branch: daily-ci
+          name: gcc-newlib-rv32gc-ilp32d-71a907abdb4c03d4a3419190dbaad15c308ac8c7-non-multilib-report.log
+          search_artifacts: true
+          if_no_artifact_found: fail
+
+      - name: Old artifact
+        id: download-old-artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: build-frequent.yaml
+          workflow_conclusion: ""
+          name: gcc-newlib-rv32gc-ilp32d-d76d19c9bc5ef1138af65fa3546eb628b7a756c9-non-multilib-report.log
           search_artifacts: true
           if_no_artifact_found: fail
 
       - name: run script
         run: |
-          ./scripts/compare-testsuite-log -plog gcc-linux-rv32gc-ilp32d-b621883620b127caf20e88e59fa73e666960013e-non-multilib-report.log \
-            -phash b621883620b127caf20e88e59fa73e666960013e \
-            -clog gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log \
-            -chash ef3bbc69d15707e4db6e2f198c621effb636cc26 \
+          ./scripts/compare-testsuite-log -plog gcc-newlib-rv32gc-ilp32d-d76d19c9bc5ef1138af65fa3546eb628b7a756c9-non-multilib-report.log \
+            -phash d76d19c9bc5ef1138af65fa3546eb628b7a756c9 \
+            -clog gcc-newlib-rv32gc-ilp32d-71a907abdb4c03d4a3419190dbaad15c308ac8c7-non-multilib-report.log \
+            -chash 71a907abdb4c03d4a3419190dbaad15c308ac8c7 \
             -o out.md
           cat out.md
 
@@ -84,10 +85,10 @@ jobs:
       - name: run script (same hash)
         run: |
           ./scripts/compare-testsuite-log \
-            -plog gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log \
-            -phash ef3bbc69d15707e4db6e2f198c621effb636cc26-same \
-            -clog gcc-linux-rv32gc-ilp32d-ef3bbc69d15707e4db6e2f198c621effb636cc26-non-multilib-report.log \
-            -chash ef3bbc69d15707e4db6e2f198c621effb636cc26-same \
+            -plog gcc-linux-rv32gc-ilp32d-71a907abdb4c03d4a3419190dbaad15c308ac8c7-non-multilib-report.log \
+            -phash 71a907abdb4c03d4a3419190dbaad15c308ac8c7-same \
+            -clog gcc-newlib-rv32gc-ilp32d-71a907abdb4c03d4a3419190dbaad15c308ac8c7-non-multilib-report.log  \
+            -chash 71a907abdb4c03d4a3419190dbaad15c308ac8c7-same \
             -o out.md
           cat out.md
 
