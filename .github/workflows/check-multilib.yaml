@@ -1,0 +1,128 @@
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Restore submodules from cache
+        uses: actions/download-artifact@v3
+        with:
+          name: sources-cache
+
+      - name: Restore submodules
+        run: |
+          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          unzip cache.zip
+
+      - name: Install dependencies
+        run: sudo ./.github/setup-apt.sh
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--"
+
+      - name: Make gcc
+        run: |
+          cd build
+          make -j $(nproc) ${{ inputs.mode }}
+
+      - name: Zip binaries
+        run: |
+          zip -r bin.zip build/bin
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: multilib-${{ inputs.mode }}-bin
+          path: |
+            bin.zip
+
+      # Running testsuite (stamps/check-gcc-*) only uses stage2 & some assorted folders
+      - name: Zip stage2
+        if: ${{ false }} # Disable until multilib errors are triaged
+        run: |
+          zip -r stage2.zip build/build-gcc-${{ inputs.mode }}-stage2 \
+                 build/riscv64-unknown-elf/bin build/riscv64-unknown-linux-gnu/bin \
+                 build/riscv32-unknown-elf/bin build/riscv32-unknown-linux-gnu/bin
+
+      - name: Upload stage2 artifact
+        if: ${{ false }} # Disable until multilib errors are triaged
+        uses: actions/upload-artifact@v3
+        with:
+          name: multilib-${{ inputs.mode }}-stage2
+          path: |
+            stage2.zip
+          retention-days: 1
+
+  test:
+    runs-on: ubuntu-22.04
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Restore submodules from cache
+        uses: actions/download-artifact@v3
+        with:
+          name: sources-cache
+
+      - name: Restore submodules
+        run: |
+          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          unzip cache.zip
+
+      - name: Install dependencies
+        run: sudo ./.github/setup-apt.sh
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--"
+
+      - name: Restore stage2
+        uses: actions/download-artifact@v3
+        with:
+          name: multilib-${{ inputs.mode }}-stage2
+
+      - name: Unzip artifacts
+        run: |
+          unzip stage2.zip
+
+      # We need to use future timestamps since some stamps are generated during build process and invalidate the stamps here.
+      # Future timestamps prevent that invalidation.
+      - name: Generate fake stamps to prevent rebuilding
+        run: |
+          mkdir build/stamps
+          cd build/stamps
+          touch -d "+2 days" check-write-permission
+          touch -d "+2 days" build-gdb-${{ inputs.mode }}
+          touch -d "+2 days" build-binutils-${{ inputs.mode }}
+          touch -d "+2 days" build-linux-headers
+          touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage1
+          touch -d "+2 days" build-glibc-linux-headers
+          touch -d "+2 days" build-glibc-linux-rv32gc-ilp32d
+          touch -d "+2 days" build-glibc-linux-rv64gc-lp64d
+          touch -d "+2 days" build-newlib-nano
+          touch -d "+2 days" build-${{ inputs.mode }}
+          touch -d "+2 days" merge-newlib-nano
+          touch -d "+2 days" build-gcc-${{ inputs.mode }}-stage2
+
+      # Checks that the cache has been properly setup (make doesn't try rebuilding)
+      - name: Build sanity check (should be instant)
+        run: |
+          cd build
+          make -d ${{ inputs.mode }}
+
+      - name: Run testsuite
+        run: |
+          cd build
+          make -j $(nproc) report-${{ inputs.mode }}
