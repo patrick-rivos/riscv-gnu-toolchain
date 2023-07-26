@@ -6,98 +6,18 @@ on:
       - ci-playground
 
 jobs:
-  init-submodules:
+  testfiles:
     runs-on: ubuntu-22.04
-    permissions:
-      issues: write
+
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Retrieve cache
-        id: retrieve-cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            .git
-            binutils
-            dejagnu
-            gcc
-            gdb
-            glibc
-            musl
-            newlib
-            pk
-            qemu
-          key: submodules
-
-      - name: Init gcc
+      - name: Make file
         run: |
-          cd gcc
-          git checkout master
-          git pull
+          echo "ok" > test.txt
 
-      - name: Search for most recent valid hash
-        run: |
-          pip install pygithub
-          python ./scripts/get-most-recent-ci-hash.py -hash 71a907abdb4c03d4a3419190dbaad15c308ac8c7 -token ${{ secrets.GITHUB_TOKEN }}
+      - name: if file exists
+        if: ${{ hashFiles('test.txt') != '' }}
+        run: echo "File exists"
 
-      - name: Download artifact
-        id: download-artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: build-frequent.yaml
-          workflow_conclusion: ""
-          name: gcc-newlib-rv32gc-ilp32d-71a907abdb4c03d4a3419190dbaad15c308ac8c7-non-multilib-report.log
-          search_artifacts: true
-          if_no_artifact_found: fail
-
-      - name: Old artifact
-        id: download-old-artifact
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          workflow: build-frequent.yaml
-          workflow_conclusion: ""
-          name: gcc-newlib-rv32gc-ilp32d-d76d19c9bc5ef1138af65fa3546eb628b7a756c9-non-multilib-report.log
-          search_artifacts: true
-          if_no_artifact_found: fail
-
-      - name: run script
-        run: |
-          ./scripts/compare-testsuite-log -plog gcc-newlib-rv32gc-ilp32d-d76d19c9bc5ef1138af65fa3546eb628b7a756c9-non-multilib-report.log \
-            -phash d76d19c9bc5ef1138af65fa3546eb628b7a756c9 \
-            -clog gcc-newlib-rv32gc-ilp32d-71a907abdb4c03d4a3419190dbaad15c308ac8c7-non-multilib-report.log \
-            -chash 71a907abdb4c03d4a3419190dbaad15c308ac8c7 \
-            -o out.md
-          cat out.md
-
-      - name: trim script output
-        run: |
-          head -100 out.md > test.md
-
-      - uses: JasonEtco/create-an-issue@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          filename: test.md
-          update_existing: true
-
-      - name: run script (same hash)
-        run: |
-          ./scripts/compare-testsuite-log \
-            -plog gcc-linux-rv32gc-ilp32d-71a907abdb4c03d4a3419190dbaad15c308ac8c7-non-multilib-report.log \
-            -phash 71a907abdb4c03d4a3419190dbaad15c308ac8c7-same \
-            -clog gcc-newlib-rv32gc-ilp32d-71a907abdb4c03d4a3419190dbaad15c308ac8c7-non-multilib-report.log  \
-            -chash 71a907abdb4c03d4a3419190dbaad15c308ac8c7-same \
-            -o out.md
-          cat out.md
-
-      - name: trim script output (same hash)
-        run: |
-          head -100 out.md > test.md
-
-      - uses: JasonEtco/create-an-issue@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          filename: test.md
-          update_existing: true
+      - name: if file doesn't exist
+        if: ${{ hashFiles('test.txt') == '' }}
+        run: echo "File doesn't exist"
