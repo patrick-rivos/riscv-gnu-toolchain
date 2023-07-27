@@ -9,8 +9,89 @@ on:
       - build-frequent
 
 jobs:
+  init-submodules:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Retrieve cache
+        id: retrieve-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Initalize submodules cache
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          git submodule init
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+          git submodule update --recursive --progress --recommend-shallow
+
+      - name: Get GCC hash
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+          if [ "${{ github.event.inputs.gcchash }}" == "" ]; then
+            export GCCHASH=$(git rev-parse HEAD)
+          else
+            export GCCHASH=${{ github.event.inputs.gcchash }}
+          fi
+          echo $GCCHASH
+          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+
+      - name: Cache submodules
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Make cache zip
+        run: |
+          zip -r cache.zip .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+
+      # Use artifact rather than cache since cache downloads are flaky/hang.
+      # Artifacts are reliable but ~30 min slower to set up.
+      # Setup is done on one runner, so this isn't a show stopper.
+      - name: Upload git cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-sources-${{ steps.gcc-hash.outputs.gcchash }}
+          path: |
+            cache.zip
+          retention-days: 5
+
+    outputs:
+      gcchash: ${{ steps.gcc-hash.outputs.gcchash }}
+
   build:
     runs-on: ubuntu-22.04
+    needs: [init-submodules]
     environment: production
     steps:
       - name: Remove unneeded frameworks to recover disk space
@@ -27,7 +108,7 @@ jobs:
       - name: Restore submodules from cache
         uses: actions/download-artifact@v3
         with:
-          name: gcc-sources-${{ inputs.gcchash }}
+          name: gcc-sources-${{ needs.init-submodules.outputs.gcchash }}
 
       - name: Restore submodules
         run: |
@@ -38,7 +119,7 @@ jobs:
         run: |
           cd gcc
           git fetch
-          git checkout ${{ inputs.gcchash }}
+          git checkout ${{ needs.init-submodules.outputs.gcchash }}
 
       - name: Install dependencies
         run: sudo ./.github/setup-apt.sh
