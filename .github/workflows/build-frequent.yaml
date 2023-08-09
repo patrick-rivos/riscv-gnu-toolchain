@@ -172,16 +172,15 @@ jobs:
       gcchash: ${{ needs.init-submodules.outputs.gcchash }}
       multilib: non-multilib
 
-  build-x86:
-    if: failure() # Only check x86 if a riscv build fails
-    needs: [init-submodules, creg, cmreg]
-    uses: ./.github/workflows/bootstrap-x86.yaml
+  cregx86:
+    needs: [init-submodules]
+    uses: ./.github/workflows/x86-runner.yaml
     with:
       gcchash: ${{ needs.init-submodules.outputs.gcchash }}
 
   summarize:
     if: "!cancelled()" # Generate github issues even when some (or all) targets fail to build
-    needs: [init-submodules, creg, cmreg, csreg]
+    needs: [init-submodules, creg, cmreg, csreg, cregx86]
     permissions:
       issues: write
     uses: ./.github/workflows/generate-summary.yaml
