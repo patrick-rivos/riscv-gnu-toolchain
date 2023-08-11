@@ -155,7 +155,8 @@ jobs:
 
       - name: Unzip artifacts
         run: |
-          unzip stage2.zip -d ..
+          unzip stage2.zip -d ../build
+          ls ../build
 
       # We need to use future timestamps since some stamps are generated during build process and invalidate the stamps here.
       # Future timestamps prevent that invalidation.
