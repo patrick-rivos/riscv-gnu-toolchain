@@ -55,9 +55,9 @@ jobs:
         run: |
           unset ADA_INCLUDE_PATH
           unset ADA_OBJECT_PATH
-          mkdir build
-          cd build
-          ../gcc/configure \
+          mkdir ../build
+          cd ../build
+          ../riscv-gnu-toolchain/gcc/configure \
                 --enable-languages=c,c++,go,d,fortran,objc,obj-c++,m2 \
                 --prefix=/usr \
                 --with-gcc-major-version-only \
@@ -95,10 +95,10 @@ jobs:
 
       - name: Make bootstrap
         run: |
-          cd build
+          cd ../build
           make bootstrap -j$(nproc)
 
       - name: Make install
         run: |
-          cd build
+          cd ../build
           sudo make install
