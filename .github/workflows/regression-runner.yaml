@@ -196,7 +196,15 @@ jobs:
       - name: Run testsuite
         run: |
           cd build
-          make -j $(nproc) report-${{ inputs.mode }} || true
+          RUNTESTFLAGS="--debug" make -j $(nproc) report-${{ inputs.mode }} || true
+          
+      - name: Display debug output 
+        run: |
+          if [ "${{ inputs.mode }}" == "newlib" ]; then
+            cat build/build-gcc-newlib-stage2/gcc/testsuite/*/dbg.log
+          else
+            cat build/build-gcc-linux-stage2/gcc/testsuite/*/dbg.log
+          fi
 
       - name: Save results
         run: |
