@@ -225,7 +225,7 @@ def main():
     resolved_markdown = additional_failures_to_markdown("Resolved", all_resolved)
     new_markdown = additional_failures_to_markdown("New", all_new)
     
-    markdown = summary_markdown + resolved_markdown + new_markdown
+    markdown = summary_markdown + new_markdown + resolved_markdown
 
     with open(args.output_markdown, "w") as markdown_file:
         markdown_file.write(markdown)
