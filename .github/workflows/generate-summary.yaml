@@ -6,6 +6,9 @@ on:
       gcchash:
         required: true
         type: string
+      orig_gcchash:
+        required: false
+        type: string
   workflow_dispatch:
     branches:
       - build-frequent
@@ -68,150 +71,10 @@ jobs:
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/rate_limit
 
-      # Download linux
-      - name: Download linux rv32 non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
+      - name: Download All targets
+        uses: ./.github/actions/download-all-comparison-artifacts
         with:
-          report-artifact-name: gcc-linux-rv32gc-ilp32d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-linux-rv32gc-ilp32d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download linux rv64 non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-linux-rv64gc-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-linux-rv64gc-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download linux rv32 vector non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-linux-rv32gcv-ilp32d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-linux-rv32gcv-ilp32d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download linux rv64 vector non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-linux-rv64gcv-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-linux-rv64gcv-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download linux rv32 bitmanip non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-linux-rv32gc_zba_zbb_zbc_zbs-ilp32d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-linux-rv32gc_zba_zbb_zbc_zbs-ilp32d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download linux rv64 bitmanip non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-linux-rv64gc_zba_zbb_zbc_zbs-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-linux-rv64gc_zba_zbb_zbc_zbs-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download linux rv32 vector crypto non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-linux-rv32gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-ilp32d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-linux-rv32gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-ilp32d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download linux rv64 vector crypto non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-linux-rv64gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-linux-rv64gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download linux RVA64U64 profile non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-linux-rv64imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-linux-rv64imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Newlib
-      - name: Download newlib rv32 non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv32gc-ilp32d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv32gc-ilp32d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download newlib rv64 non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv64gc-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv64gc-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download newlib rv32 vector non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv32gcv-ilp32d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv32gcv-ilp32d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download newlib rv64 vector non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv64gcv-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv64gcv-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download newlib rv32 bitmanip non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv32gc_zba_zbb_zbc_zbs-ilp32d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv32gc_zba_zbb_zbc_zbs-ilp32d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download newlib rv64 bitmanip non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv64gc_zba_zbb_zbc_zbs-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv64gc_zba_zbb_zbc_zbs-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download newlib rv32 vector crypto non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv32gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-ilp32d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv32gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-ilp32d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download newlib rv64 vector crypto non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv64gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv64gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download newlib RVA64U64 profile non-multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv64imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt-lp64d-${{ inputs.gcchash }}-non-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv64imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt-lp64d-${{ inputs.gcchash }}-non-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # Multilib
-      - name: Download linux rv32 multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-linux-rv64gc-lp64d-${{ inputs.gcchash }}-multilib-report.log
-          binary-artifact-name: gcc-linux-rv32gc-ilp32d-${{ inputs.gcchash }}-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Download newlib rv64 multilib
-        uses: ./.github/actions/download-comparison-artifacts
-        with:
-          report-artifact-name: gcc-newlib-rv64gc-lp64d-${{ inputs.gcchash }}-multilib-report.log
-          binary-artifact-name: gcc-newlib-rv64gc-lp64d-${{ inputs.gcchash }}-multilib
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      # End download
+          gcchash: ${{ inputs.gcchash }}
 
       - name: Print API usage info
         run: |
@@ -319,3 +182,81 @@ jobs:
         run: |
           echo "Do nothing for now. Most github actions only work with classic projects."
           echo "We'll likely need to use the API to implement this"
+
+  regenerate-issues:
+    if: ${{ inputs.orig_gcchash }} != '' # Only run if has bisection hash
+    needs: [generate-issues]
+    runs-on: ubuntu-22.04
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Clear directories
+        run: |
+          rm -rf logs/*
+          rm -rf temp/*
+          rm -rf summaries/*
+
+      # Download all workload artifacts
+
+      - name: Print API usage info
+        run: |
+          curl \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/rate_limit
+
+      - name: Download All targets
+        uses: ./.github/actions/download-all-comparison-artifacts
+        with:
+          gcchash: ${{ inputs.orig_gcchash }}
+
+      - name: Print API usage info
+        run: |
+          curl \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/rate_limit
+
+      - name: Extract artifacts
+        run: |
+          ls ./temp/
+          mkdir -p logs
+          unzip ./temp/*report.log.zip -d ./logs || true
+          ls logs
+
+      - name: Download artifacts and compare
+        run: |
+          pip install pygithub requests
+          python ./scripts/download_artifacts.py -hash ${{ inputs.orig_gcchash }} -token ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Aggregate information
+        run: |
+          python ./scripts/aggregate.py \
+            -chash ${{ inputs.orig_gcchash }} \
+            -o issue.md
+          cat issue.md
+
+      - name: Print API usage info
+        run: |
+          curl \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/rate_limit
+
+      - name: Trim issue length # reduce the number of lines in final issue so github always creates issue
+        run: |
+          head -c 65000 issue.md > trimmed_issue.md
+          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "Issue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
+          run_id=${{ github.run_id }} && echo "Associated run is: https://github.com/patrick-rivos/riscv-gnu-toolchain/actions/runs/$run_id" >> trimmed_issue.md
+          cat trimmed_issue.md
+
+      - name: Create or update summary issue
+        uses: JasonEtco/create-an-issue@v2
+        id: create-issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: trimmed_issue.md
+          update_existing: true
