@@ -34,7 +34,7 @@ def download_artifact_with_name(artifact_name: str, token: str, outdir: str):
     auth = Auth.Token(token)
     g = Github(auth=auth)
 
-    repo = g.get_repo('patrick-rivos/riscv-gnu-toolchain')
+    repo = g.get_repo('ewlu/riscv-gnu-toolchain')
 
     artifacts = repo.get_artifacts(artifact_name).get_page(0)
     if len(artifacts) != 0:

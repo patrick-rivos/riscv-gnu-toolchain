@@ -302,7 +302,7 @@ jobs:
         run: |
           head -c 65000 issue.md > trimmed_issue.md
           if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "Issue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
-          run_id=${{ github.run_id }} && echo "Associated run is: https://github.com/patrick-rivos/riscv-gnu-toolchain/actions/runs/$run_id" >> trimmed_issue.md
+          run_id=${{ github.run_id }} && echo "Associated run is: https://github.com/ewlu/riscv-gnu-toolchain/actions/runs/$run_id" >> trimmed_issue.md
           cat trimmed_issue.md
 
       - name: Create or update summary issue

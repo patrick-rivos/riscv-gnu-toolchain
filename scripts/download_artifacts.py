@@ -105,7 +105,7 @@ def download_artifact(artifact_name: str, artifact_id: str, token: str, outdir: 
     }
     artifact_zip_name = artifact_name.replace(".log", ".zip")
     r = requests.get(
-        f"https://api.github.com/repos/patrick-rivos/riscv-gnu-toolchain/actions/artifacts/{artifact_id}/zip",
+        f"https://api.github.com/repos/ewlu/riscv-gnu-toolchain/actions/artifacts/{artifact_id}/zip",
         headers=params,
     )
     print(r.status_code)

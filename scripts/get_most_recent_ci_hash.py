@@ -27,7 +27,7 @@ def get_valid_artifact_hash(hashes:List[str], token: str, artifact_name: str):
     auth = Auth.Token(token)
     g = Github(auth=auth)
 
-    repo = g.get_repo('patrick-rivos/riscv-gnu-toolchain')
+    repo = g.get_repo('ewlu/riscv-gnu-toolchain')
 
     for hash in hashes:
         artifacts = repo.get_artifacts(artifact_name.format(hash)).get_page(0)
