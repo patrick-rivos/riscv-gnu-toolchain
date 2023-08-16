@@ -59,6 +59,13 @@ jobs:
           mkdir temp
           mkdir summaries
 
+      - name: Bump pyopenssl and crypto
+        run: |
+          sudo apt remove python3-pip
+          wget https://bootstrap.pypa.io/get-pip.py
+          sudo python3 get-pip.py
+          pip install -U pyopenssl cryptography
+
       # Download all workload artifacts
 
       - name: Print API usage info
