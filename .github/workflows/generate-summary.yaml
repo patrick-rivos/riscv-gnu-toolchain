@@ -16,6 +16,9 @@ on:
       gcchash:
         description: 'GCC Hash'
         required: true
+      orig_gcchash:
+        description: 'Bisection GCC Hash (Optional)'
+        required: false
 
 jobs:
   compare-artifacts:
@@ -193,11 +196,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Clear directories
+      - name: Create directories
         run: |
-          rm -rf logs/*
-          rm -rf temp/*
-          rm -rf summaries/*
+          mkdir logs
+          mkdir temp
+          mkdir summaries
 
       # Download all workload artifacts
 
