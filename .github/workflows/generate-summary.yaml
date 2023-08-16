@@ -16,6 +16,9 @@ on:
       gcchash:
         description: 'GCC Hash'
         required: true
+      orig_gcchash:
+        description: 'Bisection GCC Hash (Optional)'
+        required: false
 
 jobs:
   compare-artifacts:
@@ -75,6 +78,7 @@ jobs:
         uses: ./.github/actions/download-all-comparison-artifacts
         with:
           gcchash: ${{ inputs.gcchash }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print API usage info
         run: |
@@ -184,7 +188,7 @@ jobs:
           echo "We'll likely need to use the API to implement this"
 
   regenerate-issues:
-    if: ${{ inputs.orig_gcchash }} != '' # Only run if has bisection hash
+    if: ${{ inputs.orig_gcchash != '' }} && ${{ inputs.orig_gcchash }} != '' # Only run if has bisection hash
     needs: [generate-issues]
     runs-on: ubuntu-22.04
     permissions:
@@ -192,11 +196,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Clear directories
+      - name: Create directories
         run: |
-          rm -rf logs/*
-          rm -rf temp/*
-          rm -rf summaries/*
+          mkdir logs
+          mkdir temp
+          mkdir summaries
 
       # Download all workload artifacts
 
@@ -211,6 +215,7 @@ jobs:
         uses: ./.github/actions/download-all-comparison-artifacts
         with:
           gcchash: ${{ inputs.orig_gcchash }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print API usage info
         run: |
