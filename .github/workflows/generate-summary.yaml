@@ -75,6 +75,7 @@ jobs:
         uses: ./.github/actions/download-all-comparison-artifacts
         with:
           gcchash: ${{ inputs.gcchash }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print API usage info
         run: |
@@ -211,6 +212,7 @@ jobs:
         uses: ./.github/actions/download-all-comparison-artifacts
         with:
           gcchash: ${{ inputs.orig_gcchash }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print API usage info
         run: |
