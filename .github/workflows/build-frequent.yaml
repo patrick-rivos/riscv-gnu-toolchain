@@ -58,9 +58,7 @@ jobs:
             gcc
             gdb
             glibc
-            musl
             newlib
-            pk
             qemu
           key: submodules
 
@@ -70,7 +68,12 @@ jobs:
           git submodule init
           rm -rf gcc
           git clone git://gcc.gnu.org/git/gcc.git
-          git submodule update --recursive --progress --recommend-shallow
+          git submodule update --init --recursive binutils
+          git submodule update --init --recursive dejagnu
+          git submodule update --init --recursive gdb
+          git submodule update --init --recursive glibc
+          git submodule update --init --recursive newlib
+          git submodule update --init --recursive qemu
 
       - name: Get GCC hash
         id: gcc-hash
@@ -97,15 +100,13 @@ jobs:
             gcc
             gdb
             glibc
-            musl
             newlib
-            pk
             qemu
           key: submodules
 
       - name: Make cache zip
         run: |
-          zip -r cache.zip .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          zip -r cache.zip .git binutils dejagnu gcc gdb glibc newlib qemu
 
       # Use artifact rather than cache since cache downloads are flaky/hang.
       # Artifacts are reliable but ~30 min slower to set up.
