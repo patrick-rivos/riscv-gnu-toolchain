@@ -1,4 +1,4 @@
-name: Bootstrap-x86
+name: x86-regression-runner
 
 on:
   workflow_call:
@@ -84,8 +84,6 @@ jobs:
                 --disable-werror \
                 --with-arch-32=i686 \
                 --with-abi=m64 \
-                --with-multilib-list=m32,m64,mx32 \
-                --enable-multilib \
                 --with-tune=generic \
                 --without-cuda-driver \
                 --enable-checking=release \
@@ -102,3 +100,21 @@ jobs:
         run: |
           cd build
           sudo make install
+
+      - name: Make check
+        run: |
+          cd build
+          make -k check -j$(nproc) || true
+
+      - name: Save results
+        run: |
+          PARSE_EXISTING_REPORT="./scripts/testsuite-filter gcc newlib test/allowlist `find build/build-gcc-newlib-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`"
+          $PARSE_EXISTING_REPORT | tee gcc-newlib-x86_64-${{ inputs.gcchash }}-report.log
+
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-newlib-x86_64-${{ inputs.gcchash }}-report.log
+          path: |
+            gcc-newlib-x86_64-${{ inputs.gcchash }}-report.log
+          retention-days: 90
