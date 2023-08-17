@@ -39,8 +39,8 @@ on:
         - rv32gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-ilp32d
         - rv64gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt-lp64d
         - rv64imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt-lp64d
-      orig_gcchash:
-        description: 'Bisection GCC Hash (Optional)'
+      issue_num:
+        description: 'Bisection Issue Number (Optional)'
         required: false
 
 jobs:
@@ -192,4 +192,4 @@ jobs:
     uses: ./.github/workflows/generate-summary.yaml
     with:
       gcchash: ${{ needs.init-submodules.outputs.gcchash }}
-      orig_gcchash: ${{ github.events.inputs.orig_gcchash }}
+      issue_num: ${{ github.events.inputs.issue_num }}
