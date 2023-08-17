@@ -6,7 +6,7 @@ on:
       gcchash:
         required: true
         type: string
-      orig_gcchash:
+      issue_num:
         required: false
         type: string
   workflow_dispatch:
@@ -16,8 +16,8 @@ on:
       gcchash:
         description: 'GCC Hash'
         required: true
-      orig_gcchash:
-        description: 'Bisection GCC Hash (Optional)'
+      issue_num:
+        description: 'Bisection Issue Number (Optional)'
         required: false
 
 jobs:
@@ -187,14 +187,61 @@ jobs:
           echo "Do nothing for now. Most github actions only work with classic projects."
           echo "We'll likely need to use the API to implement this"
 
+    outputs:
+      new_issue_num: ${{ steps.create-issue.outputs.number }}
+
   regenerate-issues:
-    if: ${{ inputs.orig_gcchash != '' }} && ${{ inputs.orig_gcchash }} != '' # Only run if has bisection hash
+    if: ${{ inputs.issue_num != '' }} # Only run if has bisection hash
     needs: [generate-issues]
     runs-on: ubuntu-22.04
     permissions:
       issues: write
     steps:
       - uses: actions/checkout@v3
+
+      - name: Add Bisect Label to New Issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: ${{ needs.generate-issues.outputs.new_issue_num }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['bisect']
+            })
+
+      - name: Link New Issue to Bisection Issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ needs.generate-issues.outputs.new_issue_num }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Bisection of #${{ inputs.issue_num }}'
+            })
+
+      - name: Link to Bisection Issue to New Issue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: ${{ inputs.issue_num }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'Bisecting with #' + String(${{ needs.generate-issues.outputs.new_issue_num }})
+            })
+
+      - name: Initialize Bisection Hash
+        id: bisection-hash
+        run: |
+          sudo apt remove python3-pip
+          wget https://bootstrap.pypa.io/get-pip.py
+          sudo python3 get-pip.py
+          pip install pygithub requests
+          export ORIG_GCCHASH=$(python ./scripts/scrape_issue_info.py -num ${{ inputs.issue_num }} -token ${{ secrets.GITHUB_TOKEN }})
+          echo $ORIG_GCCHASH
+          echo "orig_gcchash=$ORIG_GCCHASH" >> "$GITHUB_OUTPUT"
 
       - name: Create directories
         run: |
@@ -214,7 +261,7 @@ jobs:
       - name: Download All targets
         uses: ./.github/actions/download-all-comparison-artifacts
         with:
-          gcchash: ${{ inputs.orig_gcchash }}
+          gcchash: ${{ steps.bisection-hash.outputs.orig_gcchash }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Print API usage info
@@ -233,13 +280,12 @@ jobs:
 
       - name: Download artifacts and compare
         run: |
-          pip install pygithub requests
-          python ./scripts/download_artifacts.py -hash ${{ inputs.orig_gcchash }} -token ${{ secrets.GITHUB_TOKEN }}
+          python ./scripts/download_artifacts.py -token ${{ secrets.GITHUB_TOKEN }} -hash ${{ steps.bisection-hash.outputs.orig_gcchash }} 
 
       - name: Aggregate information
         run: |
           python ./scripts/aggregate.py \
-            -chash ${{ inputs.orig_gcchash }} \
+            -chash ${{ steps.bisection-hash.outputs.orig_gcchash }} \
             -o issue.md
           cat issue.md
 
