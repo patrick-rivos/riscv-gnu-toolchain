@@ -188,7 +188,7 @@ jobs:
           echo "We'll likely need to use the API to implement this"
 
   regenerate-issues:
-    if: ${{ inputs.orig_gcchash }} != '' # Only run if has bisection hash
+    if: ${{ inputs.orig_gcchash != '' }} && ${{ inputs.orig_gcchash }} != '' # Only run if has bisection hash
     needs: [generate-issues]
     runs-on: ubuntu-22.04
     permissions:
