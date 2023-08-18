@@ -88,7 +88,7 @@ jobs:
       - name: Zip stage2
         if: inputs.mode != 'musl'
         run: |
-          zip -r stage2.zip build
+          zip --symlinks -r stage2.zip build
 
       - name: Upload stage2 artifact
         if: inputs.mode != 'musl'
