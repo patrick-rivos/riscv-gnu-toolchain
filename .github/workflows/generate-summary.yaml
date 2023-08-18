@@ -61,7 +61,8 @@ jobs:
 
       - name: Create directories
         run: |
-          mkdir logs
+          mkdir current_logs
+          mkdir previous_logs
           mkdir temp
           mkdir summaries
 
@@ -98,9 +99,9 @@ jobs:
       - name: Extract artifacts
         run: |
           ls ./temp/
-          mkdir -p logs
-          unzip ./temp/*report.log.zip -d ./logs || true
-          ls logs
+          mkdir -p current_logs
+          unzip ./temp/*report.log.zip -d ./current_logs || true
+          ls current_logs
 
       - name: Download artifacts and compare
         run: |
@@ -110,7 +111,8 @@ jobs:
       - name: Make artifact zips
         run: |
           zip -r summaries.zip summaries
-          zip -r logs.zip logs
+          zip -r current_logs.zip current_logs
+          zip -r previous_logs.zip previous_logs
 
       - name: Upload compare summaries
         uses: actions/upload-artifact@v3
@@ -120,12 +122,20 @@ jobs:
             summaries.zip
           retention-days: 90
 
-      - name: Upload log failures
+      - name: Upload current log failures
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ inputs.gcchash }}-logs
+          name: ${{ inputs.gcchash }}-current-logs
           path: |
-            logs.zip
+            current_logs.zip
+          retention-days: 90
+
+      - name: Upload previous log failures
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.gcchash }}-previous-logs
+          path: |
+            previous_logs.zip
           retention-days: 90
 
     outputs:
@@ -145,10 +155,15 @@ jobs:
         with:
           name: ${{ needs.compare-artifacts.outputs.gcchash }}-summaries
 
-      - name: Download logs artifact
+      - name: Download current logs artifact
         uses: actions/download-artifact@v3
         with:
-          name: ${{ needs.compare-artifacts.outputs.gcchash }}-logs
+          name: ${{ needs.compare-artifacts.outputs.gcchash }}-current-logs
+
+      - name: Download previous logs artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.compare-artifacts.outputs.gcchash }}-previous-logs
 
       - name: Print API usage info
         run: |
@@ -160,7 +175,8 @@ jobs:
       - name: Aggregate information
         run: |
           unzip summaries.zip
-          unzip logs.zip
+          unzip current_logs.zip
+          unzip previous_logs.zip
           python ./scripts/aggregate.py \
             -chash ${{ needs.compare-artifacts.outputs.gcchash }} \
             -o issue.md
