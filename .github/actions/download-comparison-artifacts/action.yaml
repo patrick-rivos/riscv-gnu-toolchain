@@ -16,7 +16,7 @@ runs:
       uses: actions/download-artifact@v3
       with:
         name: ${{ inputs.report-artifact-name }}
-        path: "./logs"
+        path: "./current_logs"
       continue-on-error: true
 
     - name: Download report from another workflow
@@ -24,7 +24,7 @@ runs:
       shell: bash
       run: |
         pip install pygithub requests
-        python ./scripts/download_single_artifact.py -name ${{ inputs.report-artifact-name }} -token ${{ inputs.github-token }} -outdir logs
+        python ./scripts/download_single_artifact.py -name ${{ inputs.report-artifact-name }} -token ${{ inputs.github-token }} -outdir current_logs
       continue-on-error: true
 
     - name: Download rv32 non-multilib binary
