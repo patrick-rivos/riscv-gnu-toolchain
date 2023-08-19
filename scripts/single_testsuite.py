@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import glob
 import subprocess
 import logging
 import argparse
@@ -102,6 +103,30 @@ def parse_directories(args):
                 return root_directory, install_directory
     return None, None
 
+def parse_target_test(target_test: str):
+    """
+    dejagnu expects target test case to be in form of exp_file.exp=testcase.c
+    however we are passed in test case path. i.e. gcc.target/riscv/attribute-1.c
+    Finds exp file from test case path and returns string dejagnu expects for
+    targetting test cases
+    """
+    test_case = os.path.basename(target_test)
+    dir_path = "./"
+    if not os.path.isdir(os.path.join(dir_path, "gcc")):
+        dir_path = "../"
+    dir_path = os.path.join(dir_path, "gcc/gcc/testsuite/")
+    dir_path = os.path.dirname(os.path.join(dir_path, target_test))
+    for i in range(7):
+        files = glob.glob(os.path.join(dir_path, "*.exp"))
+        print(files)
+        if not files:
+            dir_path = os.path.join(dir_path, "..")
+            continue
+        exp_file = os.path.basename(files[0])
+        return f"{exp_file}={test_case}"
+    return "Cannot find exp file"
+
+
 
 def setup_environment(args):
     current_environment = os.environ.copy()
@@ -138,6 +163,9 @@ def main():
     args.install_directory = install_directory
     current_environment = setup_environment(args)
     target_board_option = parse_target_board(args.target_board)
+    target_test = parse_target_test(args.target_test)
+    if target_test == "Cannot find exp file":
+        return 1
 
     verbose_option = ""
     if args.verbose:
@@ -148,7 +176,7 @@ def main():
     command = (
         "make check-gcc -C"
         f" {args.build_directory} \"RUNTESTFLAGS=--target_board='{target_board_option}'"
-        f' {verbose_option} {args.target_test}"'
+        f' {verbose_option} {target_test}"'
     )
 
     print("\nEXECUTION PATH:\n", current_environment["PATH"])

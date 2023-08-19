@@ -18,7 +18,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     environment: production
     steps:
       - name: Remove unneeded frameworks to recover disk space
@@ -41,6 +41,7 @@ jobs:
         run: |
           rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
           unzip cache.zip
+          rm -rf cache.zip
 
       - name: Checkout gcc hash
         run: |
@@ -87,9 +88,7 @@ jobs:
       - name: Zip stage2
         if: inputs.mode != 'musl'
         run: |
-          zip -r stage2.zip build/build-gcc-${{ inputs.mode }}-stage2 \
-                 build/riscv64-unknown-elf/bin build/riscv64-unknown-linux-gnu/bin \
-                 build/riscv32-unknown-elf/bin build/riscv32-unknown-linux-gnu/bin
+          zip --symlinks -r stage2.zip build
 
       - name: Upload stage2 artifact
         if: inputs.mode != 'musl'
@@ -102,7 +101,7 @@ jobs:
 
   test:
     if: ${{ inputs.mode != 'musl' }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
     environment: production
     needs: [build]
     steps:
@@ -126,6 +125,7 @@ jobs:
         run: |
           rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
           unzip cache.zip
+          rm -rf cache.zip
 
       - name: Checkout gcc hash
         run: |
@@ -154,13 +154,14 @@ jobs:
 
       - name: Unzip artifacts
         run: |
-          unzip stage2.zip
+          unzip -n stage2.zip
+          rm -rf stage2.zip
 
       # We need to use future timestamps since some stamps are generated during build process and invalidate the stamps here.
       # Future timestamps prevent that invalidation.
       - name: Generate fake stamps to prevent rebuilding
         run: |
-          mkdir build/stamps
+          mkdir -p build/stamps
           cd build/stamps
           touch -d "+2 days" check-write-permission
           touch -d "+2 days" build-gdb-${{ inputs.mode }}
@@ -191,6 +192,12 @@ jobs:
         run: |
           cd build
           make -d ${{ inputs.mode }}
+
+      - name: Reinstall stage2
+        run: |
+          cd build
+          cd build-gcc-${{ inputs.mode }}-stage2
+          make install
 
       - name: Run testsuite
         run: |

@@ -45,7 +45,7 @@ on:
 
 jobs:
   init-submodules:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-20.04
 
     steps:
       - uses: actions/checkout@v3
@@ -133,8 +133,6 @@ jobs:
         mode: [newlib, linux]
         target:
           [
-            rv32gc-ilp32d, # rv32
-            rv64gc-lp64d, # rv64
             rv32gcv-ilp32d, # rv32 vector
             rv64gcv-lp64d, # rv64 vector
             rv32gc_zba_zbb_zbc_zbs-ilp32d, # rv32 bitmanip
