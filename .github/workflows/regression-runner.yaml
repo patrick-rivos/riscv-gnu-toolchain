@@ -193,6 +193,12 @@ jobs:
           cd build
           make -d ${{ inputs.mode }}
 
+      - name: Reinstall stage2
+        run: |
+          cd build
+          cd build-gcc-${{ inputs.mode }}-stage2
+          make install
+
       - name: Run testsuite
         run: |
           cd build
