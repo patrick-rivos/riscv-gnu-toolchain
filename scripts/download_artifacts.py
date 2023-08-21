@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 from zipfile import ZipFile
 import requests
 from github import Auth, Github, Repository
@@ -15,6 +16,12 @@ def parse_arguments():
         required=True,
         type=str,
         help="Commit hash of GCC to get artifacts for",
+    )
+    parser.add_argument(
+        "-phash",
+        required=False,
+        type=str,
+        help="Previous commit hash if exists",
     )
     parser.add_argument(
         "-token",
@@ -109,7 +116,7 @@ def download_artifact(artifact_name: str, artifact_id: str, token: str, outdir: 
         f"https://api.github.com/repos/patrick-rivos/riscv-gnu-toolchain/actions/artifacts/{artifact_id}/zip",
         headers=params,
     )
-    print(r.status_code)
+    print(f"download for {artifact_zip_name}: {r.status_code}")
     with open(f"./temp/{artifact_zip_name}", "wb") as f:
         f.write(r.content)
     with ZipFile(f"./temp/{artifact_zip_name}", "r") as zf:
@@ -119,7 +126,7 @@ def download_artifact(artifact_name: str, artifact_id: str, token: str, outdir: 
     )
 
 
-def download_all_artifacts(current_hash: str, token: str):
+def download_all_artifacts(current_hash: str, previous_hash: str, token: str):
     """
     Goes through all possible artifact targets and downloads it
     if it exists. Downloads previous successful hash's artifact
@@ -138,6 +145,27 @@ def download_all_artifacts(current_hash: str, token: str):
         artifact += "-report.log"
         artifact_name += "-report.log"
 
+        # check if we already have a previous artifact available
+        # mostly for regenerate issues
+        if previous_hash:
+            name_components = artifact_name.split("-")
+            name_components[4] = "{}"
+            previous_name = "-".join(name_components).format(previous_hash)
+            name_components[4] = "[^-]*"
+            name_regex = "-".join(name_components)
+            dir_contents = " ".join(os.listdir("./previous_logs"))
+            possible_previous_logs = re.findall(name_regex, dir_contents)
+            if len(possible_previous_logs) > 1:
+                print(f"found more than 1 previous log for {name_regex}: {possible_previous_logs}")
+                for log in possible_previous_logs: # remove non-recent logs
+                    if previous_name not in log:
+                        print(f"removing {log} from previous_logs")
+                        os.remove(os.path.join("./previous_logs", log))
+                continue
+            if len(possible_previous_logs) == 1:
+                print(f"found single log: {possible_previous_logs[0]}. Skipping download")
+                continue
+
         # download previous artifact
         base_hash, base_id = get_valid_artifact_hash(prev_commits, token, artifact_name)
         if base_hash != "No valid hash":
@@ -145,7 +173,7 @@ def download_all_artifacts(current_hash: str, token: str):
 
 def main():
     args = parse_arguments()
-    download_all_artifacts(args.hash, args.token)
+    download_all_artifacts(args.hash, args.phash, args.token)
 
 
 if __name__ == "__main__":
