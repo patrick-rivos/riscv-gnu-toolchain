@@ -176,7 +176,7 @@ jobs:
       multilib: non-multilib
 
   build-x86:
-    if: failure() # Only check x86 if a riscv build fails
+    if: ${{ false }} # Temporarily disable x86. Should be re-enabled to only run when a build failure occurs.
     needs: [init-submodules, creg, cmreg]
     uses: ./.github/workflows/bootstrap-x86.yaml
     with:
