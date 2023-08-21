@@ -103,10 +103,15 @@ jobs:
           unzip ./temp/*report.log.zip -d ./current_logs || true
           ls current_logs
 
-      - name: Download artifacts and compare
+      - name: Download artifacts
         run: |
-          pip install pygithub requests
+          pip install pygithub requests 
           python ./scripts/download_artifacts.py -hash ${{ inputs.gcchash }} -token ${{ secrets.GITHUB_TOKEN }}
+          ls previous_logs
+
+      - name: Compare artifacts
+        run: |
+          python ./scripts/compare_all_artifacts.py -hash ${{ inputs.gcchash }} 
 
       - name: Make artifact zips
         run: |
@@ -192,7 +197,7 @@ jobs:
       - name: Trim issue length # reduce the number of lines in final issue so github always creates issue
         run: |
           head -c 65000 issue.md > trimmed_issue.md
-          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "Issue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
+          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "\`\`\`\nIssue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
           run_id=${{ github.run_id }} && echo "Associated run is: https://github.com/patrick-rivos/riscv-gnu-toolchain/actions/runs/$run_id" >> trimmed_issue.md
           cat trimmed_issue.md
 
@@ -216,7 +221,7 @@ jobs:
 
   regenerate-issues:
     if: ${{ inputs.issue_num != '' }} # Only run if has bisection hash
-    needs: [generate-issues]
+    needs: [generate-issues, compare-artifacts]
     runs-on: ubuntu-22.04
     permissions:
       issues: write
@@ -253,7 +258,7 @@ jobs:
               issue_number: ${{ inputs.issue_num }},
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'Bisecting with #${{ inputs.issue_num }}'
+              body: 'Bisecting with #${{ needs.generate-issues.outputs.new_issue_num }}'
             })
 
       - name: Initialize Bisection Hash
@@ -267,10 +272,27 @@ jobs:
           echo $ORIG_GCCHASH
           echo "orig_gcchash=$ORIG_GCCHASH" >> "$GITHUB_OUTPUT"
 
+      - name: Download current logs artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.compare-artifacts.outputs.gcchash }}-current-logs
+
+      - name: Download previous logs artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.compare-artifacts.outputs.gcchash }}-previous-logs
+
+      - name: Unzip previous logs
+        run: |
+          unzip current_logs.zip
+          unzip previous_logs.zip
+          mv current_logs/* previous_logs
+
       - name: Create directories
         run: |
-          mkdir logs
-          mkdir temp
+          mkdir -p current_logs
+          mkdir -p previous_logs
+          mkdir -p temp
           mkdir summaries
 
       # Download all workload artifacts
@@ -298,13 +320,49 @@ jobs:
       - name: Extract artifacts
         run: |
           ls ./temp/
-          mkdir -p logs
-          unzip ./temp/*report.log.zip -d ./logs || true
-          ls logs
+          mkdir -p current_logs
+          unzip ./temp/*report.log.zip -d ./current_logs || true
+          ls current_logs
 
-      - name: Download artifacts and compare
+      - name: Download artifacts
         run: |
-          python ./scripts/download_artifacts.py -token ${{ secrets.GITHUB_TOKEN }} -hash ${{ steps.bisection-hash.outputs.orig_gcchash }} 
+          pip install pygithub requests
+          python ./scripts/download_artifacts.py -token ${{ secrets.GITHUB_TOKEN }} -phash ${{ inputs.gcchash }} -hash ${{ steps.bisection-hash.outputs.orig_gcchash }} 
+          ls previous_logs
+
+      - name: Compare artifacts
+        run: |
+          python ./scripts/compare_all_artifacts.py -hash ${{ steps.bisection-hash.outputs.orig_gcchash }} 
+
+      - name: Make artifact zips
+        run: |
+          zip -r summaries.zip summaries
+          zip -r current_logs.zip current_logs
+          zip -r previous_logs.zip previous_logs
+
+      - name: Upload compare summaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.bisection-hash.outputs.orig_gcchash }}-summaries
+          path: |
+            summaries.zip
+          retention-days: 90
+
+      - name: Upload current log failures
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.bisection-hash.outputs.orig_gcchash }}-current-logs
+          path: |
+            current_logs.zip
+          retention-days: 90
+
+      - name: Upload previous log failures
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.bisection-hash.outputs.orig_gcchash }}-previous-logs
+          path: |
+            previous_logs.zip
+          retention-days: 90
 
       - name: Aggregate information
         run: |
@@ -323,7 +381,7 @@ jobs:
       - name: Trim issue length # reduce the number of lines in final issue so github always creates issue
         run: |
           head -c 65000 issue.md > trimmed_issue.md
-          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "Issue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
+          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "\`\`\`\nIssue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
           run_id=${{ github.run_id }} && echo "Associated run is: https://github.com/patrick-rivos/riscv-gnu-toolchain/actions/runs/$run_id" >> trimmed_issue.md
           cat trimmed_issue.md
 

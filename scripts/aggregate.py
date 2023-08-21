@@ -34,7 +34,7 @@ def build_summary(failures: Dict[str, List[str]], failure_name: str):
     tools = ("gcc", "g++", "gfortran")
     result = f"|{failure_name}|{tools[0]}|{tools[1]}|{tools[2]}|Previous Hash|\n"
     result += "|---|---|---|---|---|\n"
-    result += f"{''.join(failures[failure_name.split(' ')[0]])}"
+    result += f"{''.join(sorted(failures[failure_name.split(' ')[0]]))}"
     result += "\n"
     return result
 
