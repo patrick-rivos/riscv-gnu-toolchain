@@ -74,14 +74,14 @@ jobs:
 
       - name: Zip binaries
         run: |
-          zip -r bin.zip build/bin
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip build/bin
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
           path: |
-            bin.zip
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip
           retention-days: 5
 
       # Running testsuite (stamps/check-gcc-*) only uses stage2 & assorted folders

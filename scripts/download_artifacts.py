@@ -79,23 +79,23 @@ def check_artifact_exists(artifact_name: str):
     If the artifact does not exist, something failed and logs error into
     appropriate file
     """
-    build_name = artifact_name
-    artifact_name += "-report.log"
+    build_name = f"{artifact_name}.zip"
+    log_name = f"{artifact_name}-report.log"
     build_failed = False
     # check if the build failed
     if (not os.path.exists(os.path.join("./temp", build_name)) and
-        not os.path.exists(os.path.join("./current_logs", artifact_name))):
-        print(f"build failed for {build_name}")
+        not os.path.exists(os.path.join("./current_logs", log_name))):
+        print(f"build failed for {artifact_name}")
         build_failed = True
         with open("./current_logs/failed_build.txt", "a+") as f:
-            f.write(f"{build_name}|Check logs\n")
+            f.write(f"{artifact_name}|Check logs\n")
 
     # check if the testsuite failed
-    if not os.path.exists(os.path.join("./current_logs", artifact_name)):
-        print(f"testsuite failed for {build_name}")
+    if not os.path.exists(os.path.join("./current_logs", log_name)):
+        print(f"testsuite failed for {artifact_name}")
         if not build_failed:
             with open("./current_logs/failed_testsuite.txt", "a+") as f:
-                f.write(f"{build_name}|Cannot find testsuite artifact\n")
+                f.write(f"{artifact_name}|Cannot find testsuite artifact. Likely caused by testsuite timeout.\n")
         return False
     return True
 
