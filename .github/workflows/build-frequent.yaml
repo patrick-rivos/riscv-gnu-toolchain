@@ -142,6 +142,7 @@ jobs:
             rv64imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt-lp64d, # RVA23U64 profile with optional extensions, excluding unsupported extensions
           ]
         multilib: [non-multilib]
+        #multilib: [singlelib]
     uses: ./.github/workflows/regression-runner.yaml
     with:
       mode: ${{ matrix.mode }}
@@ -174,6 +175,7 @@ jobs:
       target: ${{ github.event.inputs.single_target }}
       gcchash: ${{ needs.init-submodules.outputs.gcchash }}
       multilib: non-multilib
+      #multilib: singlelib
 
   build-x86:
     if: ${{ false }} # Temporarily disable x86. Should be re-enabled to only run when a build failure occurs.

@@ -45,6 +45,7 @@ def get_possible_artifact_names():
     libc = ["gcc-linux", "gcc-newlib"]
     arch = ["rv32{}-ilp32d-{}", "rv64{}-lp64d-{}"]
     multilib = ["multilib", "non-multilib"]
+    # multilib = ["multilib", "singlelib"]
 
     arch_extensions = [
         "gc",
@@ -70,6 +71,15 @@ def get_possible_artifact_names():
         and not ("rv32" in name and "imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt" in ext)
         and not ("non-multilib" in name and ext == "gc")
     ]
+    
+    # all_names = [
+    #     name.format(ext, "{}") for name in all_lists for ext in arch_extensions
+    #     if not ("gcv" in ext and "singlelib" not in name)
+    #     and not ("gc_" in ext and "singlelib" not in name)
+    #     and not ("imafdcv_" in ext and "singlelib" not in name)
+    #     and not ("rv32" in name and "imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt" in ext)
+    #     and not ("singlelib" in name and ext == "gc")
+    # ]
     return all_names
 
 

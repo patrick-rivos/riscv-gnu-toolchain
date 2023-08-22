@@ -75,6 +75,9 @@ jobs:
       - name: Zip binaries
         run: |
           zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip build/bin
+          if [ "${{ inputs.multilib }}" == "non-multilib" ]; then
+            zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-singlelib.zip build/bin
+          fi
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
@@ -82,6 +85,14 @@ jobs:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
           path: |
             gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip
+          retention-days: 5
+
+      - name: Upload singlelib binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-singlelib
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-singlelib.zip
           retention-days: 5
 
       # Running testsuite (stamps/check-gcc-*) only uses stage2 & assorted folders
@@ -95,6 +106,15 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
+          path: |
+            stage2.zip
+          retention-days: 5
+
+      - name: Upload singlelib stage2 artifact
+        if: inputs.mode != 'musl' && inputs.multilib != 'multilib'
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-singlelib-stage2
           path: |
             stage2.zip
           retention-days: 5
@@ -213,10 +233,29 @@ jobs:
           fi
           $PARSE_EXISTING_REPORT | tee gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
 
+      - name: Save singlelib results
+        if: inputs.multilib != 'multilib'
+        run: |
+          if [ "${{ inputs.mode }}" == "newlib" ]; then
+            PARSE_EXISTING_REPORT="./scripts/testsuite-filter gcc newlib test/allowlist `find build/build-gcc-newlib-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`"
+          else
+            PARSE_EXISTING_REPORT="./scripts/testsuite-filter gcc glibc test/allowlist `find build/build-gcc-linux-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`"
+          fi
+          $PARSE_EXISTING_REPORT | tee gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-singlelib-report.log
+
       - name: Upload results artifact
         uses: actions/upload-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
           path: |
             gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+          retention-days: 90
+
+      - name: Upload singlelib results artifact
+        if: inputs.multilib != 'multilib'
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-singlelib-report.log
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-singlelib-report.log
           retention-days: 90

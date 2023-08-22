@@ -81,6 +81,7 @@ def parse_arch_info(name: str):
     Extract libc, arch, abi, multilib from file name
     """
     parts = name.split("-")[1:4]
+    # if "singlelib" not in name:
     if "non-multilib" not in name:
         parts.append("multilib")
     return " ".join(parts)
