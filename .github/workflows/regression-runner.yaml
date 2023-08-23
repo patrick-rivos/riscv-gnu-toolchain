@@ -23,12 +23,11 @@ jobs:
   check:
     runs-on: ubuntu-20.04
     environment: production
-    if: ${{ inputs.multitarget != '' && !contains(inputs.multitarget, format('{0}:{1}', inputs.mode, inputs.target)) }}
     steps:
-
       - uses: actions/checkout@v3
 
       - name: Early exit
+        if: ${{ inputs.multitarget != '' && !contains(inputs.multitarget, format('{0}:{1}', inputs.mode, inputs.target)) }}
         id: early-exit
         run: |
           export EARLY_EXIT="exit"
