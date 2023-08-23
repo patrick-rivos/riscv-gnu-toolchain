@@ -210,11 +210,17 @@ jobs:
           filename: trimmed_issue.md
           update_existing: true
 
-      - name: UNIMPLEMENTED - Associate issue with project # Only scheduled jobs are guarenteed to track trunk.
+      - name: Add Scheduled Label to Issue # Only scheduled jobs are guarenteed to track trunk.
         if: ${{ github.event_name == 'schedule' }}
-        run: |
-          echo "Do nothing for now. Most github actions only work with classic projects."
-          echo "We'll likely need to use the API to implement this"
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.addLabels({
+              issue_number: ${{ steps.create-issue.outputs.number }},
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: ['scheduled']
+            })
 
     outputs:
       new_issue_num: ${{ steps.create-issue.outputs.number }}
