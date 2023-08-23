@@ -202,15 +202,24 @@ jobs:
       - name: Run testsuite
         run: |
           cd build
-          RUNTESTFLAGS="--debug" make -j $(nproc) report-${{ inputs.mode }} || true
+          make -j $(nproc) report-${{ inputs.mode }} || true
           
-      - name: Display debug output 
+      - name: Build debug log zip
         run: |
           if [ "${{ inputs.mode }}" == "newlib" ]; then
-            cat build/build-gcc-newlib-stage2/gcc/testsuite/*/dbg.log
+            cat `find build/build-gcc-newlib-stage2/gcc/testsuite/ -name g*.log` > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
           else
-            cat build/build-gcc-linux-stage2/gcc/testsuite/*/dbg.log
+            cat `find build/build-gcc-linux-stage2/gcc/testsuite/ -name g*.log` > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
           fi
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.zip gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
+
+      - name: Upload debug artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
+          retention-days: 90
 
       - name: Save results
         run: |
