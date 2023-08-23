@@ -1,0 +1,221 @@
+name: Test self-hosted runner
+
+on:
+  push:
+    branches:
+      - self-hosted-tester
+
+jobs:
+  init-submodules:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Say Hello
+        run: |
+          echo "Hello World!"
+
+      - uses: actions/checkout@v3
+
+      - name: Retrieve cache
+        id: retrieve-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Initalize submodules cache
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          git submodule init
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+          git submodule update --recursive --progress --recommend-shallow
+
+      - name: Get GCC hash
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+          if [ "${{ github.event.inputs.gcchash }}" == "" ]; then
+            export GCCHASH=$(git rev-parse HEAD)
+          else
+            export GCCHASH=${{ github.event.inputs.gcchash }}
+          fi
+          echo $GCCHASH
+          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+
+      - name: Cache submodules
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Make cache zip
+        run: |
+          zip -r hello.zip .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+
+      - name: Upload git cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: hello-zip
+          path: |
+            hello.zip
+          retention-days: 5
+
+    outputs:
+      gcchash: ${{ steps.gcc-hash.outputs.gcchash }}
+
+  download-artifact:
+    runs-on: ubuntu-20.04
+    needs: [init-submodules]
+    steps:
+      - name: Say hello
+        run: |
+          echo "Hello there!"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: hello-zip
+
+  init-submodules-local:
+    runs-on: self-hosted
+
+    steps:
+      - name: Say Hello
+        run: |
+          echo "Hello World!"
+
+      - uses: actions/checkout@v3
+
+      - name: Retrieve cache
+        id: retrieve-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Initalize submodules cache
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          git submodule init
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+          git submodule update --recursive --progress --recommend-shallow
+
+      - name: Get GCC hash
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+          if [ "${{ github.event.inputs.gcchash }}" == "" ]; then
+            export GCCHASH=$(git rev-parse HEAD)
+          else
+            export GCCHASH=${{ github.event.inputs.gcchash }}
+          fi
+          echo $GCCHASH
+          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+
+      - name: Cache submodules
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Make cache zip
+        run: |
+          zip -r hello.zip .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+
+      - name: Upload git cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: hello-zip
+          path: |
+            hello.zip
+          retention-days: 5
+
+    outputs:
+      gcchash: ${{ steps.gcc-hash.outputs.gcchash }}
+
+  download-artifact-local:
+    runs-on: self-hosted
+    needs: [init-submodules-local]
+    steps:
+      - name: Say hello
+        run: |
+          echo "Hello there!"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: hello-zip
+
+  download-artifact-github-to-local:
+    runs-on: self-hosted
+    needs: [init-submodules]
+    steps:
+      - name: Say hello
+        run: |
+          echo "Hello there!"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: hello-zip
+
+  download-artifact-local-to-github:
+    runs-on: ubuntu-20.04
+    needs: [init-submodules-local]
+    steps:
+      - name: Say hello
+        run: |
+          echo "Hello there!"
+
+      - name: Download artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: hello-zip
