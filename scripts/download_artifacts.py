@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 from zipfile import ZipFile
 import requests
 from github import Auth, Github, Repository
@@ -15,6 +16,12 @@ def parse_arguments():
         required=True,
         type=str,
         help="Commit hash of GCC to get artifacts for",
+    )
+    parser.add_argument(
+        "-phash",
+        required=False,
+        type=str,
+        help="Previous commit hash if exists",
     )
     parser.add_argument(
         "-token",
@@ -61,6 +68,7 @@ def get_possible_artifact_names():
         and not ("gc_" in ext and "non-multilib" not in name)
         and not ("imafdcv_" in ext and "non-multilib" not in name)
         and not ("rv32" in name and "imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt" in ext)
+        and not ("non-multilib" in name and ext == "gc")
     ]
     return all_names
 
@@ -71,28 +79,28 @@ def check_artifact_exists(artifact_name: str):
     If the artifact does not exist, something failed and logs error into
     appropriate file
     """
-    build_name = artifact_name
-    artifact_name += "-report.log"
+    build_name = f"{artifact_name}.zip"
+    log_name = f"{artifact_name}-report.log"
     build_failed = False
     # check if the build failed
     if (not os.path.exists(os.path.join("./temp", build_name)) and
-        not os.path.exists(os.path.join("./logs", artifact_name))):
-        print(f"build failed for {build_name}")
+        not os.path.exists(os.path.join("./current_logs", log_name))):
+        print(f"build failed for {artifact_name}")
         build_failed = True
-        with open("./logs/failed_build.txt", "a+") as f:
-            f.write(f"{build_name}|Check logs\n")
+        with open("./current_logs/failed_build.txt", "a+") as f:
+            f.write(f"{artifact_name}|Check logs\n")
 
     # check if the testsuite failed
-    if not os.path.exists(os.path.join("./logs", artifact_name)):
-        print(f"testsuite failed for {build_name}")
+    if not os.path.exists(os.path.join("./current_logs", log_name)):
+        print(f"testsuite failed for {artifact_name}")
         if not build_failed:
-            with open("./logs/failed_testsuite.txt", "a+") as f:
-                f.write(f"{build_name}|Cannot find testsuite artifact\n")
+            with open("./current_logs/failed_testsuite.txt", "a+") as f:
+                f.write(f"{artifact_name}|Cannot find testsuite artifact. Likely caused by testsuite timeout.\n")
         return False
     return True
 
 
-def download_artifact(artifact_name: str, artifact_id: str, token: str, outdir: str = "logs"):
+def download_artifact(artifact_name: str, artifact_id: str, token: str, outdir: str = "current_logs"):
     """
     Uses GitHub api endpoint to download and extract the previous workflow
     log artifacts into directory called ./logs. Current workflow log artifacts
@@ -108,7 +116,7 @@ def download_artifact(artifact_name: str, artifact_id: str, token: str, outdir: 
         f"https://api.github.com/repos/patrick-rivos/riscv-gnu-toolchain/actions/artifacts/{artifact_id}/zip",
         headers=params,
     )
-    print(r.status_code)
+    print(f"download for {artifact_zip_name}: {r.status_code}")
     with open(f"./temp/{artifact_zip_name}", "wb") as f:
         f.write(r.content)
     with ZipFile(f"./temp/{artifact_zip_name}", "r") as zf:
@@ -118,7 +126,7 @@ def download_artifact(artifact_name: str, artifact_id: str, token: str, outdir: 
     )
 
 
-def download_and_compare_all_artifacts(current_hash: str, token: str):
+def download_all_artifacts(current_hash: str, previous_hash: str, token: str):
     """
     Goes through all possible artifact targets and downloads it
     if it exists. Downloads previous successful hash's artifact
@@ -137,45 +145,35 @@ def download_and_compare_all_artifacts(current_hash: str, token: str):
         artifact += "-report.log"
         artifact_name += "-report.log"
 
+        # check if we already have a previous artifact available
+        # mostly for regenerate issues
+        if previous_hash:
+            name_components = artifact_name.split("-")
+            name_components[4] = "{}"
+            previous_name = "-".join(name_components).format(previous_hash)
+            name_components[4] = "[^-]*"
+            name_regex = "-".join(name_components)
+            dir_contents = " ".join(os.listdir("./previous_logs"))
+            possible_previous_logs = re.findall(name_regex, dir_contents)
+            if len(possible_previous_logs) > 1:
+                print(f"found more than 1 previous log for {name_regex}: {possible_previous_logs}")
+                for log in possible_previous_logs: # remove non-recent logs
+                    if previous_name not in log:
+                        print(f"removing {log} from previous_logs")
+                        os.remove(os.path.join("./previous_logs", log))
+                continue
+            if len(possible_previous_logs) == 1:
+                print(f"found single log: {possible_previous_logs[0]}. Skipping download")
+                continue
+
         # download previous artifact
         base_hash, base_id = get_valid_artifact_hash(prev_commits, token, artifact_name)
-        if base_hash == "No valid hash":
-            print(f"no baseline for {artifact}")
-            with open("./logs/no_baseline.txt", "a+") as f:
-                f.write(f"{artifact}\n")
-            base_hash = current_hash + "-no-baseline"
-            try:
-                compare_logs(
-                    base_hash,
-                    f"./logs/{artifact}",
-                    base_hash,
-                    f"./logs/{artifact}",
-                    compare_path,
-                )
-            except (RuntimeError, ValueError) as err:
-                with open("./logs/failed_testsuite.txt", "a+") as f:
-                    f.write(f"{artifact}|{err}\n")
-            continue
-
-        download_artifact(artifact_name.format(base_hash), str(base_id), token)
-        try:
-            print(f"./logs/{artifact_name.format(base_hash)}")
-            print(f"./logs/{artifact}")
-            compare_logs(
-                base_hash,
-                f"./logs/{artifact_name.format(base_hash)}",
-                current_hash,
-                f"./logs/{artifact}",
-                compare_path,
-            )
-        except (RuntimeError, ValueError) as err:
-            with open("./logs/failed_testsuite.txt", "a+") as f:
-                f.write(f"{artifact}|{err}\n")
-
+        if base_hash != "No valid hash":
+            download_artifact(artifact_name.format(base_hash), str(base_id), token, "previous_logs")
 
 def main():
     args = parse_arguments()
-    download_and_compare_all_artifacts(args.hash, args.token)
+    download_all_artifacts(args.hash, args.phash, args.token)
 
 
 if __name__ == "__main__":

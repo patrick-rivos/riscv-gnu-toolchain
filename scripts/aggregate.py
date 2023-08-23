@@ -4,7 +4,7 @@ from collections import defaultdict
 from typing import Dict, List, Set
 
 SUMMARIES = "./summaries"
-FAILURES = "./logs"
+FAILURES = "./current_logs"
 
 
 def get_additional_failures(file_name: str, failure_name: str, seen_failures: Set[str]):
@@ -34,7 +34,7 @@ def build_summary(failures: Dict[str, List[str]], failure_name: str):
     tools = ("gcc", "g++", "gfortran")
     result = f"|{failure_name}|{tools[0]}|{tools[1]}|{tools[2]}|Previous Hash|\n"
     result += "|---|---|---|---|---|\n"
-    result += f"{''.join(failures[failure_name.split(' ')[0]])}"
+    result += f"{''.join(sorted(failures[failure_name.split(' ')[0]]))}"
     result += "\n"
     return result
 
@@ -91,9 +91,9 @@ def get_common_intersection(failures: Dict[str, Set[str]]):
     """
     common = [i for i in failures.values() if len(i) != 0]
     if len(common) == 0:
-        return set()
+        return set(), 0
     intersect = set.intersection(*common)
-    return intersect
+    return intersect, len(common)
 
 def get_unique_failures(failure_type: str, intersect: Set[str], failures: Dict[str, Set[str]]):
     """
@@ -118,11 +118,11 @@ def additional_failures_to_markdown(failure_type: str, failures: Dict[str, Set[s
     """
     Adds new sections to issue displaying what failures were added/resolved
     """
-    intersect = get_common_intersection(failures)
+    intersect, num_failures = get_common_intersection(failures)
     result = ""
     if len(intersect) > 0:
         found_failures = sorted(list(intersect))
-        result = f"## {failure_type} Failures Across All Targets\n"
+        result = f"## {failure_type} Failures Across All Affected Targets ({num_failures} targets / {len(failures)} total targets)\n"
         result += "```\n"
         result += "".join(found_failures)
         result += "```\n"
@@ -225,7 +225,7 @@ def main():
     resolved_markdown = additional_failures_to_markdown("Resolved", all_resolved)
     new_markdown = additional_failures_to_markdown("New", all_new)
     
-    markdown = summary_markdown + resolved_markdown + new_markdown
+    markdown = summary_markdown + new_markdown + resolved_markdown
 
     with open(args.output_markdown, "w") as markdown_file:
         markdown_file.write(markdown)

@@ -74,21 +74,21 @@ jobs:
 
       - name: Zip binaries
         run: |
-          zip -r bin.zip build/bin
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip build/bin
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
           path: |
-            bin.zip
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip
           retention-days: 5
 
       # Running testsuite (stamps/check-gcc-*) only uses stage2 & assorted folders
       - name: Zip stage2
         if: inputs.mode != 'musl'
         run: |
-          zip -r stage2.zip build
+          zip --symlinks -r stage2.zip build
 
       - name: Upload stage2 artifact
         if: inputs.mode != 'musl'
@@ -192,6 +192,12 @@ jobs:
         run: |
           cd build
           make -d ${{ inputs.mode }}
+
+      - name: Reinstall stage2
+        run: |
+          cd build
+          cd build-gcc-${{ inputs.mode }}-stage2
+          make install
 
       - name: Run testsuite
         run: |
