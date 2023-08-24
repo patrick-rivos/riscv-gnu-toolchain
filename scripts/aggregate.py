@@ -38,6 +38,19 @@ def build_summary(failures: Dict[str, List[str]], failure_name: str):
     result += "\n"
     return result
 
+def print_failed_tests(table: str):
+    print(table.split('\n'))
+    failures = table.split('\n')[2:-2]
+    allowlist = []
+    for failure in failures:
+        print(failure.split('|'))
+        log_name = failure.split('|')[1]
+        components = log_name.split('-')
+        allowlist.append(f"{components[1]}:{components[2]}-{components[3]}")
+    print(";".join(allowlist))
+    with open("allowlist.txt", "w") as f:
+        f.write(";".join(allowlist) + "\n")
+
 def failures_to_summary(failures: Dict[str, List[str]]):
     """ Builds summary section """
     result = "# Summary\n"
@@ -45,6 +58,7 @@ def failures_to_summary(failures: Dict[str, List[str]]):
     additional_result, seen_failures = get_additional_failures("failed_build.txt", "Build Failures", seen_failures)
     result += additional_result
     additional_result, seen_failures = get_additional_failures("failed_testsuite.txt", "Testsuite Failures", seen_failures)
+    print_failed_tests(additional_result)
     result += additional_result
 
     result += build_summary(failures, "New Failures")
@@ -229,7 +243,6 @@ def main():
 
     with open(args.output_markdown, "w") as markdown_file:
         markdown_file.write(markdown)
-        
 
 if __name__ == "__main__":
     main()

@@ -15,11 +15,32 @@ on:
       multilib:
         required: true
         type: string
+      multitarget:
+        required: false
+        type: string
 
 jobs:
+  check:
+    runs-on: ubuntu-20.04
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Early exit
+        if: ${{ inputs.multitarget != '' && !contains(inputs.multitarget, format('{0}:{1}', inputs.mode, inputs.target)) }}
+        id: early-exit
+        run: |
+          export EARLY_EXIT="exit"
+          echo "early_exit=$EARLY_EXIT" >> "$GITHUB_OUTPUT"
+
+    outputs:
+      early_exit: ${{ steps.early-exit.outputs.early_exit }}
+      
   build:
     runs-on: ubuntu-20.04
     environment: production
+    needs: [check]
+    if: ${{ needs.check.outputs.early_exit != 'exit' }}
     steps:
       - name: Remove unneeded frameworks to recover disk space
         run: |
@@ -100,10 +121,10 @@ jobs:
           retention-days: 5
 
   test:
-    if: ${{ inputs.mode != 'musl' }}
     runs-on: ubuntu-20.04
     environment: production
-    needs: [build]
+    needs: [check, build]
+    if: ${{ needs.check.outputs.early_exit != 'exit' && inputs.mode != 'musl' }}
     steps:
       - name: Remove unneeded frameworks to recover disk space
         run: |
