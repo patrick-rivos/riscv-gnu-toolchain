@@ -216,6 +216,7 @@ def parse_testsuite_failures(log_path: str) -> Dict[Description, Set[str]]:
                 break
             if is_description(line):
                 description = parse_description(line, "non-multilib" not in log_path)
+                # description = parse_description(line, "singlelib" not in log_path)
                 failures[description] = set()
                 continue
             failures[description].add(line)

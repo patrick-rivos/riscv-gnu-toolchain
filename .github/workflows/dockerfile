@@ -7,6 +7,7 @@ ARG MODE=newlib
 ARG TARGET=rv32gc-ilp32d
 ARG GCCHASH=bed993884b149851fe930b43cf11cbcdf05f1578
 ARG MULTILIB=non-multilib
+#ARG MULTILIB=singlelib
 
 FROM ubuntu:22.04 as get-sources
 ARG GCCHASH
