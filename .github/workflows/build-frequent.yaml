@@ -155,7 +155,6 @@ jobs:
 
   summarize:
     if: "!cancelled()" # Generate github issues even when some (or all) targets fail to build
-    # needs: [init-submodules, creg, cmreg, csreg]
     needs: [init-submodules, creg, cmreg]
     permissions:
       issues: write
