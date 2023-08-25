@@ -117,13 +117,20 @@ def download_artifact(artifact_name: str, artifact_id: str, token: str, outdir: 
         headers=params,
     )
     print(f"download for {artifact_zip_name}: {r.status_code}")
+    download_binary = False
     with open(f"./temp/{artifact_zip_name}", "wb") as f:
         f.write(r.content)
     with ZipFile(f"./temp/{artifact_zip_name}", "r") as zf:
-        zf.extractall(path=f"./temp/{artifact_name.split('.log')[0]}")
-    os.rename(
-        f"./temp/{artifact_name.split('.log')[0]}/{artifact_name}", f"./{outdir}/{artifact_name}"
-    )
+        try:
+            zf.extractall(path=f"./temp/{artifact_name.split('.log')[0]}")
+        except NotADirectoryError:
+            download_binary = True
+            print("extracting a binary file")
+            zf.extractall(path="./temp/")
+    if not download_binary:
+        os.rename(
+            f"./temp/{artifact_name.split('.log')[0]}/{artifact_name}", f"./{outdir}/{artifact_name}"
+        )
 
 
 def download_all_artifacts(current_hash: str, previous_hash: str, token: str):
@@ -170,6 +177,8 @@ def download_all_artifacts(current_hash: str, previous_hash: str, token: str):
         base_hash, base_id = get_valid_artifact_hash(prev_commits, token, artifact_name)
         if base_hash != "No valid hash":
             download_artifact(artifact_name.format(base_hash), str(base_id), token, "previous_logs")
+        else:
+            print(f"found no valid hash for {artifact_name}. possible hashes: {prev_commits}")
 
 def main():
     args = parse_arguments()

@@ -261,6 +261,37 @@ jobs:
               body: 'Bisecting with #${{ needs.generate-issues.outputs.new_issue_num }}'
             })
 
+      - name: Retrieve cache
+        id: retrieve-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules
+
+      - name: Initalize gcc
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+          git submodule update --recursive --progress --recommend-shallow
+
+      - name: Pull gcc
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+
       - name: Initialize Bisection Hash
         id: bisection-hash
         run: |
@@ -381,7 +412,7 @@ jobs:
       - name: Trim issue length # reduce the number of lines in final issue so github always creates issue
         run: |
           head -c 65000 issue.md > trimmed_issue.md
-          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "\`\`\`\nIssue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
+          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "\n\`\`\`\nIssue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
           run_id=${{ github.run_id }} && echo "Associated run is: https://github.com/patrick-rivos/riscv-gnu-toolchain/actions/runs/$run_id" >> trimmed_issue.md
           cat trimmed_issue.md
 
