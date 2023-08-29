@@ -36,6 +36,8 @@ runs:
       run: |
         cd gcc
         git fetch
+        git reset --hard origin/master
+        git checkout master
         git checkout ${{ inputs.gcchash }}
 
     - name: Install dependencies

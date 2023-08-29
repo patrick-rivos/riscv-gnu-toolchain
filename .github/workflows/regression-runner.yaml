@@ -157,7 +157,7 @@ jobs:
           multitarget: ${{ inputs.multitarget }}
 
   rerun-timeouts:
-    runs-on: ubuntu-20.04
+    runs-on: self-hosted
     environment: production
     needs: [check, build, test]
     if: ${{ failure() && needs.build.outputs.build_success == 'success' }}
