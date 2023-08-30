@@ -124,7 +124,7 @@ jobs:
         id: build-success
         run: |
           export BUILD_SUCCESS="success"
-          echo $BUILD_SUCCESS"
+          echo $BUILD_SUCCESS
           echo "build_success=$BUILD_SUCCESS" >> "$GITHUB_OUTPUT"
 
     outputs:
