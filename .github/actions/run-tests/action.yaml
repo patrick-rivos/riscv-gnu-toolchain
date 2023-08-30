@@ -27,12 +27,14 @@ runs:
         name: gcc-sources-${{ inputs.gcchash }}
 
     - name: Restore submodules
+      shell: bash
       run: |
         rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
         unzip cache.zip
         rm -rf cache.zip
 
     - name: Checkout gcc hash
+      shell: bash
       run: |
         cd gcc
         git fetch
@@ -41,9 +43,11 @@ runs:
         git checkout ${{ inputs.gcchash }}
 
     - name: Install dependencies
+      shell: bash
       run: sudo ./.github/setup-apt.sh
 
     - name: Configure
+      shell: bash
       run: |
         mkdir build
         cd build
@@ -60,6 +64,7 @@ runs:
         name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
 
     - name: Unzip artifacts
+      shell: bash
       run: |
         unzip -n stage2.zip
         rm -rf stage2.zip
@@ -67,6 +72,7 @@ runs:
     # We need to use future timestamps since some stamps are generated during build process and invalidate the stamps here.
     # Future timestamps prevent that invalidation.
     - name: Generate fake stamps to prevent rebuilding
+      shell: bash
       run: |
         mkdir -p build/stamps
         cd build/stamps
@@ -96,22 +102,26 @@ runs:
 
     # Checks that the cache has been properly setup (make doesn't try rebuilding)
     - name: Build sanity check (should be instant)
+      shell: bash
       run: |
         cd build
         make -d ${{ inputs.mode }}
 
     - name: Reinstall stage2
+      shell: bash
       run: |
         cd build
         cd build-gcc-${{ inputs.mode }}-stage2
         make install
 
     - name: Run testsuite
+      shell: bash
       run: |
         cd build
         make -j $(nproc) report-${{ inputs.mode }} || true
         
     - name: Build debug log zip
+      shell: bash
       run: |
         if [ "${{ inputs.mode }}" == "newlib" ]; then
           cat `find build/build-gcc-newlib-stage2/gcc/testsuite/ -name g*.log` > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
@@ -129,6 +139,7 @@ runs:
         retention-days: 90
 
     - name: Save results
+      shell: bash
       run: |
         if [ "${{ inputs.mode }}" == "newlib" ]; then
           PARSE_EXISTING_REPORT="./scripts/testsuite-filter gcc newlib test/allowlist `find build/build-gcc-newlib-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`"
