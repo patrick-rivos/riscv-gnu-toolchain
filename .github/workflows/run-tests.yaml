@@ -3,7 +3,7 @@ description: "Runs the tests in the matrix"
 on:
   workflow_call:
     inputs:
-      image:
+      runimage:
         required: true
         type: string
       mode:
@@ -24,7 +24,7 @@ on:
 
 jobs:
   run-test:
-    runs-on: ${{ image }}
+    runs-on: ${{ runimage }}
     environment: production
     steps:
       - name: Remove unneeded frameworks to recover disk space

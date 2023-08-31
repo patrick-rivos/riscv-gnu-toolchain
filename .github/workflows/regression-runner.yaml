@@ -135,7 +135,7 @@ jobs:
     if: ${{ needs.check.outputs.early_exit != 'exit' && inputs.mode != 'musl' }}
     uses: ./.github/workflows/run-tests.yaml
     with:
-      image: ubuntu-20.04
+      runimage: ubuntu-20.04
       mode: ${{ inputs.mode }}
       target: ${{ inputs.target }}
       gcchash: ${{ inputs.gcchash }}
@@ -147,7 +147,7 @@ jobs:
     if: ${{ failure() && needs.build.outputs.build_success == 'success' }}
     uses: ./.github/workflows/run-tests.yaml
     with:
-      image: self-hosted
+      runimage: self-hosted
       mode: ${{ inputs.mode }}
       target: ${{ inputs.target }}
       gcchash: ${{ inputs.gcchash }}
