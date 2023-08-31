@@ -136,17 +136,6 @@ jobs:
     needs: [check, build]
     if: ${{ needs.check.outputs.early_exit != 'exit' && inputs.mode != 'musl' }}
     steps:
-      - name: Remove unneeded frameworks to recover disk space
-        run: |
-          echo "-- Before --"
-          df -h
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          echo "-- After --"
-          df -h
-
-      - uses: actions/checkout@v3
-      
       - name: Run Tests
         uses: ./.github/actions/run-tests
         with:
@@ -162,17 +151,6 @@ jobs:
     needs: [check, build, test]
     if: ${{ failure() && needs.build.outputs.build_success == 'success' }}
     steps:
-      - name: Remove unneeded frameworks to recover disk space
-        run: |
-          echo "-- Before --"
-          df -h
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          echo "-- After --"
-          df -h
-
-      - uses: actions/checkout@v3
-
       - name: Run Tests
         uses: ./.github/actions/run-tests
         with:

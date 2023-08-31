@@ -20,6 +20,16 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - name: Remove unneeded frameworks to recover disk space
+      run: |
+        echo "-- Before --"
+        df -h
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        echo "-- After --"
+        df -h
+
+    - uses: actions/checkout@v3
 
     - name: Restore submodules from cache
       uses: actions/download-artifact@v3
