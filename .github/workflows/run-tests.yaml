@@ -1,5 +1,4 @@
 name: "Run Testsuite"
-description: "Runs the tests in the matrix"
 on:
   workflow_call:
     inputs:
