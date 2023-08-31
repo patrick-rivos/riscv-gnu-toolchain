@@ -131,31 +131,25 @@ jobs:
       build_success: ${{ steps.build-success.outputs.build_success }}
 
   test:
-    runs-on: ubuntu-20.04
-    environment: production
     needs: [check, build]
     if: ${{ needs.check.outputs.early_exit != 'exit' && inputs.mode != 'musl' }}
-    steps:
-      - name: Run Tests
-        uses: ./.github/actions/run-tests
-        with:
-          mode: ${{ inputs.mode }}
-          target: ${{ inputs.target }}
-          gcchash: ${{ inputs.gcchash }}
-          multilib: ${{ inputs.multilib }}
-          multitarget: ${{ inputs.multitarget }}
+    uses: ./.github/workflows/run-tests.yaml
+    with:
+      image: ubuntu-20.04
+      mode: ${{ inputs.mode }}
+      target: ${{ inputs.target }}
+      gcchash: ${{ inputs.gcchash }}
+      multilib: ${{ inputs.multilib }}
+      multitarget: ${{ inputs.multitarget }}
 
   rerun-timeouts:
-    runs-on: self-hosted
-    environment: production
     needs: [check, build, test]
     if: ${{ failure() && needs.build.outputs.build_success == 'success' }}
-    steps:
-      - name: Run Tests
-        uses: ./.github/actions/run-tests
-        with:
-          mode: ${{ inputs.mode }}
-          target: ${{ inputs.target }}
-          gcchash: ${{ inputs.gcchash }}
-          multilib: ${{ inputs.multilib }}
-          multitarget: ${{ inputs.multitarget }}
+    uses: ./.github/workflows/run-tests.yaml
+    with:
+      image: self-hosted
+      mode: ${{ inputs.mode }}
+      target: ${{ inputs.target }}
+      gcchash: ${{ inputs.gcchash }}
+      multilib: ${{ inputs.multilib }}
+      multitarget: ${{ inputs.multitarget }}
