@@ -23,7 +23,7 @@ on:
 
 jobs:
   run-test:
-    runs-on: ${{ runimage }}
+    runs-on: ${{ inputs.runimage }}
     environment: production
     steps:
       - name: Remove unneeded frameworks to recover disk space
