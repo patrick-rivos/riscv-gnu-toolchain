@@ -50,7 +50,7 @@ jobs:
         run: |
           rm -rf gcc
           git clone git://gcc.gnu.org/git/gcc.git
-          git submodule update --recursive --progress --recommend-shallow
+          # git submodule update --recursive --progress --recommend-shallow
 
       - name: Pull gcc
         id: gcc-hash
