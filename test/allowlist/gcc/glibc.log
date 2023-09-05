@@ -1,0 +1,4 @@
+#
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=111298
+#
+FAIL: gcc.dg/tree-prof/time-profiler-2.c
