@@ -59,14 +59,16 @@ export PATH AWK SED
 
 MULTILIB_FLAGS := @multilib_flags@
 MULTILIB_GEN := @multilib_gen@
+GLIBC_BUILD_MULTILIB_ALL_ABI_NAMES := rv32imac-ilp32 rv32imafdc-ilp32d rv64imac-lp64 rv64imafdc-lp64d
 ifeq ($(MULTILIB_GEN),)
+GLIBC_MULTILIB_NAMES := @glibc_multilib_names@
 NEWLIB_MULTILIB_NAMES := @newlib_multilib_names@
 GCC_MULTILIB_FLAGS := $(MULTILIB_FLAGS)
 else
+GLIBC_MULTILIB_NAMES := $(shell echo "$(MULTILIB_GEN)" | $(SED) 's/;/\n/g'| $(AWK) '{split($$0,a,"-"); printf "%s-%s ", a[1],a[2]}')
 NEWLIB_MULTILIB_NAMES := $(shell echo "$(MULTILIB_GEN)" | $(SED) 's/;/\n/g'| $(AWK) '{split($$0,a,"-"); printf "%s-%s ", a[1],a[2]}')
 GCC_MULTILIB_FLAGS := $(MULTILIB_FLAGS) --with-multilib-generator="$(MULTILIB_GEN)"
 endif
-GLIBC_MULTILIB_NAMES := @glibc_multilib_names@
 GCC_CHECKING_FLAGS := @gcc_checking@
 
 XLEN := $(shell echo $(WITH_ARCH) | tr A-Z a-z | sed 's/.*rv\([0-9]*\).*/\1/')
@@ -448,7 +450,8 @@ stamps/build-gcc-linux-stage1: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-binutil
 	$(MAKE) -C $(notdir $@) inhibit-libc=true install-target-libgcc
 	mkdir -p $(dir $@) && touch $@
 
-stamps/build-gcc-linux-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) $(addprefix stamps/build-glibc-linux-,$(GLIBC_MULTILIB_NAMES)) \
+stamps/build-gcc-linux-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) $(addprefix stamps/build-glibc-linux-,$(GLIBC_BUILD_MULTILIB_ALL_ABI_NAMES)) \
+                               $(addprefix stamps/build-glibc-linux-,$(GLIBC_MULTILIB_NAMES)) \
                                stamps/build-glibc-linux-headers
 	rm -rf $@ $(notdir $@)
 	mkdir $(notdir $@)
