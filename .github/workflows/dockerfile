@@ -3,9 +3,9 @@
 # This dockerfile approximates the multi-stage pipeline and allows us to test
 # changes before pushing.
 
-ARG MODE=newlib
-ARG TARGET=rv32gc-ilp32d
-ARG GCCHASH=bed993884b149851fe930b43cf11cbcdf05f1578
+ARG MODE=linux
+ARG TARGET=rv64gcv-lp64d
+ARG GCCHASH=b0d75f7d3bb24e94c5a3d764c95d598ad6b6ca48
 ARG MULTILIB=non-multilib
 
 FROM ubuntu:22.04 as get-sources
@@ -13,12 +13,12 @@ ARG GCCHASH
 RUN apt update
 RUN apt install git -y
 RUN git clone https://github.com/patrick-rivos/riscv-gnu-toolchain.git tc
-RUN cd tc && git submodule update --init --recursive binutils
-RUN cd tc && git submodule update --init --recursive dejagnu
-RUN cd tc && git submodule update --init --recursive gdb
-RUN cd tc && git submodule update --init --recursive glibc
-RUN cd tc && git submodule update --init --recursive newlib
-RUN cd tc && git submodule update --init --recursive qemu
+RUN cd tc && git submodule update --init --recursive --depth 1 binutils
+RUN cd tc && git submodule update --init --recursive --depth 1 dejagnu
+RUN cd tc && git submodule update --init --recursive --depth 1 gdb
+RUN cd tc && git submodule update --init --recursive --depth 1 glibc
+RUN cd tc && git submodule update --init --recursive --depth 1 newlib
+RUN cd tc && git submodule update --init --recursive --depth 1 qemu
 RUN cd tc && rm -rf gcc
 RUN cd tc && git clone git://gcc.gnu.org/git/gcc.git && cd gcc && git checkout ${GCCHASH}
 RUN apt install zip -y
@@ -44,9 +44,9 @@ RUN cd tc && mkdir build
 COPY configure.sh configure.sh
 RUN chmod u+x /configure.sh && /configure.sh "$MULTILIB" "$TARGET"
 RUN cat tc/build/Makefile
-RUN cd tc && cd build && make newlib -j32
+RUN cd tc && cd build && make ${MODE} -j32
 # Free up disk space
-RUN cd tc && rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
+RUN cd tc && rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
 # Zip artifact
 RUN apt install zip -y
 RUN cd tc && zip --symlinks -r stage2.zip build
@@ -106,7 +106,7 @@ RUN apt install python3 -y
 RUN apt install python-is-python3 -y
 
 # CMD cd tc && cd build && RUNTESTFLAGS="-v -v" make report-newlib -j32
-RUN cd tc && cd build && cd build-gcc-newlib-stage2 && make install
+RUN cd tc && cd build && cd build-gcc-${MODE}-stage2 && make install
 RUN cd tc && cd build && make report-${MODE} -j32 || true
 
 COPY testsuite.sh testsuite.sh

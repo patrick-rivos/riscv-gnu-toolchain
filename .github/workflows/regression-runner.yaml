@@ -81,10 +81,10 @@ jobs:
           mkdir build
           cd build
           if [ "${{ inputs.multilib }}" == "multilib" ]; then
-            ../configure --prefix=$(pwd) --enable-multilib --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--"
+            ../configure --prefix=$(pwd) --enable-multilib --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--" --enable-gcc-checking
           else
             TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
-            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}
+            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]} --enable-gcc-checking
           fi
 
       - name: Make gcc
@@ -174,10 +174,10 @@ jobs:
           mkdir build
           cd build
           if [ "${{ inputs.multilib }}" == "multilib" ]; then
-            ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--"
+            ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--" --enable-gcc-checking
           else
             TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
-            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}
+            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]} --enable-gcc-checking
           fi
 
       - name: Restore stage2
@@ -311,10 +311,10 @@ jobs:
           mkdir build
           cd build
           if [ "${{ inputs.multilib }}" == "multilib" ]; then
-            ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--"
+            ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--" --enable-gcc-checking
           else
             TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
-            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}
+            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]} --enable-gcc-checking
           fi
 
       - name: Build
@@ -401,10 +401,10 @@ jobs:
           mkdir build
           cd build
           if [ "${{ inputs.multilib }}" == "multilib" ]; then
-            ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--"
+            ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--" --enable-gcc-checking
           else
             TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
-            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}
+            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]} --enable-gcc-checking
           fi
 
       - name: Build
