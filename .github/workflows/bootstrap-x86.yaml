@@ -32,7 +32,7 @@ jobs:
 
       - name: Restore submodules
         run: |
-          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
           unzip cache.zip
 
       - name: Checkout gcc hash

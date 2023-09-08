@@ -43,7 +43,7 @@ jobs:
             newlib
             pk
             qemu
-          key: submodules
+          key: submodules-archive-1
 
       - name: Initalize gcc
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
@@ -274,7 +274,7 @@ jobs:
             newlib
             pk
             qemu
-          key: submodules
+          key: submodules-archive-1
 
       - name: Initalize gcc
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
