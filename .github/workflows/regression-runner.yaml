@@ -60,7 +60,7 @@ jobs:
 
       - name: Restore submodules
         run: |
-          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
           unzip cache.zip
           rm -rf cache.zip
 
@@ -91,7 +91,7 @@ jobs:
 
       - name: Remove sources to reclaim disk space
         run: |
-          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
 
       - name: Zip binaries
         run: |
@@ -107,12 +107,10 @@ jobs:
 
       # Running testsuite (stamps/check-gcc-*) only uses stage2 & assorted folders
       - name: Zip stage2
-        if: inputs.mode != 'musl'
         run: |
           zip --symlinks -r stage2.zip build
 
       - name: Upload stage2 artifact
-        if: inputs.mode != 'musl'
         uses: actions/upload-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
@@ -134,7 +132,7 @@ jobs:
     runs-on: ubuntu-20.04
     environment: production
     needs: [check, build]
-    if: ${{ needs.check.outputs.early_exit != 'exit' && inputs.mode != 'musl' }}
+    if: ${{ needs.check.outputs.early_exit != 'exit' }}
     steps:
       - name: Remove unneeded frameworks to recover disk space
         run: |
@@ -154,7 +152,7 @@ jobs:
 
       - name: Restore submodules
         run: |
-          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
           unzip cache.zip
           rm -rf cache.zip
 
@@ -288,7 +286,7 @@ jobs:
 
       - name: Restore submodules
         run: |
-          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
           unzip cache.zip
           rm -rf cache.zip
 

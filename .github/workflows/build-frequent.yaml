@@ -42,19 +42,21 @@ jobs:
             gcc
             gdb
             glibc
-            musl
             newlib
-            pk
             qemu
-          key: submodules
+          key: submodules-archive-1 # Numbered archive to allow for easy transition when bumping submodules
 
       - name: Initalize submodules cache
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
         run: |
-          git submodule init
+          git submodule update --init --recursive --depth 1 binutils
+          git submodule update --init --recursive --depth 1 dejagnu
+          git submodule update --init --recursive --depth 1 gdb
+          git submodule update --init --recursive --depth 1 glibc
+          git submodule update --init --recursive --depth 1 newlib
+          git submodule update --init --recursive --depth 1 qemu
           rm -rf gcc
           git clone git://gcc.gnu.org/git/gcc.git
-          git submodule update --recursive --progress --recommend-shallow
 
       - name: Get GCC hash
         id: gcc-hash
@@ -81,15 +83,13 @@ jobs:
             gcc
             gdb
             glibc
-            musl
             newlib
-            pk
             qemu
-          key: submodules
+          key: submodules-archive-1
 
       - name: Make cache zip
         run: |
-          zip -r cache.zip .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          zip -r cache.zip .git binutils dejagnu gcc gdb glibc newlib qemu
 
       # Use artifact rather than cache since cache downloads are flaky/hang.
       # Artifacts are reliable but ~30 min slower to set up.
