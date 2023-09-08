@@ -44,7 +44,7 @@ jobs:
             glibc
             newlib
             qemu
-          key: submodules-archive-1 # Numbered archive to allow for easy transition when bumping submodules
+          key: submodules-archive-2 # Numbered archive to allow for easy transition when bumping submodules
 
       - name: Initalize submodules cache
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
@@ -85,7 +85,7 @@ jobs:
             glibc
             newlib
             qemu
-          key: submodules-archive-1
+          key: submodules-archive-2
 
       - name: Make cache zip
         run: |
