@@ -132,7 +132,8 @@ jobs:
     runs-on: ubuntu-20.04
     environment: production
     needs: [check, build]
-    if: ${{ needs.check.outputs.early_exit != 'exit' }}
+    # Skip linux multilib
+    if: ${{ needs.check.outputs.early_exit != 'exit' && !contains('linux:rv64gc-lp64d', format('{0}:{1}', inputs.mode, inputs.target)) }}
     steps:
       - name: Remove unneeded frameworks to recover disk space
         run: |
@@ -274,7 +275,8 @@ jobs:
     runs-on: self-hosted
     environment: production
     needs: [check, build, test]
-    if: ${{ failure() && needs.build.outputs.build_success == 'success' }}
+    # If linux multilib or testsuite failed to build
+    if: ${{ contains('linux:rv64gc-lp64d', format('{0}:{1}', inputs.mode, inputs.target)) || failure() && needs.build.outputs.build_success == 'success' }}
     timeout-minutes: 1440 # 24 hours
     steps:
       - uses: actions/checkout@v3
@@ -317,6 +319,21 @@ jobs:
         run: |
           cd build
           make ${{ inputs.mode }} -j $(nproc)
+
+      # Only upload if linux multilib since that skips its build step.
+      - name: Zip binaries
+        if: ${{ contains('linux:rv64gc-lp64d', format('{0}:{1}', inputs.mode, inputs.target)) }}
+        run: |
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip build/bin
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        if: ${{ contains('linux:rv64gc-lp64d', format('{0}:{1}', inputs.mode, inputs.target)) }}
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip
+          retention-days: 5
 
       - name: Run testsuite
         run: |
