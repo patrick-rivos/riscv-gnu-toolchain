@@ -42,19 +42,21 @@ jobs:
             gcc
             gdb
             glibc
-            musl
             newlib
-            pk
             qemu
-          key: submodules
+          key: submodules-archive-2 # Numbered archive to allow for easy transition when bumping submodules
 
       - name: Initalize submodules cache
         if: steps.retrieve-cache.outputs.cache-hit != 'true'
         run: |
-          git submodule init
+          git submodule update --init --recursive --depth 1 binutils
+          git submodule update --init --recursive --depth 1 dejagnu
+          git submodule update --init --recursive --depth 1 gdb
+          git submodule update --init --recursive --depth 1 glibc
+          git submodule update --init --recursive --depth 1 newlib
+          git submodule update --init --recursive --depth 1 qemu
           rm -rf gcc
           git clone git://gcc.gnu.org/git/gcc.git
-          git submodule update --recursive --progress --recommend-shallow
 
       - name: Get GCC hash
         id: gcc-hash
@@ -81,15 +83,13 @@ jobs:
             gcc
             gdb
             glibc
-            musl
             newlib
-            pk
             qemu
-          key: submodules
+          key: submodules-archive-2
 
       - name: Make cache zip
         run: |
-          zip -r cache.zip .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          zip -r cache.zip .git binutils dejagnu gcc gdb glibc newlib qemu
 
       # Use artifact rather than cache since cache downloads are flaky/hang.
       # Artifacts are reliable but ~30 min slower to set up.
@@ -129,13 +129,14 @@ jobs:
       gcchash: ${{ needs.init-submodules.outputs.gcchash }}
       multilib: ${{ matrix.multilib }}
       multitarget: ${{ github.event.inputs.multi_target }}
+      run_on_self_hosted: false
 
   cmreg: # Check Multilib Regressions. Short name so I can see the matrix string in github
     needs: [init-submodules]
     strategy:
       fail-fast: false
       matrix:
-        mode: [newlib, linux]
+        mode: [newlib]
         target: [rv64gc-lp64d] # Dummy placeholder. Actually runs rv32/rv64 multilib
         multilib: [multilib]
     uses: ./.github/workflows/regression-runner.yaml
@@ -145,6 +146,24 @@ jobs:
       gcchash: ${{ needs.init-submodules.outputs.gcchash }}
       multilib: ${{ matrix.multilib }}
       multitarget: ${{ github.event.inputs.multi_target }}
+      run_on_self_hosted: false
+
+  cmreg-self-hosted: # Check Multilib Regressions. Short name so I can see the matrix string in github
+    needs: [init-submodules]
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [linux]
+        target: [rv64gc-lp64d] # Dummy placeholder. Actually runs rv32/rv64 multilib
+        multilib: [multilib]
+    uses: ./.github/workflows/regression-runner.yaml
+    with:
+      mode: ${{ matrix.mode }}
+      target: ${{ matrix.target }}
+      gcchash: ${{ needs.init-submodules.outputs.gcchash }}
+      multilib: ${{ matrix.multilib }}
+      multitarget: ${{ github.event.inputs.multi_target }}
+      run_on_self_hosted: true
 
   build-x86:
     if: ${{ false }} # Temporarily disable x86. Should be re-enabled to only run when a build failure occurs.
@@ -155,7 +174,7 @@ jobs:
 
   summarize:
     if: "!cancelled()" # Generate github issues even when some (or all) targets fail to build
-    needs: [init-submodules, creg, cmreg]
+    needs: [init-submodules, creg, cmreg, cmreg-self-hosted]
     permissions:
       issues: write
     uses: ./.github/workflows/generate-summary.yaml

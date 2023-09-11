@@ -18,6 +18,9 @@ on:
       multitarget:
         required: false
         type: string
+      run_on_self_hosted:
+        required: true
+        type: string
 
 jobs:
   check:
@@ -40,7 +43,7 @@ jobs:
     runs-on: ubuntu-20.04
     environment: production
     needs: [check]
-    if: ${{ needs.check.outputs.early_exit != 'exit' }}
+    if: ${{ needs.check.outputs.early_exit != 'exit' && inputs.run_on_self_hosted != 'true' }}
     steps:
       - name: Remove unneeded frameworks to recover disk space
         run: |
@@ -60,7 +63,7 @@ jobs:
 
       - name: Restore submodules
         run: |
-          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
           unzip cache.zip
           rm -rf cache.zip
 
@@ -91,7 +94,7 @@ jobs:
 
       - name: Remove sources to reclaim disk space
         run: |
-          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
 
       - name: Zip binaries
         run: |
@@ -107,12 +110,10 @@ jobs:
 
       # Running testsuite (stamps/check-gcc-*) only uses stage2 & assorted folders
       - name: Zip stage2
-        if: inputs.mode != 'musl'
         run: |
           zip --symlinks -r stage2.zip build
 
       - name: Upload stage2 artifact
-        if: inputs.mode != 'musl'
         uses: actions/upload-artifact@v3
         with:
           name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-stage2
@@ -134,7 +135,8 @@ jobs:
     runs-on: ubuntu-20.04
     environment: production
     needs: [check, build]
-    if: ${{ needs.check.outputs.early_exit != 'exit' && inputs.mode != 'musl' }}
+    # Skip linux multilib
+    if: ${{ needs.check.outputs.early_exit != 'exit' && inputs.run_on_self_hosted != 'true' }}
     steps:
       - name: Remove unneeded frameworks to recover disk space
         run: |
@@ -154,7 +156,7 @@ jobs:
 
       - name: Restore submodules
         run: |
-          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
           unzip cache.zip
           rm -rf cache.zip
 
@@ -276,7 +278,7 @@ jobs:
     runs-on: self-hosted
     environment: production
     needs: [check, build, test]
-    if: ${{ failure() && needs.build.outputs.build_success == 'success' }}
+    if: ${{ failure() && needs.build.outputs.build_success == 'success' && inputs.run_on_self_hosted != 'true' }}
     timeout-minutes: 1440 # 24 hours
     steps:
       - uses: actions/checkout@v3
@@ -288,7 +290,7 @@ jobs:
 
       - name: Restore submodules
         run: |
-          rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
           unzip cache.zip
           rm -rf cache.zip
 
@@ -319,6 +321,108 @@ jobs:
         run: |
           cd build
           make ${{ inputs.mode }} -j $(nproc)
+
+      - name: Run testsuite
+        run: |
+          cd build
+          make -j $(nproc) report-${{ inputs.mode }} || true
+
+      - name: Build debug log zip
+        run: |
+          if [ "${{ inputs.mode }}" == "newlib" ]; then
+            cat `find build/build-gcc-newlib-stage2/gcc/testsuite/ -name g*.log` > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
+          else
+            cat `find build/build-gcc-linux-stage2/gcc/testsuite/ -name g*.log` > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
+          fi
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.zip gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
+
+      - name: Upload debug artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.log
+          retention-days: 90
+
+      - name: Save results
+        run: |
+          if [ "${{ inputs.mode }}" == "newlib" ]; then
+            PARSE_EXISTING_REPORT="./scripts/testsuite-filter gcc newlib test/allowlist `find build/build-gcc-newlib-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`"
+          else
+            PARSE_EXISTING_REPORT="./scripts/testsuite-filter gcc glibc test/allowlist `find build/build-gcc-linux-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`"
+          fi
+          $PARSE_EXISTING_REPORT | tee gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+
+      - name: Upload results artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-report.log
+          retention-days: 90
+
+  # The self-hosted environment does not have the same path setup as the hosted runners
+  # We need to rebuild since restoring the artifact won't work
+  # (the new path will break the existing build).
+  run-on-self-hosted:
+    runs-on: self-hosted
+    environment: production
+    needs: [check]
+    if: ${{ needs.check.outputs.early_exit != 'exit' && inputs.run_on_self_hosted == 'true' }}
+    timeout-minutes: 1440 # 24 hours
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Restore submodules from cache
+        uses: actions/download-artifact@v3
+        with:
+          name: gcc-sources-${{ inputs.gcchash }}
+
+      - name: Restore submodules
+        run: |
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
+          unzip cache.zip
+          rm -rf cache.zip
+
+      - name: Checkout gcc hash
+        run: |
+          cd gcc
+          git fetch
+          git checkout ${{ inputs.gcchash }}
+
+      - name: Install dependencies
+        run: |
+          sudo ./.github/setup-apt.sh
+          sudo apt install python3 -y
+          sudo apt install python-is-python3 -y
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          if [ "${{ inputs.multilib }}" == "multilib" ]; then
+            ../configure --prefix=$(pwd) --with-multilib-generator="rv64gc-lp64d--;rv32gc-ilp32d--"
+          else
+            TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
+            ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]}
+          fi
+
+      - name: Build
+        run: |
+          cd build
+          make ${{ inputs.mode }} -j $(nproc)
+
+      - name: Zip binaries
+        run: |
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip build/bin
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip
+          retention-days: 5
 
       - name: Run testsuite
         run: |
