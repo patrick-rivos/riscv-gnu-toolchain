@@ -1,0 +1,99 @@
+name: Patchworks
+
+on:
+  # Don't enable schedule until it's ready
+  # schedule:
+  #   # Run every 15 minutes
+  #   - cron: "*/15 * * * *"
+  push:
+    branches:
+      - patchworks-ci
+
+jobs:
+  fetch_patches:
+    # Might need to set up a dedicated self hosted runner to always run this on time
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Get list of new patches
+        run: |
+          TZ=UTC date -d "@$((($(date +%s) + 450) / 900 * 900))" '+%Y-%m-%dT%H:%M:%S' > date_recent.txt
+          TZ=UTC date -d "@$((($(date +%s) - 450) / 900 * 900))" '+%Y-%m-%dT%H:%M:%S' > date_old.txt
+
+          curl "https://patchwork.sourceware.org/api/1.3/patches/?order=-date&q=RISC-V&project=6&before=$(cat date_recent.txt)&since=$(cat date_old.txt)" | tee patches.txt
+
+      - name: Check for patches
+        run: |
+          echo "Hello World"
+          cat patches.txt
+
+      - name: List patch artifacts
+        id: list_patches
+        run: |
+          export PATCHLIST="['Patch 1', 'Patch 2', 'Patch,3']"
+          echo "patch_list=$PATCHLIST" >> $GITHUB_OUTPUT
+
+    outputs:
+      list_of_patch_artifacts: ${{ steps.list_patches.outputs.patch_list }}
+
+  prepare_sources:
+    runs-on: ubuntu-20.04
+    needs: [fetch_patches]
+    if: ${{ needs.fetch_patches.outputs.list_of_patch_artifacts != '[]' }}
+    steps:
+      - name: Determine baseline
+        run: |
+          echo TODO
+
+      - name: Download baseline results
+        run: |
+          echo TODO
+
+      - name: Upload baseline results
+        id: upload_baseline_results
+        run: |
+          echo TODO
+          export BASELINE_RESULTS_ARTIFACT="['baseline results']"
+          echo "baseline_results_artifact=$BASELINE_RESULTS_ARTIFACT" >> $GITHUB_OUTPUT
+
+      - name: Download sources
+        run: |
+          echo TODO
+
+      - name: Zip
+        run: |
+          echo TODO
+
+      - name: Upload
+        id: upload_sources
+        run: |
+          echo TODO
+          export SOURCES_ARTIFACT="['sources artifact']"
+          echo "sources_artifact=$SOURCES_ARTIFACT" >> $GITHUB_OUTPUT
+
+    outputs:
+      sources_artifact: ${{ steps.upload_sources.outputs.sources_artifact }}
+      baseline_results_artifact: ${{ steps.upload_baseline_results.outputs.baseline_results_artifact }}
+
+  patch_matrix:
+    runs-on: ubuntu-20.04
+    needs: [fetch_patches, prepare_sources]
+    strategy:
+      matrix:
+        patch_artifact: ${{ fromJSON(needs.fetch_patches.outputs.list_of_patch_artifacts) }}
+        sources_artifact: ${{ fromJSON(needs.prepare_sources.outputs.sources_artifact) }}
+        baseline_results_artifact: ${{ fromJSON(needs.prepare_sources.outputs.baseline_results_artifact) }}
+    steps:
+      - name: Download patch artifact
+        run: |
+          echo "TODO: Download patch artifact"
+          echo "Artifact name: ${{ matrix.patch_artifact }}"
+          echo "Sources name: ${{ matrix.sources_artifact }}"
+          echo "Baseline name: ${{ matrix.baseline_results_artifact }}"
+
+      - name: Download patches in order
+        run: |
+          echo "TODO: Download patch artifact"
+
+      - name: Download patches in order
+        run: |
+          echo "TODO: Download patch artifact"
