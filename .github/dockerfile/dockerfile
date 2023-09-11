@@ -46,7 +46,7 @@ RUN chmod u+x /configure.sh && /configure.sh "$MULTILIB" "$TARGET"
 RUN cat tc/build/Makefile
 RUN cd tc && cd build && make newlib -j32
 # Free up disk space
-RUN cd tc && rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
+RUN cd tc && rm -rf .git binutils dejagnu gcc gdb glibc musl newlib pk qemu
 # Zip artifact
 RUN apt install zip -y
 RUN cd tc && zip --symlinks -r stage2.zip build
