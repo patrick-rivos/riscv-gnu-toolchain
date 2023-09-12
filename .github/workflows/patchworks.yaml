@@ -5,6 +5,9 @@ on:
   # schedule:
   #   # Run every 15 minutes
   #   - cron: "*/15 * * * *"
+  pull_request:
+    branches:
+      - patchworks-ci
   push:
     branches:
       - patchworks-ci
@@ -33,12 +36,12 @@ jobs:
           echo "patch_list=$PATCHLIST" >> $GITHUB_OUTPUT
 
     outputs:
-      list_of_patch_artifacts: ${{ steps.list_patches.outputs.patch_list }}
+      list_of_patch_names: ${{ steps.list_patches.outputs.patch_list }}
 
   prepare_sources:
     runs-on: ubuntu-20.04
     needs: [fetch_patches]
-    if: ${{ needs.fetch_patches.outputs.list_of_patch_artifacts != '[]' }}
+    if: ${{ needs.fetch_patches.outputs.list_of_patch_names != '[]' }}
     steps:
       - name: Determine baseline
         run: |
@@ -75,25 +78,14 @@ jobs:
       baseline_results_artifact: ${{ steps.upload_baseline_results.outputs.baseline_results_artifact }}
 
   patch_matrix:
-    runs-on: ubuntu-20.04
     needs: [fetch_patches, prepare_sources]
     strategy:
       matrix:
-        patch_artifact: ${{ fromJSON(needs.fetch_patches.outputs.list_of_patch_artifacts) }}
+        patch_name: ${{ fromJSON(needs.fetch_patches.outputs.list_of_patch_names) }}
         sources_artifact: ${{ fromJSON(needs.prepare_sources.outputs.sources_artifact) }}
         baseline_results_artifact: ${{ fromJSON(needs.prepare_sources.outputs.baseline_results_artifact) }}
-    steps:
-      - name: Download patch artifact
-        run: |
-          echo "TODO: Download patch artifact"
-          echo "Artifact name: ${{ matrix.patch_artifact }}"
-          echo "Sources name: ${{ matrix.sources_artifact }}"
-          echo "Baseline name: ${{ matrix.baseline_results_artifact }}"
-
-      - name: Download patches in order
-        run: |
-          echo "TODO: Download patch artifact"
-
-      - name: Download patches in order
-        run: |
-          echo "TODO: Download patch artifact"
+    uses: ./.github/workflows/run_checks.yaml
+    with:
+      patch_name: ${{ matrix.patch_name }}
+      sources_artifact: ${{ matrix.sources_artifact }}
+      baseline_results_artifact: ${{ matrix.baseline_results_artifact }}
