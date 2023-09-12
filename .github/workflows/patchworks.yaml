@@ -1,10 +1,9 @@
 name: Patchworks
 
 on:
-  # Don't enable schedule until it's ready
-  # schedule:
-  #   # Run every 15 minutes
-  #   - cron: "*/15 * * * *"
+  schedule:
+    # Run every 15 minutes
+    - cron: "*/15 * * * *"
   pull_request:
     branches:
       - patchworks-ci
@@ -32,7 +31,7 @@ jobs:
         run: |
           export PATCHLIST="$(cat artifact_names.txt)"
           echo "patch_list=$PATCHLIST" >> $GITHUB_OUTPUT
-      
+
       - name: Make artifact zip
         run: |
           zip -r patch_files.zip patch_urls
