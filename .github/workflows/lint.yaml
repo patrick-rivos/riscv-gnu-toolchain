@@ -22,12 +22,16 @@ jobs:
       - name: Download patches artifact
         uses: actions/download-artifact@v3
         with:
-          name: patches
+          name: ${{ inputs.patch_name }}-downloaded-patches
 
       - name: Extract patches
         run: |
-          echo TODO
+          unzip ${{ inputs.patch_name }}-downloaded-patches.zip
 
       - name: Lint patch
         run: |
-          python ./scripts/check_GNU_style.py ${{ inputs.patch_name }} | tee lint_results.txt
+          let count=1
+          for file in $(ls patches); do 
+            python ./scripts/check_GNU_style.py "./patches/$file" | tee "lint_results_$count.txt"
+            count=$(($count+1))
+          done;
