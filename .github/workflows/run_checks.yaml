@@ -14,7 +14,41 @@ on:
         type: string
 
 jobs:
+  download_patches:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download patch urls artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: patch_urls
+
+      - name: Extract patch urls
+        run: |
+          unzip patch_files.zip
+
+      - name: Create patches dir
+        run: |
+          mkdir patches
+
+      - name: Download patches from urls
+        run: |
+          scripts/download_patches.sh -p ${{ inputs.patch_name }}
+
+      - name: Zip patches
+        run: |
+          zip -r ${{ inputs.patch_name }}-downloaded-patches.zip patches
+
+      - name: Upload patches artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.patch_name }}-downloaded-patches
+          path: |
+            ${{ inputs.patch_name }}-downloaded-patches.zip
+          retention-days: 90
   lint:
+    needs: [download_patches]
     uses: ./.github/workflows/lint.yaml
     with:
       patch_name: ${{ inputs.patch_name }}
@@ -22,6 +56,7 @@ jobs:
       baseline_results_artifact: ${{ inputs.baseline_results_artifact }}
 
   build_test:
+    needs: [download_patches]
     runs-on: ubuntu-20.04
     steps:
       - run: |
