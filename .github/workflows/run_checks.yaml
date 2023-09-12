@@ -1,0 +1,28 @@
+name: Run checks
+
+on:
+  workflow_call:
+    inputs:
+      patch_name:
+        required: true
+        type: string
+      sources_artifact:
+        required: true
+        type: string
+      baseline_results_artifact:
+        required: true
+        type: string
+
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yaml
+    with:
+      patch_name: ${{ inputs.patch_name }}
+      sources_artifact: ${{ inputs.sources_artifact }}
+      baseline_results_artifact: ${{ inputs.baseline_results_artifact }}
+
+  build_test:
+    runs-on: ubuntu-20.04
+    steps:
+      - run: |
+          echo TODO

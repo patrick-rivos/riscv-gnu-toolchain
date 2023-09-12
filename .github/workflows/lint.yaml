@@ -1,0 +1,63 @@
+name: Lint
+
+on:
+  workflow_call:
+    inputs:
+      patch_name:
+        required: true
+        type: string
+      sources_artifact:
+        required: true
+        type: string
+      baseline_results_artifact:
+        required: true
+        type: string
+
+jobs:
+  lint:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Retrieve cache
+        id: retrieve-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules-archive-2
+
+      - name: Initalize gcc
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+
+      - name: Pull gcc
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+
+      - name: Download patches artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: patches
+
+      - name: Extract patches
+        run: |
+          echo TODO
+
+      - name: Lint patch
+        run: |
+          python ./gcc/contrib/check_GNU_style.py ${{ inputs.patch_name }} | tee lint_results.txt
