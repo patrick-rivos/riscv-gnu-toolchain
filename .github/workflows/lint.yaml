@@ -6,12 +6,6 @@ on:
       patch_name:
         required: true
         type: string
-      sources_artifact:
-        required: true
-        type: string
-      baseline_results_artifact:
-        required: true
-        type: string
 
 jobs:
   lint:

@@ -55,49 +55,105 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Determine baseline
+        id: gcc-hash
         run: |
           echo TODO
+          export GCCHASH=$(python ./scripts/get_baseline_hash.py)
+          echo "gcchash=$GCCHASH" >> $GITHUB_OUTPUT
+
+      - name: Retrieve cache
+        id: retrieve-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            newlib
+            qemu
+          key: submodules-archive-2 # Numbered archive to allow for easy transition when bumping submodules
+
+      - name: Initalize submodules cache
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          git submodule update --init --recursive --depth 1 binutils
+          git submodule update --init --recursive --depth 1 dejagnu
+          git submodule update --init --recursive --depth 1 gdb
+          git submodule update --init --recursive --depth 1 glibc
+          git submodule update --init --recursive --depth 1 newlib
+          git submodule update --init --recursive --depth 1 qemu
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+
+      - name: Get GCC hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+
+      - name: Cache submodules
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            newlib
+            qemu
+          key: submodules-archive-2
+
+      - name: Make cache zip
+        run: |
+          zip -r cache.zip .git binutils dejagnu gcc gdb glibc newlib qemu
+
+      # Use artifact rather than cache since cache downloads are flaky/hang.
+      # Artifacts are reliable but ~30 min slower to set up.
+      # Setup is done on one runner, so this isn't a show stopper.
+      - name: Upload git cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-sources-${{ steps.gcc-hash.outputs.gcchash }}
+          path: |
+            cache.zip
+          retention-days: 5
 
       - name: Download baseline results
         run: |
-          echo TODO
-          # python ./scripts/download_single_artifact.py -name
+          python ./scripts/download_single_artifact.py -name ${{ steps.gcc-hash.outputs.gcchash }}-current-logs -token ${{ secrets.GITHUB_TOKEN }} -outdir ./
+
+      - name: Extract baseline results
+        run: |
+          unzip current_logs.zip
+          mv current_logs previous_logs
+
+      - name: Make previous logs artifact
+        run: |
+          zip -r previous_logs.zip previous_logs
 
       - name: Upload baseline results
-        id: upload_baseline_results
-        run: |
-          echo TODO
-          export BASELINE_RESULTS_ARTIFACT="['baseline results']"
-          echo "baseline_results_artifact=$BASELINE_RESULTS_ARTIFACT" >> $GITHUB_OUTPUT
-
-      - name: Download sources
-        run: |
-          echo TODO
-
-      - name: Zip
-        run: |
-          echo TODO
-
-      - name: Upload
-        id: upload_sources
-        run: |
-          echo TODO
-          export SOURCES_ARTIFACT="['sources artifact']"
-          echo "sources_artifact=$SOURCES_ARTIFACT" >> $GITHUB_OUTPUT
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ steps.gcc-hash.outputs.gcchash }}-previous-logs
+          path: |
+            previous_logs.zip
+          retention-days: 90
 
     outputs:
-      sources_artifact: ${{ steps.upload_sources.outputs.sources_artifact }}
-      baseline_results_artifact: ${{ steps.upload_baseline_results.outputs.baseline_results_artifact }}
+      gcchash: ${{ steps.gcc-hash.outputs.gcchash }}
 
   patch_matrix:
     needs: [fetch_patches, prepare_sources]
     strategy:
       matrix:
         patch_name: ${{ fromJSON(needs.fetch_patches.outputs.list_of_patch_names) }}
-        sources_artifact: ${{ fromJSON(needs.prepare_sources.outputs.sources_artifact) }}
-        baseline_results_artifact: ${{ fromJSON(needs.prepare_sources.outputs.baseline_results_artifact) }}
     uses: ./.github/workflows/run_checks.yaml
     with:
       patch_name: ${{ matrix.patch_name }}
-      sources_artifact: ${{ matrix.sources_artifact }}
-      baseline_results_artifact: ${{ matrix.baseline_results_artifact }}
+      gcchash: ${{ needs.prepare_sources.outputs.gcchash }}

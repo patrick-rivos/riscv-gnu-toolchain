@@ -6,10 +6,7 @@ on:
       patch_name:
         required: true
         type: string
-      sources_artifact:
-        required: true
-        type: string
-      baseline_results_artifact:
+      gcchash: # Baseline gcc hash
         required: true
         type: string
 
@@ -18,6 +15,17 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
+
+      - name: Restore submodules from cache
+        uses: actions/download-artifact@v3
+        with:
+          name: gcc-sources-${{ inputs.gcchash }}
+
+      - name: Restore submodules
+        run: |
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
+          unzip cache.zip
+          rm -rf cache.zip
 
       - name: Download patch urls artifact
         uses: actions/download-artifact@v3
@@ -52,8 +60,6 @@ jobs:
     uses: ./.github/workflows/lint.yaml
     with:
       patch_name: ${{ inputs.patch_name }}
-      sources_artifact: ${{ inputs.sources_artifact }}
-      baseline_results_artifact: ${{ inputs.baseline_results_artifact }}
 
   build_test:
     needs: [download_patches]
