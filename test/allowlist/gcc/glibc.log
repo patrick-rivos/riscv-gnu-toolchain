@@ -2,3 +2,11 @@
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=111298
 #
 FAIL: gcc.dg/tree-prof/time-profiler-2.c
+
+#
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=111428
+#
+FAIL: gfortran.dg/minval_char_1.f90
+FAIL: gfortran.dg/minval_char_2.f90
+FAIL: gfortran.dg/maxval_char_1.f90
+FAIL: gfortran.dg/maxval_char_2.f90
