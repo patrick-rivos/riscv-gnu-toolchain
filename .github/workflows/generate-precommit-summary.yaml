@@ -1,0 +1,199 @@
+name: Generate-Summary
+
+on:
+  workflow_call:
+    inputs:
+      patch_name:
+        required: true
+        type: string
+      gcchash:
+        required: true
+        type: string
+      new_gcchash:
+        required: true
+        type: string
+
+jobs:
+  compare-artifacts:
+    if: always() # ensure comparison always runs even on error
+    runs-on: ubuntu-20.04
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Retrieve cache
+        id: retrieve-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            musl
+            newlib
+            pk
+            qemu
+          key: submodules-archive-2
+
+      - name: Initalize gcc
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+
+      - name: Pull gcc
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+
+      - name: Create directories
+        run: |
+          mkdir current_logs
+          mkdir temp
+          mkdir summaries
+
+      - name: Bump pyopenssl and crypto
+        run: |
+          sudo apt remove python3-pip
+          wget https://bootstrap.pypa.io/get-pip.py
+          sudo python3 get-pip.py
+          pip install -U pyopenssl cryptography
+
+      # Download all workload artifacts
+
+      - name: Print API usage info
+        run: |
+          curl \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/rate_limit
+
+      - name: Download All targets
+        uses: ./.github/actions/download-all-comparison-artifacts
+        with:
+          gcchash: ${{ inputs.new_gcchash }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print API usage info
+        run: |
+          curl \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/rate_limit
+
+      - name: Extract artifacts
+        run: |
+          ls ./temp/
+          mkdir -p current_logs
+          unzip ./temp/*report.log.zip -d ./current_logs || true
+          ls current_logs
+
+      - name: Download baseline logs
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.gcchash }}-previous-logs
+
+      - name: Extract previous logs
+        run: |
+          unzip previous_logs.zip
+
+      - name: Compare artifacts
+        run: |
+          python ./scripts/compare_all_artifacts.py -hash ${{ inputs.gcchash }}
+
+      - name: Make artifact zips
+        run: |
+          zip -r summaries.zip summaries
+          zip -r current_logs.zip current_logs
+
+      - name: Upload compare summaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.gcchash }}-summaries
+          path: |
+            summaries.zip
+          retention-days: 90
+
+      - name: Upload current log failures
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ inputs.gcchash }}-current-logs
+          path: |
+            current_logs.zip
+          retention-days: 90
+
+    outputs:
+      gcchash: ${{ inputs.gcchash }}
+
+  generate-issues:
+    if: always() # ensure generate issues always runs even on error
+    needs: [compare-artifacts]
+    runs-on: ubuntu-20.04
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download summaries artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.compare-artifacts.outputs.gcchash }}-summaries
+
+      - name: Download current logs artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.compare-artifacts.outputs.gcchash }}-current-logs
+
+      - name: Download previous logs artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ needs.compare-artifacts.outputs.gcchash }}-previous-logs
+
+      - name: Print API usage info
+        run: |
+          curl \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/rate_limit
+
+      - name: Aggregate information
+        run: |
+          unzip summaries.zip
+          unzip current_logs.zip
+          unzip previous_logs.zip
+          python ./scripts/aggregate.py \
+            -chash ${{ needs.compare-artifacts.outputs.gcchash }} \
+            -o issue.md
+          cat issue.md
+
+      - name: Print API usage info
+        run: |
+          curl \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/rate_limit
+
+      - name: Trim issue length # reduce the number of lines in final issue so github always creates issue
+        run: |
+          head -c 65000 issue.md > trimmed_issue.md
+          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "\`\`\`\nIssue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
+          run_id=${{ github.run_id }} && echo "Associated run is: https://github.com/ewlu/riscv-gnu-toolchain/actions/runs/$run_id" >> trimmed_issue.md
+          cat trimmed_issue.md
+
+      - name: Create or update summary issue
+        uses: JasonEtco/create-an-issue@v2
+        id: create-issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          filename: trimmed_issue.md
+          update_existing: true
+
+    outputs:
+      new_issue_num: ${{ steps.create-issue.outputs.number }}
+

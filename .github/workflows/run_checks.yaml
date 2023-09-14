@@ -61,9 +61,124 @@ jobs:
     with:
       patch_name: ${{ inputs.patch_name }}
 
-  build_test:
+  apply:
     needs: [download_patches]
     runs-on: ubuntu-20.04
     steps:
-      - run: |
-          echo TODO
+      - name: Remove unneeded frameworks to recover disk space
+        run: |
+          echo "-- Before --"
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          echo "-- After --"
+          df -h
+
+      - uses: actions/checkout@v3
+
+      - name: Restore submodules from cache
+        uses: actions/download-artifact@v3
+        with:
+          name: gcc-sources-${{ inputs.gcchash }}
+
+      - name: Restore submodules
+        run: |
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
+          unzip cache.zip
+          rm -rf cache.zip
+
+      - name: Download patches artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.patch_name }}-downloaded-patches
+
+      - name: Extract patches
+        run: |
+          unzip ${{ inputs.patch_name }}-downloaded-patches.zip
+
+      - name: Checkout gcc hash
+        run: |
+          cd gcc
+          git fetch
+          git checkout ${{ inputs.gcchash }}
+
+      - name: Apply patches to baseline
+        id: apply-baseline
+        run: |
+          cd gcc
+          git config user.name "GitHub Actions Bot"
+          git config user.email "<>"
+          git am ../patches/*.patch &> out || true
+          cat out
+          if [[ $(cat out | wc -l) != 0 ]]; then
+            echo "Failed to apply patch cleanly to baseline hash"
+            git am --abort
+            echo "apply_baseline=false" >> $GITHUB_OUTPUT
+            rm out
+          else
+            echo "apply_baseline=true" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Apply patches to tip of tree
+        id: apply-tip-of-tree
+        run: |
+          cd gcc
+          git reset --hard origin/master
+          git pull origin master
+          git am ../patches/*.patch &> out || true
+          cat out
+          if [[ $(cat out | wc -l) != 0 ]]; then
+            echo "Failed to apply patch cleanly to tip of tree"
+            git am --abort
+            echo "apply_tot=false" >> $GITHUB_OUTPUT
+            rm out
+          else
+            echo "apply_tot=true" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
+
+      - name: Check warn rebase
+        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'true' && steps.apply-tip-of-tree.outputs.apply-tot == 'false' }}
+        run: |
+          echo "TODO WARN REBASE"
+
+      - name: Check build only
+        id: build-only
+        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'false' && steps.apply-tip-of-tree.outputs.apply-tot == 'true' }}
+        run: |
+          echo "build_only=true" >> $GITHUB_OUTPUT
+
+      - name: Check early exit
+        id: early-exit
+        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'false' && steps.apply-tip-of-tree.outputs.apply-tot == 'false' }}
+        run: |
+          echo "early_exit=true" >> $GITHUB_OUTPUT
+
+      - name: Output new gcchash
+        id: new-gcc-hash
+        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'true' || steps.apply-tip-of-tree.outputs.apply-tot == 'true' }}
+        run: |
+          cd gcc
+          git reset --hard origin/master
+          if [ "${{ steps.apply-baseline.outputs.apply_baseline }}" == "true" ]; then
+            git checkout ${{ inputs.gcchash }}
+          fi
+          git am ../patches/*.patch
+          export NEW_GCCHASH=$(git rev-parse HEAD)
+          echo "new_gcchash=$NEW_GCCHASH" >> $GITHUB_OUTPUT
+
+    outputs:
+      early_exit: ${{ steps.early-exit.outputs.early_exit }}
+      build_only: ${{ steps.build-only.outputs.build_only }}
+      new_gcchash: ${{ steps.new-gcc-hash.ouputs.new_gcchash }}
+
+  build_test:
+    needs: [download_patches, apply]
+    if: ${{ needs.apply.outputs.early_exit != 'true' }}
+    uses: ./.github/workflows/build-target.yaml
+    with:
+      patch_name: ${{ inputs.patch_name }}
+      gcchash: ${{ inputs.gcchash }}
+      build_only: ${{ needs.apply.outputs.build_only }}
+      new_gcchash: ${{ needs.apply.outputs.new_gcchash }}

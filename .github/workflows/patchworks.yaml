@@ -24,6 +24,11 @@ jobs:
           TZ=UTC date -d "@$((($(date +%s) - 450) / 900 * 900))" '+%Y-%m-%dT%H:%M:%S' > date_old.txt
           TZ=UTC date -d "@$((($(date +%s) - 1350) / 900 * 900))" '+%Y-%m-%dT%H:%M:%S' > date_older.txt
 
+          # Testing
+          echo "2023-09-14T15:45:00" > date_old.txt
+          echo "2023-09-14T16:00:00" > date_recent.txt
+          echo "2023-09-14T15:30:00" > date_older.txt
+
           mkdir patch_urls
           python scripts/create_patches_files.py -backup $(cat date_older.txt) -start $(cat date_old.txt) -end $(cat date_recent.txt)
 
@@ -59,7 +64,12 @@ jobs:
         id: gcc-hash
         run: |
           echo TODO
-          export GCCHASH=$(python ./scripts/get_baseline_hash.py)
+          ls
+          ls ./scripts/get_baseline_hash.py
+          python ./scripts/get_baseline_hash.py -token ${{ secrets.GITHUB_TOKEN }}
+
+          export GCCHASH=$(python ./scripts/get_baseline_hash.py -token ${{ secrets.GITHUB_TOKEN }})
+          echo $GCCHASH
           echo "gcchash=$GCCHASH" >> $GITHUB_OUTPUT
 
       - name: Retrieve cache
@@ -127,10 +137,17 @@ jobs:
 
       - name: Download baseline results
         run: |
-          python ./scripts/download_single_artifact.py -name ${{ steps.gcc-hash.outputs.gcchash }}-current-logs -token ${{ secrets.GITHUB_TOKEN }} -outdir ./
+          sudo apt remove python3-pip
+          wget https://bootstrap.pypa.io/get-pip.py
+          sudo python3 get-pip.py
+          pip install -U pyopenssl cryptography pygithub requests
+          mkdir temp
+          python ./scripts/download_single_artifact.py -name ${{ steps.gcc-hash.outputs.gcchash }}-current-logs -token ${{ secrets.GITHUB_TOKEN }} -outdir ./temp
+
 
       - name: Extract baseline results
         run: |
+          mv ./temp/current_logs.zip .
           unzip current_logs.zip
           mv current_logs previous_logs
 
