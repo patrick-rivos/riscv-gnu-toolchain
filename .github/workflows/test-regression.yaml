@@ -274,7 +274,7 @@ jobs:
           else
             cat `find build/build-gcc-linux-stage2/gcc/testsuite/ -name g*.log` > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.log
           fi
-          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.zip gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.log
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.zip gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.log
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v3
@@ -381,7 +381,7 @@ jobs:
           else
             cat `find build/build-gcc-linux-stage2/gcc/testsuite/ -name g*.log` > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.log
           fi
-          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.zip gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.log
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.zip gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.log
 
       - name: Upload debug artifacts
         uses: actions/upload-artifact@v3
@@ -477,7 +477,7 @@ jobs:
 
       - name: Zip binaries
         run: |
-          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip build/bin
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}.zip build/bin
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v3
@@ -501,7 +501,7 @@ jobs:
           else
             cat `find build/build-gcc-linux-stage2/gcc/testsuite/ -name g*.log` > gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.log
           fi
-          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}-debug-output.zip gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.log
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.zip gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.new_gcchash }}-${{ inputs.multilib }}-debug-output.log
 
       - name: Upload debug artifacts
         if: ${{ inputs.build_only != 'true' }}
