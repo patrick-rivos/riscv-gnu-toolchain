@@ -79,14 +79,12 @@ jobs:
           git pull
 
       - name: Apply patches 
-        id: new-gcc-hash
         run: |
           cd gcc
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git am ../patches/*.patch 
+          git am ../patches/*.patch --reject --whitespace=fix 
           echo $(git rev-parse HEAD)
-        continue-on-error: true
 
       - name: Install dependencies
         run: sudo ./.github/setup-apt.sh
@@ -195,7 +193,7 @@ jobs:
           cd gcc
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git am ../patches/*.patch
+          git am ../patches/*.patch --reject --whitespace=fix 
           echo $(git rev-parse HEAD)
 
       - name: Install dependencies
@@ -346,7 +344,7 @@ jobs:
           cd gcc
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git am ../patches/*.patch
+          git am ../patches/*.patch --reject --whitespace=fix 
           echo $(git rev-parse HEAD)
 
       - name: Install dependencies
@@ -452,7 +450,7 @@ jobs:
           cd gcc
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git am ../patches/*.patch
+          git am ../patches/*.patch --reject --whitespace=fix  
           echo $(git rev-parse HEAD)
 
       - name: Install dependencies
