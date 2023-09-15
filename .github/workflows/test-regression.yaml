@@ -83,7 +83,7 @@ jobs:
           cd gcc
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git am ../patches/*.patch --reject --whitespace=fix 
+          git am ../patches/*.patch --whitespace=fix 
           echo $(git rev-parse HEAD)
 
       - name: Install dependencies
@@ -193,7 +193,7 @@ jobs:
           cd gcc
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git am ../patches/*.patch --reject --whitespace=fix 
+          git am ../patches/*.patch --whitespace=fix 
           echo $(git rev-parse HEAD)
 
       - name: Install dependencies
@@ -344,7 +344,7 @@ jobs:
           cd gcc
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git am ../patches/*.patch --reject --whitespace=fix 
+          git am ../patches/*.patch --whitespace=fix 
           echo $(git rev-parse HEAD)
 
       - name: Install dependencies
@@ -450,7 +450,7 @@ jobs:
           cd gcc
           git config user.name "GitHub Actions Bot"
           git config user.email "<>"
-          git am ../patches/*.patch --reject --whitespace=fix  
+          git am ../patches/*.patch --whitespace=fix  
           echo $(git rev-parse HEAD)
 
       - name: Install dependencies
