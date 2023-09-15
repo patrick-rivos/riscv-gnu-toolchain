@@ -1,0 +1,99 @@
+name: Regression-Runner
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        required: true
+        type: string
+      target:
+        required: true
+        type: string
+      gcchash:
+        required: true
+        type: string
+      multitarget:
+        required: false
+        type: string
+
+jobs:
+  check:
+    runs-on: ubuntu-20.04
+    environment: production
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Early exit
+        if: ${{ inputs.multitarget != '' && !contains(inputs.multitarget, format('{0}:{1}', inputs.mode, inputs.target)) }}
+        id: early-exit
+        run: |
+          export EARLY_EXIT="exit"
+          echo "early_exit=$EARLY_EXIT" >> "$GITHUB_OUTPUT"
+
+    outputs:
+      early_exit: ${{ steps.early-exit.outputs.early_exit }}
+
+  build-with-checking:
+    runs-on: ubuntu-20.04
+    environment: production
+    needs: [check]
+    if: ${{ needs.check.outputs.early_exit != 'exit' }}
+    steps:
+      - name: Remove unneeded frameworks to recover disk space
+        run: |
+          echo "-- Before --"
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          echo "-- After --"
+          df -h
+
+      - uses: actions/checkout@v3
+
+      - name: Restore submodules from cache
+        uses: actions/download-artifact@v3
+        with:
+          name: gcc-sources-${{ inputs.gcchash }}
+
+      - name: Restore submodules
+        run: |
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
+          unzip cache.zip
+          rm -rf cache.zip
+
+      - name: Checkout gcc hash
+        run: |
+          cd gcc
+          git fetch
+          git checkout ${{ inputs.gcchash }}
+
+      - name: Install dependencies
+        run: sudo ./.github/setup-apt.sh
+
+      - name: Configure
+        run: |
+          mkdir build
+          cd build
+          TARGET_TUPLE=($(echo ${{ inputs.target }} | tr "-" "\n"))
+          ../configure --prefix=$(pwd) --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]} --enable-gcc-checking=all
+
+      - name: Make gcc
+        run: |
+          cd build
+          make -j $(nproc) ${{ inputs.mode }}
+
+      - name: Remove sources to reclaim disk space
+        run: |
+          rm -rf .git binutils dejagnu gcc gdb glibc newlib qemu
+
+      - name: Zip binaries
+        run: |
+          zip -r gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip build/bin
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}
+          path: |
+            gcc-${{ inputs.mode }}-${{ inputs.target }}-${{ inputs.gcchash }}-${{ inputs.multilib }}.zip
+          retention-days: 5
