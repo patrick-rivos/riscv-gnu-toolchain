@@ -166,12 +166,13 @@ jobs:
           fi
           git am ../patches/*.patch --whitespace=fix 
           export NEW_GCCHASH=$(git rev-parse HEAD)
+          echo $NEW_GCCHASH
           echo "new_gcchash=$NEW_GCCHASH" >> $GITHUB_OUTPUT
 
     outputs:
       early_exit: ${{ steps.early-exit.outputs.early_exit }}
       build_only: ${{ steps.build-only.outputs.build_only }}
-      new_gcchash: ${{ steps.new-gcc-hash.ouputs.new_gcchash }}
+      new_gcchash: ${{ steps.new-gcc-hash.outputs.new_gcchash }}
 
   build_test:
     needs: [download_patches, apply]
