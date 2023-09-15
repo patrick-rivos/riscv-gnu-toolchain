@@ -104,7 +104,7 @@ jobs:
 
       - name: Compare artifacts
         run: |
-          python ./scripts/compare_all_artifacts.py -hash ${{ inputs.gcchash }}
+          python ./scripts/compare_all_artifacts.py -hash ${{ inputs.new_gcchash }}
 
       - name: Make artifact zips
         run: |
@@ -167,7 +167,7 @@ jobs:
           unzip current_logs.zip
           unzip previous_logs.zip
           python ./scripts/aggregate.py \
-            -chash ${{ needs.compare-artifacts.outputs.gcchash }} \
+            -chash ${{ inputs.new_gcchash }} \
             -o issue.md
           cat issue.md
 
