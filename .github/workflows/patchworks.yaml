@@ -24,11 +24,6 @@ jobs:
           TZ=UTC date -d "@$((($(date +%s) - 450) / 900 * 900))" '+%Y-%m-%dT%H:%M:%S' > date_old.txt
           TZ=UTC date -d "@$((($(date +%s) - 1350) / 900 * 900))" '+%Y-%m-%dT%H:%M:%S' > date_older.txt
 
-          # Testing
-          echo "2023-09-15T13:00:00" > date_old.txt
-          echo "2023-09-15T13:30:00" > date_recent.txt
-          echo "2023-09-15T12:30:00" > date_older.txt
-
           mkdir patch_urls
           python scripts/create_patches_files.py -backup $(cat date_older.txt) -start $(cat date_old.txt) -end $(cat date_recent.txt)
 
