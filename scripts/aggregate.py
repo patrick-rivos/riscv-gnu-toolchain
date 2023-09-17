@@ -74,9 +74,9 @@ def assign_labels(file_name: str, label: str):
         return label
     return ""
 
-def failures_to_markdown(failures: Dict[str, List[str]], current_hash: str):
+def failures_to_markdown(failures: Dict[str, List[str]], current_hash: str, patch_name: str):
     result = f"""---
-title: Testsuite Status {current_hash}
+title: Testsuite Status {current_hash if patch_name == "" else patch_name} 
 """
     labels = {"bug"}
     labels.add(assign_labels("failed_build.txt", "build-failure"))
@@ -220,6 +220,14 @@ def parse_arguments():
         type=str,
         help="Path to the current testsuite result log",
     )
+    parser.add_argument(
+        "-patch",
+        "--patch-name",
+        default="",
+        metavar="<string>",
+        type=str,
+        help="Patch name",
+    )
     return parser.parse_args()
 
 
@@ -233,7 +241,7 @@ def main():
         all_resolved[file] = resolved
         all_new[file] = new
         
-    summary_markdown = failures_to_markdown(failures, args.current_hash)
+    summary_markdown = failures_to_markdown(failures, args.current_hash, args.patch_name)
     resolved_markdown = additional_failures_to_markdown("Resolved", all_resolved)
     new_markdown = additional_failures_to_markdown("New", all_new)
     

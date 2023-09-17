@@ -168,6 +168,7 @@ jobs:
           unzip previous_logs.zip
           python ./scripts/aggregate.py \
             -chash ${{ inputs.new_gcchash }} \
+            -patch ${{ inputs.patch_name }} \
             -o issue.md
           cat issue.md
 
