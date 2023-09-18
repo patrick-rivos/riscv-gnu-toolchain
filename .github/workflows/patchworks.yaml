@@ -38,6 +38,7 @@ jobs:
           zip -r patch_files.zip patch_urls
 
       - name: Upload artifact zip
+        if: ${{ steps.list_patches.outputs.patch_list != '[]' }}
         uses: actions/upload-artifact@v3
         with:
           name: patch_urls
