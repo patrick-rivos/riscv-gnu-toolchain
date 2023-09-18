@@ -139,32 +139,32 @@ jobs:
         continue-on-error: true
 
       - name: Check warn rebase
-        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'true' && steps.apply-tip-of-tree.outputs.apply-tot == 'false' }}
+        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'true' && steps.apply-tip-of-tree.outputs.apply_tot == 'false' }}
         run: |
           echo "TODO WARN REBASE"
 
       - name: Check build only
         id: build-only
-        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'false' && steps.apply-tip-of-tree.outputs.apply-tot == 'true' }}
+        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'false' && steps.apply-tip-of-tree.outputs.apply_tot == 'true' }}
         run: |
           echo "build_only=true" >> $GITHUB_OUTPUT
 
       - name: Check early exit
         id: early-exit
-        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'false' && steps.apply-tip-of-tree.outputs.apply-tot == 'false' }}
+        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'false' && steps.apply-tip-of-tree.outputs.apply_tot == 'false' }}
         run: |
           echo "early_exit=true" >> $GITHUB_OUTPUT
 
       - name: Output new gcchash
         id: new-gcc-hash
-        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'true' || steps.apply-tip-of-tree.outputs.apply-tot == 'true' }}
+        if: ${{ steps.apply-baseline.outputs.apply_baseline == 'true' || steps.apply-tip-of-tree.outputs.apply_tot == 'true' }}
         run: |
           cd gcc
           git reset --hard origin/master
           if [ "${{ steps.apply-baseline.outputs.apply_baseline }}" == "true" ]; then
             git checkout ${{ inputs.gcchash }}
           fi
-          git am ../patches/*.patch --whitespace=fix 
+          git am ../patches/*.patch --whitespace=fix
           export NEW_GCCHASH=$(git rev-parse HEAD)
           echo $NEW_GCCHASH
           echo "new_gcchash=$NEW_GCCHASH" >> $GITHUB_OUTPUT
