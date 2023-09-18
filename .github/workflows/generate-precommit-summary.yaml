@@ -12,6 +12,12 @@ on:
       new_gcchash:
         required: true
         type: string
+      build_only:
+        required: true
+        type: string
+      tot_hash:
+        required: true
+        type: string
 
 jobs:
   compare-artifacts:
@@ -106,6 +112,12 @@ jobs:
         run: |
           python ./scripts/compare_all_artifacts.py -hash ${{ inputs.new_gcchash }}
 
+      - name: Remove testsuite failures on build-only
+        if: ${{ inputs.build_only == 'true' }}
+        run: |
+          rm current_logs/failed_testsuite.txt
+        continue-on-error: true
+
       - name: Make artifact zips
         run: |
           zip -r summaries.zip summaries
@@ -185,6 +197,13 @@ jobs:
           if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "\`\`\`\nIssue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
           run_id=${{ github.run_id }} && echo "Associated run is: https://github.com/ewlu/riscv-gnu-toolchain/actions/runs/$run_id" >> trimmed_issue.md
           cat trimmed_issue.md
+
+      - name: Update issue with tot hash
+        if: ${{ inputs.build_only }}
+        run: |
+          echo "Failed to apply ${{ inputs.patch_name }} cleanly to baseline hash ${{ inputs.gcchash }}. Patch applied cleanly to then tip-of-tree hash ${{ inputs.tot_hash }}" >> trimmed_issue.md
+          cat trimmed_issue.md
+
 
       - name: Create or update summary issue
         uses: JasonEtco/create-an-issue@v2

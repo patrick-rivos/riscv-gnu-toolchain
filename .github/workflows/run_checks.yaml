@@ -126,6 +126,7 @@ jobs:
           cd gcc
           git reset --hard origin/master
           git pull origin master
+          export TOT_HASH=$(git rev-parse HEAD)
           git am ../patches/*.patch --whitespace=fix -q &> out || true
           cat out
           if [[ $(cat out | wc -l) != 0 ]]; then
@@ -136,6 +137,7 @@ jobs:
           else
             echo "apply_tot=true" >> $GITHUB_OUTPUT
           fi
+          echo "tot_hash=$TOT_HASH" >> $GITHUB_OUTPUT
         continue-on-error: true
 
       - name: Check warn rebase
@@ -170,6 +172,7 @@ jobs:
           echo "new_gcchash=$NEW_GCCHASH" >> $GITHUB_OUTPUT
 
     outputs:
+      tot_hash: ${{ steps.apply-tip-of-tree.outputs.tot_hash }}
       early_exit: ${{ steps.early-exit.outputs.early_exit }}
       build_only: ${{ steps.build-only.outputs.build_only }}
       new_gcchash: ${{ steps.new-gcc-hash.outputs.new_gcchash }}
@@ -183,3 +186,4 @@ jobs:
       gcchash: ${{ inputs.gcchash }}
       build_only: ${{ needs.apply.outputs.build_only }}
       new_gcchash: ${{ needs.apply.outputs.new_gcchash }}
+      tot_hash: ${{ needs.apply.outputs.tot_hash }}
