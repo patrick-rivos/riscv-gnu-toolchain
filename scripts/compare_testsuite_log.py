@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple, Set
+from collections import Counter
 
 
 @dataclass
@@ -46,9 +47,9 @@ class GccFailure:
     gpp_failure_count: Tuple[str, str] = ("0", "0")
     gfortran_failure_count: Tuple[str, str] = ("0", "0")
 
-    gcc: Dict[str, Set[str]] = field(default_factory=dict)
-    gpp: Dict[str, Set[str]] = field(default_factory=dict)
-    gfortran: Dict[str, Set[str]] = field(default_factory=dict)
+    gcc: Dict[str, List[str]] = field(default_factory=dict)
+    gpp: Dict[str, List[str]] = field(default_factory=dict)
+    gfortran: Dict[str, List[str]] = field(default_factory=dict)
 
     def __str__(self):
         result = ""
@@ -67,7 +68,7 @@ class GccFailure:
         return result
 
     def count_failures(
-        self, unique_failure_dict: Dict[str, Set[str]]
+        self, unique_failure_dict: Dict[str, List[str]]
     ) -> Tuple[str, str]:
         """parse (total failures count, unique failures count)"""
         unique_count = len(unique_failure_dict)
@@ -76,7 +77,7 @@ class GccFailure:
             total_count += len(unique_failure_dict[unique_failures])
         return (str(total_count), str(unique_count))
 
-    def __setitem__(self, key: str, value: Dict[str, Set[str]]):
+    def __setitem__(self, key: str, value: Dict[str, List[str]]):
         if key == "gcc":
             self.gcc = value
             self.gcc_failure_count = self.count_failures(value)
@@ -202,13 +203,13 @@ def parse_failure_name(failure_line: str) -> str:
     return failure_components[1]
 
 
-def parse_testsuite_failures(log_path: str) -> Dict[Description, Set[str]]:
+def parse_testsuite_failures(log_path: str) -> Dict[Description, List[str]]:
     """
     parse testsuite failures from the log in the path
     """
     if not Path(log_path).exists():
         raise ValueError(f"Invalid Path: {log_path}")
-    failures: Dict[Description, Set[str]] = {}
+    failures: Dict[Description, List[str]] = {}
     with open(log_path, "r") as file:
         description = None
         for line in file:
@@ -216,21 +217,34 @@ def parse_testsuite_failures(log_path: str) -> Dict[Description, Set[str]]:
                 break
             if is_description(line):
                 description = parse_description(line, "non-multilib" not in log_path)
-                failures[description] = set()
+                failures[description] = []
                 continue
-            failures[description].add(line)
+            failures[description].append(line)
     return failures
 
 
-def classify_by_unique_failure(failure_set: Set[str]):
-    failure_dictionary: Dict[str, Set[str]] = {}
+def classify_by_unique_failure(failure_set: List[str]):
+    failure_dictionary: Dict[str, List[str]] = {}
     for failure in failure_set:
         failure_name = parse_failure_name(failure)
         if failure_name not in failure_dictionary:
-            failure_dictionary[failure_name] = set()
-        failure_dictionary[failure_name].add(failure)
+            failure_dictionary[failure_name] = []
+        failure_dictionary[failure_name].append(failure)
     return failure_dictionary
 
+def list_difference(a: List[str], b: List[str]):
+    count = Counter(a)
+    count.subtract(b)
+    diff = []
+    for x in a:
+        if count[x] > 0:
+            count[x] -= 1
+            diff.append(x)
+    
+    return diff
+
+def list_intersect(a: List[str], b: List[str]):
+    return list((Counter(a) & Counter(b)).elements())
 
 def compare_testsuite_log(previous_log_path: str, current_log_path: str):
     """
@@ -271,9 +285,9 @@ def compare_testsuite_log(previous_log_path: str, current_log_path: str):
             ] = classified_dict
 
     for description in unresolved_descriptions:
-        resolved_set = previous_failures[description] - current_failures[description]
-        unresolved_set = previous_failures[description] & current_failures[description]
-        new_set = current_failures[description] - previous_failures[description]
+        resolved_set = list_difference(previous_failures[description], current_failures[description])
+        unresolved_set = list_intersect(previous_failures[description], current_failures[description])
+        new_set = list_difference(current_failures[description], previous_failures[description])
         classified_dict = classify_by_unique_failure(resolved_set)
         if len(classified_dict):
             classified_gcc_failures.resolved.setdefault(
