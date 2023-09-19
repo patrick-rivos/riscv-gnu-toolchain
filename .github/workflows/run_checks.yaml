@@ -32,9 +32,18 @@ jobs:
         with:
           name: patch_urls
 
+      - name: Download patchworks urls artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: patchworks_urls
+
       - name: Extract patch urls
         run: |
           unzip patch_files.zip
+
+      - name: Extract patchworks urls
+        run: |
+          unzip patchworks_files.zip
 
       - name: Create patches dir
         run: |
@@ -43,6 +52,7 @@ jobs:
       - name: Download patches from urls
         run: |
           scripts/download_patches.sh -p ${{ inputs.patch_name }}
+          mv patchworks_urls/${{ inputs.patch_name }} patches/
 
       - name: Zip patches
         run: |

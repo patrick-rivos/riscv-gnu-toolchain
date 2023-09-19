@@ -166,6 +166,15 @@ jobs:
         with:
           name: ${{ needs.compare-artifacts.outputs.gcchash }}-previous-logs
 
+      - name: Download patches artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ inputs.patch_name }}-downloaded-patches
+
+      - name: Extract patches
+        run: |
+          unzip ${{ inputs.patch_name }}-downloaded-patches.zip
+
       - name: Print API usage info
         run: |
           curl \
@@ -194,7 +203,7 @@ jobs:
       - name: Trim issue length # reduce the number of lines in final issue so github always creates issue
         run: |
           head -c 65000 issue.md > trimmed_issue.md
-          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "\`\`\`\nIssue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
+          if [ $(cat trimmed_issue.md | wc -l) -ne $(cat issue.md | wc -l) ]; then echo "\n\`\`\`\nIssue text has been trimmed. Please check logs for the untrimmed issue." >> trimmed_issue.md; fi
           run_id=${{ github.run_id }} && echo "Associated run is: https://github.com/ewlu/riscv-gnu-toolchain/actions/runs/$run_id" >> trimmed_issue.md
           cat trimmed_issue.md
 
@@ -204,6 +213,10 @@ jobs:
           echo "Failed to apply ${{ inputs.patch_name }} cleanly to baseline hash ${{ inputs.gcchash }}. Patch applied cleanly to then tip-of-tree hash ${{ inputs.tot_hash }}" >> trimmed_issue.md
           cat trimmed_issue.md
 
+      - name: Update issue with associated patches
+        run: |
+          cat trimmed_issue.md patches/${{ inputs.patch_name }} > new_trimmed_issue.md
+          mv new_trimmed_issue.md trimmed_issue.md
 
       - name: Create or update summary issue
         uses: JasonEtco/create-an-issue@v2

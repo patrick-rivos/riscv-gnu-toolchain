@@ -326,7 +326,7 @@ def gccfailure_to_summary(failure: Dict[LibName, GccFailure], failure_name: str,
             tool_failure_key = f"{tool}_failure_count"
             # convert tuple of counts to string
             result += f"{'/'.join(gccfailure[tool_failure_key])}|"
-        result += f"[{previous_hash}](https://github.com/gcc-mirror/gcc/compare/{previous_hash}...{current_hash})|\n"
+        result += f"[{previous_hash}](https://github.com/gcc-mirror/gcc/commit/{previous_hash}|\n"
     result += "\n"
     return result
 
