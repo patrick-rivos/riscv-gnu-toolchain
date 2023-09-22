@@ -165,20 +165,6 @@ jobs:
       multitarget: ${{ github.event.inputs.multi_target }}
       run_on_self_hosted: true
 
-  build-with-checking:
-    needs: [init-submodules]
-    strategy:
-      fail-fast: false
-      matrix:
-        mode: [linux]
-        target: [rv32gc-ilp32d, rv64gc-lp64d]
-    uses: ./.github/workflows/build-with-checking.yaml
-    with:
-      mode: ${{ matrix.mode }}
-      target: ${{ matrix.target }}
-      gcchash: ${{ needs.init-submodules.outputs.gcchash }}
-      multitarget: ${{ github.event.inputs.multi_target }}
-
   build-x86:
     if: ${{ false }} # Temporarily disable x86. Should be re-enabled to only run when a build failure occurs.
     needs: [init-submodules, creg, cmreg]

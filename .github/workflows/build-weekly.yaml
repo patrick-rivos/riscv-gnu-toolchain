@@ -1,0 +1,113 @@
+name: Build-Weekly
+
+on:
+  schedule:
+    # Run at 10:32am on Saturdays
+    - cron: 32 10 * * 6
+  workflow_dispatch:
+    branches:
+      - build-frequent
+
+jobs:
+  init-submodules:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Retrieve cache
+        id: retrieve-cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            newlib
+            qemu
+          key: submodules-archive-2 # Numbered archive to allow for easy transition when bumping submodules
+
+      - name: Initalize submodules cache
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        run: |
+          git submodule update --init --recursive --depth 1 binutils
+          git submodule update --init --recursive --depth 1 dejagnu
+          git submodule update --init --recursive --depth 1 gdb
+          git submodule update --init --recursive --depth 1 glibc
+          git submodule update --init --recursive --depth 1 newlib
+          git submodule update --init --recursive --depth 1 qemu
+          rm -rf gcc
+          git clone git://gcc.gnu.org/git/gcc.git
+
+      - name: Get GCC hash
+        id: gcc-hash
+        run: |
+          cd gcc
+          git checkout master
+          git pull
+          if [ "${{ github.event.inputs.gcchash }}" == "" ]; then
+            export GCCHASH=$(git rev-parse HEAD)
+          else
+            export GCCHASH=${{ github.event.inputs.gcchash }}
+          fi
+          echo $GCCHASH
+          echo "gcchash=$GCCHASH" >> "$GITHUB_OUTPUT"
+
+      - name: Cache submodules
+        if: steps.retrieve-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v3
+        with:
+          path: |
+            .git
+            binutils
+            dejagnu
+            gcc
+            gdb
+            glibc
+            newlib
+            qemu
+          key: submodules-archive-2
+
+      - name: Make cache zip
+        run: |
+          zip -r cache.zip .git binutils dejagnu gcc gdb glibc newlib qemu
+
+      # Use artifact rather than cache since cache downloads are flaky/hang.
+      # Artifacts are reliable but ~30 min slower to set up.
+      # Setup is done on one runner, so this isn't a show stopper.
+      - name: Upload git cache
+        uses: actions/upload-artifact@v3
+        with:
+          name: gcc-sources-${{ steps.gcc-hash.outputs.gcchash }}
+          path: |
+            cache.zip
+          retention-days: 5
+
+    outputs:
+      gcchash: ${{ steps.gcc-hash.outputs.gcchash }}
+
+  build-with-checking:
+    needs: [init-submodules]
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [linux]
+        target: [
+          rv32gc-ilp32d,
+          rv64gc-lp64d,
+          rv32gcv-ilp32d, # rv32 vector
+          rv64gcv-lp64d, # rv64 vector
+          rv32gc_zba_zbb_zbc_zbs-ilp32d, # rv32 bitmanip
+          rv64gc_zba_zbb_zbc_zbs-lp64d, # rv64 bitmanip
+          rv32gcv-ilp32d,
+          rv64gcv-lp64d,
+        ]
+    uses: ./.github/workflows/build-with-checking.yaml
+    with:
+      mode: ${{ matrix.mode }}
+      target: ${{ matrix.target }}
+      gcchash: ${{ needs.init-submodules.outputs.gcchash }}
+      multitarget: ${{ github.event.inputs.multi_target }}
