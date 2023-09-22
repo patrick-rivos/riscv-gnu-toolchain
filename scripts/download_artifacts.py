@@ -228,7 +228,7 @@ def download_all_artifacts(
 
 def main():
     args = parse_arguments()
-    download_all_artifacts(args.hash, args.phash, args.repo_name, args.token)
+    download_all_artifacts(args.hash, args.phash, args.repo, args.token)
 
 
 if __name__ == "__main__":
