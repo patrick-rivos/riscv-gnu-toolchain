@@ -16,8 +16,14 @@ jobs:
 
       - name: if file exists
         if: ${{ hashFiles('test.txt') != '' }}
-        run: echo "File exists"
+        run: |
+          echo "File exists"
+          echo "ok" > test2.txt
 
       - name: if file doesn't exist
         if: ${{ hashFiles('test.txt') == '' }}
+        run: echo "File doesn't exist"
+
+      - name: if file doesn't exist
+        if: ${{ !cancelled() && hashFiles('test.txt') == '' && hashFiles('test2.txt') == '' }}
         run: echo "File doesn't exist"
