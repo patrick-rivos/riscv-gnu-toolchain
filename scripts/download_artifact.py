@@ -30,8 +30,8 @@ def parse_arguments():
 
 
 def search_for_artifact(
-    artifact_name: str, repo_name: str, token: str, github: Github | None = None
-) -> str | None:
+    artifact_name: str, repo_name: str, token: str, github: "Github | None" = None
+) -> "str | None":
     """
     Search for the given artifact.
     If multiple artifacts with that name exist, grab the first returned by the
@@ -90,14 +90,14 @@ def extract_artifact(
 
     # Move the artifact into the outdir
     # TODO: Only produce non-nested zip files
-    if os.path.exists(nested_folder):
+    if os.path.isdir(nested_folder):
         print("Removing the nested artifact folder")
         os.rename(
             f"{nested_folder}/{artifact_name}",
             f"./{outdir}/{artifact_name}",
         )
     else:
-        print("This artifact doesn't contain a directory, move the artifact directly")
+        print("This artifact doesn't contain a directory, moving the artifact directly")
         os.rename(
             f"./temp/{artifact_name}",
             f"./{outdir}/{artifact_name}",

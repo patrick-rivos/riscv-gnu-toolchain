@@ -38,7 +38,7 @@ def parse_arguments():
 
 def get_valid_artifact_hash(
     hashes: List[str], repo_name: str, token: str, artifact_name: str
-) -> Tuple[str, str | None]:
+) -> Tuple[str, "str | None"]:
     """
     Searches for the most recent GCC hash that has the artifact specified by
     @param artifact_name. Also returns id of found artifact for download.
