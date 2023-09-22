@@ -104,7 +104,7 @@ jobs:
       - name: Download artifacts
         run: |
           pip install pygithub requests
-          python ./scripts/download_artifacts.py -hash ${{ inputs.gcchash }} -token ${{ secrets.GITHUB_TOKEN }}
+          python ./scripts/download_artifacts.py -hash ${{ inputs.gcchash }} -repo patrick-rivos/riscv-gnu-toolchain -token ${{ secrets.GITHUB_TOKEN }}
           ls previous_logs
 
       - name: Compare artifacts
@@ -355,7 +355,7 @@ jobs:
       - name: Download artifacts
         run: |
           pip install pygithub requests
-          python ./scripts/download_artifacts.py -token ${{ secrets.GITHUB_TOKEN }} -phash ${{ inputs.gcchash }} -hash ${{ steps.bisection-hash.outputs.orig_gcchash }}
+          python ./scripts/download_artifacts.py -hash ${{ steps.bisection-hash.outputs.orig_gcchash }} -phash ${{ inputs.gcchash }} -repo patrick-rivos/riscv-gnu-toolchain -token ${{ secrets.GITHUB_TOKEN }}
           ls previous_logs
 
       - name: Compare artifacts
