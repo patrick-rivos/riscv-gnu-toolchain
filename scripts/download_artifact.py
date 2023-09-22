@@ -51,41 +51,55 @@ def search_for_artifact(
     return None
 
 
-def download_artifact(
-    artifact_name: str, artifact_id: str, token: str, outdir: str = "current_logs"
-):
+def download_artifact(artifact_name: str, artifact_id: str, token: str) -> str:
     """
-    Uses GitHub api endpoint to download and extract the previous workflow
-    log artifacts into the given outdir.
+    Uses GitHub api endpoint to download the given artifact into ./temp/.
+    Returns the path of the downloaded zip
     """
     params = {
         "Accept": "application/vnd.github+json",
         "Authorization": f"token {token}",
         "X-Github-Api-Version": "2022-11-28",
     }
-    artifact_zip_name = artifact_name.replace(".log", ".zip")
     response = requests.get(
         f"https://api.github.com/repos/patrick-rivos/riscv-gnu-toolchain/actions/artifacts/{artifact_id}/zip",
         headers=params,
         timeout=15 * 60,  # 15 minute timeout
     )
-    print(f"download for {artifact_zip_name}: {response.status_code}")
-    download_binary = False
+    print(f"download for {artifact_name}: {response.status_code}")
 
-    with open(f"./temp/{artifact_zip_name}", "wb") as artifact:
+    artifact_zip_name = artifact_name.replace(".log", ".zip")
+    artifact_zip = f"./temp/{artifact_zip_name}"
+
+    with open(artifact_zip, "wb") as artifact:
         artifact.write(response.content)
 
-    with ZipFile(f"./temp/{artifact_zip_name}", "r") as zf:
-        try:
-            zf.extractall(path=f"./temp/{artifact_name.split('.log')[0]}")
-        except NotADirectoryError:
-            download_binary = True
-            print("extracting a binary file")
-            zf.extractall(path="./temp/")
+    return artifact_zip
 
-    if not download_binary:
+
+def extract_artifact(
+    artifact_name: str, artifact_zip: str, outdir: str = "current_logs"
+):
+    """
+    Extracts a given artifact into the outdir.
+    """
+    with ZipFile(artifact_zip, "r") as zf:
+        zf.extractall(path="./temp/")
+
+    nested_folder = os.path.splitext(artifact_zip)[0]
+
+    # Move the artifact into the outdir
+    # TODO: Only produce non-nested zip files
+    if os.path.exists(nested_folder):
+        print("Removing the nested artifact folder")
         os.rename(
-            f"./temp/{artifact_name.split('.log')[0]}/{artifact_name}",
+            f"{nested_folder}/{artifact_name}",
+            f"./{outdir}/{artifact_name}",
+        )
+    else:
+        print("This artifact doesn't contain a directory, move the artifact directly")
+        os.rename(
+            f"./temp/{artifact_name}",
             f"./{outdir}/{artifact_name}",
         )
 
@@ -97,7 +111,9 @@ def main():
     if artifact_id is None:
         raise ValueError(f"Could not find artifact {args.name} in {args.repo}")
 
-    download_artifact(args.name, artifact_id, args.token, args.outdir)
+    artifact_zip = download_artifact(args.name, artifact_id, args.token)
+
+    extract_artifact(args.name, artifact_zip, args.outdir)
 
 
 if __name__ == "__main__":

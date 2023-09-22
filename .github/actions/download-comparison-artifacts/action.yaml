@@ -24,7 +24,7 @@ runs:
       shell: bash
       run: |
         pip install pygithub requests
-        python ./scripts/download_single_artifact.py -name ${{ inputs.report-artifact-name }} -repo patrick-rivos/riscv-gnu-toolchain -token ${{ inputs.github-token }} -outdir current_logs
+        python ./scripts/download_artifact.py -name ${{ inputs.report-artifact-name }} -repo patrick-rivos/riscv-gnu-toolchain -token ${{ inputs.github-token }} -outdir current_logs
       continue-on-error: true
 
     - name: Download rv32 non-multilib binary
@@ -40,5 +40,5 @@ runs:
       shell: bash
       run: |
         pip install pygithub requests
-        python ./scripts/download_single_artifact.py -name ${{ inputs.binary-artifact-name }} -repo patrick-rivos/riscv-gnu-toolchain -token ${{ inputs.github-token }} -outdir temp
+        python ./scripts/download_artifact.py -name ${{ inputs.binary-artifact-name }} -repo patrick-rivos/riscv-gnu-toolchain -token ${{ inputs.github-token }} -outdir temp
       continue-on-error: true

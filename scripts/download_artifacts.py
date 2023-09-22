@@ -3,8 +3,7 @@ import os
 import re
 from typing import List, Tuple
 from github import Auth, Github
-from download_artifact import download_artifact, search_for_artifact
-from get_most_recent_hashes import gcc_hashes
+from download_artifact import download_artifact, extract_artifact, search_for_artifact
 
 
 def parse_arguments():
@@ -139,6 +138,31 @@ def artifact_exists(artifact_name: str) -> bool:
     return True
 
 
+def gcc_hashes(git_hash: str, subsequent: bool):
+    """Get the most recent GCC hashes within a 100 commits (in order from closest to furthest)"""
+    if subsequent is False:  # Get prior commit
+        old_commit = (
+            os.popen(
+                f"cd gcc && git checkout master --quiet && git pull --quiet && git rev-parse {git_hash}~100"
+            )
+            .read()
+            .strip()
+        )
+        print(f"git rev-list --ancestry-path {old_commit}~1..{git_hash}~1")
+        commits = os.popen(
+            f"cd gcc && git rev-list --ancestry-path {old_commit}^..{git_hash}^"
+        ).read()
+        commits = commits.splitlines()
+    else:
+        os.popen("cd gcc && git checkout master --quiet && git pull --quiet").read()
+        commits = os.popen(
+            f"cd gcc && git rev-list --ancestry-path {git_hash}..HEAD | head -100"
+        ).read()
+        commits = list(reversed(commits.splitlines()))
+
+    return commits
+
+
 def download_all_artifacts(
     current_hash: str, previous_hash: str, repo_name: str, token: str
 ):
@@ -188,8 +212,13 @@ def download_all_artifacts(
             prev_commits, repo_name, token, artifact_name_template
         )
         if base_hash != "No valid hash":
-            download_artifact(
-                artifact_name_template.format(base_hash), str(base_id), token, "previous_logs"
+            artifact_zip = download_artifact(
+                artifact_name_template.format(base_hash), str(base_id), token
+            )
+            extract_artifact(
+                artifact_name_template.format(base_hash),
+                artifact_zip,
+                outdir="previous_logs",
             )
         else:
             print(
