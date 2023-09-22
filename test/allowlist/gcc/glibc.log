@@ -10,3 +10,9 @@ FAIL: gfortran.dg/minval_char_1.f90
 FAIL: gfortran.dg/minval_char_2.f90
 FAIL: gfortran.dg/maxval_char_1.f90
 FAIL: gfortran.dg/maxval_char_2.f90
+
+#
+# TODO: Root cause & file bugzilla
+#
+FAIL: gcc.target/riscv/zbb-strlen.c   -O2 -flto -fno-use-linker-plugin -flto-partition=none   scan-assembler-not jr
+FAIL: gcc.target/riscv/zbb-strlen.c   -O2 -flto -fuse-linker-plugin -fno-fat-lto-objects   scan-assembler-not jr
