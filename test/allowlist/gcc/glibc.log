@@ -10,3 +10,8 @@ FAIL: gfortran.dg/minval_char_1.f90
 FAIL: gfortran.dg/minval_char_2.f90
 FAIL: gfortran.dg/maxval_char_1.f90
 FAIL: gfortran.dg/maxval_char_2.f90
+
+#
+# TODO: Root cause & file bugzilla
+#
+FAIL: gcc.target/riscv/zbb-strlen.c
