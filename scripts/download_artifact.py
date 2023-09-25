@@ -51,7 +51,7 @@ def search_for_artifact(
     return None
 
 
-def download_artifact(artifact_name: str, artifact_id: str, token: str) -> str:
+def download_artifact(artifact_name: str, artifact_id: str, token: str, repo: str) -> str:
     """
     Uses GitHub api endpoint to download the given artifact into ./temp/.
     Returns the path of the downloaded zip
@@ -62,7 +62,7 @@ def download_artifact(artifact_name: str, artifact_id: str, token: str) -> str:
         "X-Github-Api-Version": "2022-11-28",
     }
     response = requests.get(
-        f"https://api.github.com/repos/patrick-rivos/riscv-gnu-toolchain/actions/artifacts/{artifact_id}/zip",
+        f"https://api.github.com/repos/{repo}/actions/artifacts/{artifact_id}/zip",
         headers=params,
         timeout=15 * 60,  # 15 minute timeout
     )
@@ -111,7 +111,7 @@ def main():
     if artifact_id is None:
         raise ValueError(f"Could not find artifact {args.name} in {args.repo}")
 
-    artifact_zip = download_artifact(args.name, artifact_id, args.token)
+    artifact_zip = download_artifact(args.name, artifact_id, args.token, args.repo)
 
     extract_artifact(args.name, artifact_zip, args.outdir)
 
