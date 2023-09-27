@@ -6,5 +6,5 @@ if [ "$1" == "multilib" ]; then
 else
   TARGET_TUPLE=($(echo $2 | tr "-" "\n"))
   cd tc && cd build && ../configure --prefix=/tc/build \
-    --with-arch=${TARGET_TUPLE[0]} --with-abi=${TARGET_TUPLE[1]};
+    --with-multilib-generator="${TARGET_TUPLE[0]}-${TARGET_TUPLE[1]}--"
 fi
