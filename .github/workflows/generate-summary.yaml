@@ -103,7 +103,7 @@ jobs:
 
       - name: Download artifacts
         run: |
-          pip install pygithub requests
+          pip install pygithub==1.59.1 requests
           python ./scripts/download_artifacts.py -hash ${{ inputs.gcchash }} -repo patrick-rivos/riscv-gnu-toolchain -token ${{ secrets.GITHUB_TOKEN }}
           ls previous_logs
 
@@ -295,7 +295,7 @@ jobs:
           sudo apt remove python3-pip
           wget https://bootstrap.pypa.io/get-pip.py
           sudo python3 get-pip.py
-          pip install pygithub requests
+          pip install pygithub==1.59.1 requests
           export ORIG_GCCHASH=$(python ./scripts/scrape_issue_info.py -num ${{ inputs.issue_num }} -token ${{ secrets.GITHUB_TOKEN }})
           echo $ORIG_GCCHASH
           echo "orig_gcchash=$ORIG_GCCHASH" >> "$GITHUB_OUTPUT"
@@ -354,7 +354,7 @@ jobs:
 
       - name: Download artifacts
         run: |
-          pip install pygithub requests
+          pip install pygithub==1.59.1 requests
           python ./scripts/download_artifacts.py -hash ${{ steps.bisection-hash.outputs.orig_gcchash }} -phash ${{ inputs.gcchash }} -repo patrick-rivos/riscv-gnu-toolchain -token ${{ secrets.GITHUB_TOKEN }}
           ls previous_logs
 
