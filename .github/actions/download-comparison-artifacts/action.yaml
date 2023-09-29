@@ -23,7 +23,7 @@ runs:
       if: ${{ !cancelled() && hashFiles(format('./current_logs/{0}', inputs.report-artifact-name)) == '' }}
       shell: bash
       run: |
-        pip install pygithub requests
+        pip install pygithub==1.59.1 requests
         python ./scripts/download_artifact.py -name ${{ inputs.report-artifact-name }} -repo patrick-rivos/riscv-gnu-toolchain -token ${{ inputs.github-token }} -outdir current_logs
       continue-on-error: true
 
