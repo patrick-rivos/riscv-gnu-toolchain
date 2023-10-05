@@ -1,9 +1,6 @@
 name: Build-Weekly
 
 on:
-  schedule:
-    # Run at 10:32am on Saturdays
-    - cron: 32 10 * * 6
   workflow_dispatch:
     branches:
       - build-frequent
