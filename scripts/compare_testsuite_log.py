@@ -240,7 +240,7 @@ def list_difference(a: List[str], b: List[str]):
         if count[x] > 0:
             count[x] -= 1
             diff.append(x)
-    
+
     return diff
 
 def list_intersect(a: List[str], b: List[str]):
@@ -343,10 +343,8 @@ def failures_to_summary(failures: ClassifedGccFailures, previous_hash: str, curr
 def failures_to_markdown(
     failures: ClassifedGccFailures, previous_hash: str, current_hash: str
 ) -> str:
-    assignees = ("patrick-rivos", "kevinl-rivos")
     result = f"""---
 title: {previous_hash}->{current_hash}
-assignees: {str(assignees)}
 labels: bug
 ---\n"""
     result += failures_to_summary(failures, previous_hash, current_hash)

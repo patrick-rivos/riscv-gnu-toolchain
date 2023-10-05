@@ -75,10 +75,8 @@ def assign_labels(file_name: str, label: str):
     return ""
 
 def failures_to_markdown(failures: Dict[str, List[str]], current_hash: str):
-    assignees = ["patrick-rivos", "kevinl-rivosinc", "ewlu"]
     result = f"""---
 title: Testsuite Status {current_hash}
-assignees: {", ".join(assignees)}
 """
     labels = {"bug"}
     labels.add(assign_labels("failed_build.txt", "build-failure"))
