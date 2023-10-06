@@ -7,9 +7,6 @@ on:
   pull_request:
     branches:
       - build-frequent
-  schedule:
-    # Run 2 times a day
-    - cron: 0 0,12 * * *
   workflow_dispatch:
     branches:
       - build-frequent
