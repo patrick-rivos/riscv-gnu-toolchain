@@ -20,7 +20,7 @@ def parse_arguments():
     return parser.parse_args()
 
 def get_issue_hash(issue_num: str, token: str):
-    issue_url = f"https://api.github.com/repos/patrick-rivos/riscv-gnu-toolchain/issues/{issue_num}"
+    issue_url = f"https://api.github.com/repos/patrick-rivos/gcc-postcommit-ci/issues/{issue_num}"
     params = {
         "Accept": "application/vnd.github+json",
         "Authorization": f"token {token}",

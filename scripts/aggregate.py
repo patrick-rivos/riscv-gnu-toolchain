@@ -74,16 +74,21 @@ def assign_labels(file_name: str, label: str):
         return label
     return ""
 
-def failures_to_markdown(failures: Dict[str, List[str]], current_hash: str):
+def failures_to_markdown(failures: Dict[str, List[str]], current_hash: str, patch_name: str):
     result = f"""---
-title: Testsuite Status {current_hash}
+title: Testsuite Status {current_hash if patch_name == "" else patch_name}
 """
-    labels = {"bug"}
+    labels = set()
     labels.add(assign_labels("failed_build.txt", "build-failure"))
     labels.add(assign_labels("failed_testsuite.txt", "testsuite-failure"))
+    if len(failures["New"]) > 0:
+        labels.add("new-regressions")
     if "" in labels:
         labels.remove("")
-    result += f"labels: {', '.join(labels)}\n"
+    if len(labels) > 0:
+        result += f"labels: {', '.join(labels)}\n"
+    with open("./labels.txt", "w") as f:
+        f.write(f"{','.join(labels)}")
     result += "---\n\n"
     result += failures_to_summary(failures)
     return result
@@ -180,7 +185,7 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
             line = f.readline()
             if not line or line.startswith("# Unresolved Failures"):
                 break
-            if line.startswith("##"): 
+            if line.startswith("##"):
                 continue
             if line != "\n":
                 resolved.add(line)
@@ -199,7 +204,7 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
                 continue
             if line != "\n":
                 new.add(line)
-           
+
     return failures, resolved, new
 
 def parse_arguments():
@@ -220,6 +225,14 @@ def parse_arguments():
         type=str,
         help="Path to the current testsuite result log",
     )
+    parser.add_argument(
+        "-patch",
+        "--patch-name",
+        default="",
+        metavar="<string>",
+        type=str,
+        help="Patch name",
+    )
     return parser.parse_args()
 
 
@@ -232,11 +245,11 @@ def main():
         failures, resolved, new = aggregate_summary(failures, os.path.join(SUMMARIES, file))
         all_resolved[file] = resolved
         all_new[file] = new
-        
-    summary_markdown = failures_to_markdown(failures, args.current_hash)
+
+    summary_markdown = failures_to_markdown(failures, args.current_hash, args.patch_name)
     resolved_markdown = additional_failures_to_markdown("Resolved", all_resolved)
     new_markdown = additional_failures_to_markdown("New", all_new)
-    
+
     markdown = summary_markdown + new_markdown + resolved_markdown
 
     with open(args.output_markdown, "w") as markdown_file:
