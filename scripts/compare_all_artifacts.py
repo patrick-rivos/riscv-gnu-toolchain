@@ -16,7 +16,6 @@ def parse_arguments():
     parser.add_argument(
         '-ccommitted',
         '--current-hash-committed',
-        type=bool,
         help="The current hash is an existing GCC hash",
         action='store_true'
     )
