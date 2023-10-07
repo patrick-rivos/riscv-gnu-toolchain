@@ -59,18 +59,26 @@ def parse_arguments():
         help="issue number",
     )
     parser.add_argument(
+        "-repo",
+        "--repo",
+        required=True,
+        metavar="<string>",
+        type=str,
+        help="repository to link",
+    )
+    parser.add_argument(
         "-comment",
         action="store_true",
         help="is comment",
     )
     return parser.parse_args()
 
-def create_data(desc: str, issue: str, rid: str, state: str, context: str):
+def create_data(desc: str, issue: str, rid: str, state: str, context: str, repo: str):
     target_url = None
     if issue is None or issue == "":
-        target_url = f"https://github.com/ewlu/riscv-gnu-toolchain/actions/runs/{rid}"
+        target_url = f"https://github.com/{repo}/actions/runs/{rid}"
     else:
-        target_url = f"https://github.com/ewlu/riscv-gnu-toolchain/issues/{issue}"
+        target_url = f"https://github.com/{repo}/issues/{issue}"
     data = {
         "state": state,
         "target_url": target_url,
@@ -95,7 +103,7 @@ def send(patch_id: str, data: Dict[str, str], headers: Dict[str, str]):
 
 def main():
     args = parse_arguments()
-    data = create_data(args.description, args.issue_id, args.run_id, args.state, args.context)
+    data = create_data(args.description, args.issue_id, args.run_id, args.state, args.context, args.repo)
     headers = create_headers(args.token)
     print(f"data: {data}")
     print(args.comment)
