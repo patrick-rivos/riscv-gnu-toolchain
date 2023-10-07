@@ -32,7 +32,7 @@ def get_workflow_runs(token: str, repo: str):
               "X-GitHub-Api-Version": "2022-11-28",
               "branch": "patchworks-ci",
               "event": "schedule"}
-    url = "https://api.github.com/repos/{repo}/actions/runs"
+    url = f"https://api.github.com/repos/{repo}/actions/runs"
     r = requests.get(url, params)
     runs = json.loads(r.text)
     return runs
