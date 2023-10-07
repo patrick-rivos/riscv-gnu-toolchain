@@ -30,7 +30,7 @@ def get_workflow_runs(token: str, repo: str):
     params = {"Accept": "application/vnd.github+json",
               "Authorization": f"token {token}",
               "X-GitHub-Api-Version": "2022-11-28",
-              "branch": "patchworks-ci",
+              "branch": "main",
               "event": "schedule"}
     url = f"https://api.github.com/repos/{repo}/actions/runs"
     r = requests.get(url, params)
