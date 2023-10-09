@@ -131,7 +131,7 @@ def get_unique_failures(failure_type: str, intersect: Set[str], failures: Dict[s
             result += "```\n"
     return result
 
-def additional_failures_to_markdown(failure_type: str, failures: Dict[str, Set[str]]):
+def additional_failures_to_markdown(failure_type: str, failures: Dict[str, Set[str]], num_targets: int):
     """
     Adds new sections to issue displaying what failures were added/resolved
     """
@@ -139,7 +139,7 @@ def additional_failures_to_markdown(failure_type: str, failures: Dict[str, Set[s
     result = ""
     if len(intersect) > 0:
         found_failures = sorted(list(intersect))
-        result = f"## {failure_type} Failures Across All Affected Targets ({num_failures} targets / {len(failures)} total targets)\n"
+        result = f"## {failure_type} Failures Across All Affected Targets ({num_failures} targets / {num_targets} total targets)\n"
         result += "```\n"
         result += "".join(found_failures)
         result += "```\n"
@@ -247,8 +247,8 @@ def main():
         all_new[file] = new
 
     summary_markdown = failures_to_markdown(failures, args.current_hash, args.patch_name)
-    resolved_markdown = additional_failures_to_markdown("Resolved", all_resolved)
-    new_markdown = additional_failures_to_markdown("New", all_new)
+    resolved_markdown = additional_failures_to_markdown("Resolved", all_resolved, len(failures['Unresolved']))
+    new_markdown = additional_failures_to_markdown("New", all_new, len(failures['Unresolved']))
 
     markdown = summary_markdown + new_markdown + resolved_markdown
 
