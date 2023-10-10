@@ -75,10 +75,7 @@ def get_possible_artifact_names() -> List[str]:
 
     arch_extensions = [
         "gc",
-        "gcv",
         "gc_zba_zbb_zbc_zbs",
-        "gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt",
-        "imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt",
     ]
 
     all_lists = [
