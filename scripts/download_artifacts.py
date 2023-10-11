@@ -71,36 +71,42 @@ def get_possible_artifact_names() -> List[str]:
     """
     libc = ["gcc-linux", "gcc-newlib"]
     arch = ["rv32{}-ilp32d-{}", "rv64{}-lp64d-{}"]
-    multilib = ["multilib", "non-multilib"]
 
-    arch_extensions = [
+    multilib_arch_extensions = [
+        "gcv",
+    ]
+
+    multilib_lists = [
+        "-".join([i, j, "multilib"])
+        for i in libc
+        for j in arch
+        if "rv64" in j
+    ]
+
+    multilib_names = [
+        name.format(ext, "{}")
+        for name in multilib_lists
+        for ext in multilib_arch_extensions
+    ]
+
+    non_multilib_arch_extensions = [
         "gc",
         "gc_zba_zbb_zbc_zbs",
     ]
 
-    all_lists = [
-        "-".join([i, j, k])
+    non_multilib_lists = [
+        "-".join([i, j, "non-multilib"])
         for i in libc
         for j in arch
-        for k in multilib
-        if not ("rv32" in j and k == "multilib")
     ]
 
-    all_names = [
+    non_multilib_names = [
         name.format(ext, "{}")
-        for name in all_lists
-        for ext in arch_extensions
-        if not ("gcv" in ext and "non-multilib" not in name)
-        and not ("gc_" in ext and "non-multilib" not in name)
-        and not ("imafdcv_" in ext and "non-multilib" not in name)
-        and not (
-            "rv32" in name
-            and "imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt"
-            in ext
-        )
-        and not ("non-multilib" in name and ext == "gc")
+        for name in non_multilib_lists
+        for ext in non_multilib_arch_extensions
     ]
-    return all_names
+
+    return multilib_names + non_multilib_names
 
 
 def artifact_exists(artifact_name: str) -> bool:
