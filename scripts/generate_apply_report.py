@@ -86,12 +86,13 @@ title: Apply Patch Status {patch_name}
         result += "```"
     elif bstatus == "Failed" and tstatus == "Applied": 
         result += "## Notes\n"
-        result += """Failed to apply to post-commit baseline. This can happen
+        result += f"""Failed to apply to the [post-commit baseline](https://github.com/patrick-rivos/gcc-postcommit-ci/issues?q=is%3Aissue+{bhash}). This can happen
 if your commit requires a recently-commited patch in order to apply. 
 The pre-commit CI will only perform a build since it doesn't know what
-dejagnu testsuite failures are expected on the tip-of-tree. If you 
-would like us to re-run this patch once the baseline reaches a 
-different hash, please email us at gcc-ci@rivosinc.com with a link 
+dejagnu testsuite failures are expected on the tip-of-tree.
+
+If you would like us to re-run this patch once the [baseline](https://github.com/patrick-rivos/gcc-postcommit-ci/issues?q=is%3Aissue) reaches a 
+different hash, please email us at patchworks-ci@rivosinc.com with a link 
 to your patch.
 """
     elif bstatus == "Applied" and tstatus == "Failed":
