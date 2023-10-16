@@ -1,4 +1,5 @@
 import argparse
+import re
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Apply patch report generator")
@@ -79,10 +80,13 @@ title: Apply Patch Status {patch_name}
         result += "```\n"
         result += "> git am ../patches/*.patch --whitespace=fix -q --3way\n"
         result += "```\n"
+        result += "## Notes\n"
+        result += "Instances of 2+ sequential `{` characters in the output have been escaped by the pipeline. This was only done to the output _after_ the patch failed to apply.\n"
         result += "## Output\n"
         result += "```\n"
+        rx = re.compile(r"[{]{2,}", re.I)
         with open("gcc/out_tot", "r") as f:
-            result += f.read()
+            result += str(rx.sub(lambda x: r"\{" * len(x.group()), f.read()))
         result += "```"
     elif bstatus == "Failed" and tstatus == "Applied": 
         result += "## Notes\n"
