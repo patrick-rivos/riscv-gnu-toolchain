@@ -81,7 +81,7 @@ title: Apply Patch Status {patch_name}
         result += "> git am ../patches/*.patch --whitespace=fix -q --3way\n"
         result += "```\n"
         result += "## Notes\n"
-        result += "Instances of 2+ sequential `{` characters in the output have been escaped\n"
+        result += "Instances of 2+ sequential `{` characters in the output have been escaped by the pipeline. This was only done to the output _after_ the patch failed to apply.\n"
         result += "## Output\n"
         result += "```\n"
         rx = re.compile(r"[{]{2,}", re.I)
