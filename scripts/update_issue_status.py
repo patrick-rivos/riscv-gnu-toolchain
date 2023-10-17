@@ -77,8 +77,7 @@ def get_current_status(issue):
     return status
 
 def build_new_issue(status: Dict[str, str], patch: str, check: str):
-    result = f"---\ntitle: {check} Status {patch}\n---\n"
-    result += "|Target|Status|\n"
+    result = "|Target|Status|\n"
     result += "|---|---|\n"
     for k, v in status.items():
         result += f"|{k}|{v.strip()}|\n"
