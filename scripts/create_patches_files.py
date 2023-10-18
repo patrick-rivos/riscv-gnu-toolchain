@@ -34,8 +34,8 @@ def parse_arguments():
     return parser.parse_args()
 
 def parse_patches(patches, outdir="./patch_urls"):
-    download_links = defaultdict(list)
-    patchworks_links = defaultdict(list)
+    download_links: defaultdict[str, List[str]] = defaultdict(list)
+    patchworks_links: defaultdict[str, List[str]]  = defaultdict(list)
     series_name = {}
     series_url = {}
     for patch in patches:
@@ -58,15 +58,15 @@ def parse_patches(patches, outdir="./patch_urls"):
     return series_name, series_url, download_links, patchworks_links
 
 
-def create_files(series_name: Dict[str, str], series_url: Dict[str, str], download_links: Dict[str, List[List[str]]], outdir="./patch_urls"):
-    artifact_names = []
+def create_files(series_name: Dict[str, str], series_url: Dict[str, str], download_links: Dict[str, List[List[str]]], outdir: str):
+    artifact_names: List[str] = []
     for series_number, links_list in download_links.items():
         for links in links_list:
             fname = f"{series_number}-{series_name[series_number]}-{len(links)}"
             artifact_names.append(fname)
             with open(os.path.join(outdir, fname), "w") as f:
-                if outdir != './patch_urls':
-                    pname, url, pid = links[-1].split("\t")
+                if outdir == './patchworks_metadata':
+                    _pname, url, pid = links[-1].split("\t")
                     f.write(f"Applied patches: 1 -> {len(links)}\n")
                     f.write(f"Associated series: {series_url[series_number]}\n")
                     f.write(f"Last patch applied: {url}\n")
@@ -98,14 +98,14 @@ def get_patches(start: str, end: str, backup: str):
     print(url.format(backup, start))
     r = requests.get(url.format(backup, start))
     patches = json.loads(r.text)
-    early_series_name, early_series_url, early_download_links, early_patchworks_links = parse_patches(patches)
+    _early_series_name, _early_series_url, early_download_links, early_patchworks_links = parse_patches(patches)
 
     print("creating download links")
     new_download_links = get_overlap_dict(download_links, early_download_links)
-    create_files(series_name, series_url, new_download_links)
+    create_files(series_name, series_url, new_download_links, "./patch_urls")
     print("creating patchworks links")
     new_patchworks_links = get_overlap_dict(patchworks_links, early_patchworks_links)
-    create_files(series_name, series_url, new_patchworks_links, "./patchworks_urls")
+    create_files(series_name, series_url, new_patchworks_links, "./patchworks_metadata")
 
 def main():
     args = parse_arguments()
