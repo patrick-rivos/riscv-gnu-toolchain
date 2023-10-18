@@ -13,16 +13,16 @@ def parse_arguments():
         help="Github access token",
     )
     parser.add_argument(
-        "-patch",
+        "-comment",
         required=True,
         type=str,
-        help="Patch name",
+        help="Comment id",
     )
     parser.add_argument(
         "-repo",
         required=True,
         type=str,
-        help="repo to pull the issues from",
+        help="repo to pull the comment from",
     )
     parser.add_argument(
         "-check",
@@ -49,58 +49,54 @@ def parse_arguments():
     )
     return parser.parse_args()
 
-def get_issue(token: str, patch: str, check: str, repo: str):
+def get_comment(token: str, comment: str, check: str, repo: str):
     params = {"Accept": "application/vnd.github+json",
               "Authorization": f"token {token}",
               "X-GitHub-Api-Version": "2022-11-28"}
-    url = f"https://api.github.com/repos/{repo}/issues?page=1&per_page=50&q=is%3Aissue&state=all"
+    url = f"https://api.github.com/repos/{repo}/issues/comments/{comment}"
     r = requests.get(url, params)
-    issues = json.loads(r.text)
-    found_issue = None
-    for issue in issues:
-        if patch in issue["title"] and check in issue["title"]:
-            found_issue = issue
-            break
-    return found_issue
+    found_comment = json.loads(r.text)
+    return found_comment
 
-def get_current_status(issue):
+def get_current_status(comment):
     status = {}
-    for line in issue['body'].split('\n'):
+    for line in comment['body'].split('\n'):
         print(line)
         if 'Target' in line or '---' in line or '|' not in line:
             continue
-        if "Associated" in line:
+        if "Additional" in line:
             break
         target, state = line.split('|')[1:-1]
         status[target] = state
 
     return status
 
-def build_new_issue(status: Dict[str, str], patch: str, check: str):
-    result = "|Target|Status|\n"
+def build_new_comment(status: Dict[str, str], check: str):
+    result = f"## {check} Status\n"
+    result += "|Target|Status|\n"
     result += "|---|---|\n"
     for k, v in status.items():
         result += f"|{k}|{v.strip()}|\n"
     result += "\n"
-    with open("issue.md", "w") as f:
+    with open("comment.md", "w") as f:
         f.write(result)
 
 def main():
     args = parse_arguments()
-    issue = get_issue(args.token, args.patch, args.check, args.repo)
+    comment = get_comment(args.token, args.comment, args.check, args.repo)
     if args.failure:
-        status = get_current_status(issue)
+        status = get_current_status(comment)
         with open("current_logs/failed_build.txt", "w") as f:
             for target, state in status.items():
                 if "Build failure" in state:
                     f.write(f"{target}|{state}\n")
     else:
-        if issue is None:
+        if comment is None:
             status = {args.target: args.state}
         else:
-            status = get_current_status(issue)
+            status = get_current_status(comment)
             status[args.target] = args.state
-        build_new_issue(status, args.patch, args.check)
+        build_new_comment(status, args.check)
 
 if __name__ == "__main__":
     main()
