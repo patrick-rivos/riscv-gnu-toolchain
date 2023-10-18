@@ -21,10 +21,7 @@ def parse_arguments():
     return parser.parse_args()
 
 def generate_markdown(linter_log: str, patch_name: str, outdir: str="./linter_fail_report.md"):
-    header = f"""---
-title: Linter Status {patch_name}
-labels: linter-failure
----
+    header = f"""
 The following issues have been found with {patch_name}.
 Please use your best judgement when resolving these issues. These are only warnings and do not need to be resolved in order to merge your patch.
 If any of these warnings seem like false-positives that could be guarded against please contact me: patrick@rivosinc.com.
