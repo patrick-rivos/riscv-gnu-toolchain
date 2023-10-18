@@ -63,10 +63,7 @@ def build_status(bhash:str, thash: str, bstatus: str, tstatus: str):
     return result
 
 def generate_report(patch_name: str, bhash: str, thash: str, bstatus: str, tstatus: str):
-    result = f"""---
-title: Apply Patch Status {patch_name}
----
-\n"""
+    result = ""
     if bstatus != "pending":
         bstatus = "Applied" if bstatus == "true" else "Failed"
     if tstatus != "pending":
