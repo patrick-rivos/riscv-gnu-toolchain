@@ -77,28 +77,25 @@ def generate_report(patch_name: str, bhash: str, thash: str, bstatus: str, tstat
         result += "```\n"
         result += "> git am ../patches/*.patch --whitespace=fix -q --3way\n"
         result += "```\n"
-        result += "## Notes\n"
-        result += "Instances of 2+ sequential `{` characters in the output have been escaped by the pipeline. This was only done to the output _after_ the patch failed to apply.\n"
         result += "## Output\n"
         result += "```\n"
-        rx = re.compile(r"[{]{2,}", re.I)
         with open("gcc/out_tot", "r") as f:
-            result += str(rx.sub(lambda x: r"\{" * len(x.group()), f.read()))
+            result += f.read()
         result += "```"
-    elif bstatus == "Failed" and tstatus == "Applied": 
+    elif bstatus == "Failed" and tstatus == "Applied":
         result += "## Notes\n"
         result += f"""Failed to apply to the [post-commit baseline](https://github.com/patrick-rivos/gcc-postcommit-ci/issues?q=is%3Aissue+{bhash}). This can happen
-if your commit requires a recently-commited patch in order to apply. 
+if your commit requires a recently-commited patch in order to apply.
 The pre-commit CI will only perform a build since it doesn't know what
 dejagnu testsuite failures are expected on the tip-of-tree.
 
-If you would like us to re-run this patch once the [baseline](https://github.com/patrick-rivos/gcc-postcommit-ci/issues?q=is%3Aissue) reaches a 
-different hash, please email us at patchworks-ci@rivosinc.com with a link 
+If you would like us to re-run this patch once the [baseline](https://github.com/patrick-rivos/gcc-postcommit-ci/issues?q=is%3Aissue) reaches a
+different hash, please email us at patchworks-ci@rivosinc.com with a link
 to your patch.
 """
     elif bstatus == "Applied" and tstatus == "Failed":
         result += "## Notes\n"
-        result += """Failed to apply to tip-of-tree. The patch will still 
+        result += """Failed to apply to tip-of-tree. The patch will still
 be tested against the baseline hash. A rebase may be necessary
 before merging.
 """
@@ -109,7 +106,7 @@ before merging.
     result += "\n"
 
     return result
-        
+
 def main():
     args = parse_arguments()
     issue = generate_report(args.patch_name, args.base_hash, args.tree_hash, args.base_status, args.tree_status)
