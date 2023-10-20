@@ -72,7 +72,7 @@ def get_current_status(comment):
     return status
 
 def build_new_comment(status: Dict[str, str], check: str):
-    result = f"## {check} Status\n"
+    result = f"## {check} Status (Beta - Ignore Results)\n"
     result += "|Target|Status|\n"
     result += "|---|---|\n"
     for k, v in status.items():
