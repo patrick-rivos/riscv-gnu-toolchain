@@ -67,6 +67,14 @@ def parse_arguments():
         help="repository to link",
     )
     parser.add_argument(
+        "-event",
+        "--event-name",
+        required=True,
+        metavar="<string>",
+        type=str,
+        help="Github event name",
+    )
+    parser.add_argument(
         "-comment",
         action="store_true",
         help="is comment",
@@ -107,7 +115,8 @@ def main():
     headers = create_headers(args.token)
     print(f"data: {data}")
     print(args.comment)
-    if args.comment:
+    print(args.event_name)
+    if args.comment and args.event_name in {"schedule", "workflow_dispatch", "issue_comment"}:
         send(args.patch_id, data, headers)
 
 if __name__ == "__main__":
