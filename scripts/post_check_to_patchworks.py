@@ -74,11 +74,6 @@ def parse_arguments():
         type=str,
         help="Github event name",
     )
-    parser.add_argument(
-        "-comment",
-        action="store_true",
-        help="is comment",
-    )
     return parser.parse_args()
 
 def create_data(desc: str, issue: str, rid: str, state: str, context: str, repo: str):
@@ -103,7 +98,7 @@ def create_headers(token: str):
 def send(patch_id: str, data: Dict[str, str], headers: Dict[str, str]):
     url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch_id}/checks/"
 
-    print("is comment. making post request")
+    print("Request valid. Making post request.")
 
     response = requests.post(url, data=data, headers=headers)
     print(response.status_code)
@@ -114,9 +109,8 @@ def main():
     data = create_data(args.description, args.issue_id, args.run_id, args.state, args.context, args.repo)
     headers = create_headers(args.token)
     print(f"data: {data}")
-    print(args.comment)
     print(args.event_name)
-    if args.comment and args.event_name in {"schedule", "workflow_dispatch", "issue_comment"}:
+    if args.event_name in {"schedule", "workflow_dispatch", "issue_comment"} and args.token != "PLACEHOLDER":
         send(args.patch_id, data, headers)
 
 if __name__ == "__main__":
