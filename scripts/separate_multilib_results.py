@@ -72,6 +72,8 @@ def main():
     assert(args.directory_name is not None or args.file_name is not None)
     if args.directory_name is not None:
         for file in os.listdir(args.directory_name):
+            if "failed" in file: # failed_build.txt failed_testsuite.txt
+                continue
             if "non-multilib" in file:
                 continue
             write_file(file, args.outdir, args.directory_name)
