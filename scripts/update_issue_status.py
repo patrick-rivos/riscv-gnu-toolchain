@@ -25,6 +25,12 @@ def parse_arguments():
         help="repo to pull the comment from",
     )
     parser.add_argument(
+        "-baseline",
+        required=True,
+        type=str,
+        help="Baseline hash commit",
+    )
+    parser.add_argument(
         "-check",
         default="Build GCC",
         type=str,
@@ -64,20 +70,23 @@ def get_current_status(comment):
         print(line)
         if 'Target' in line or '---' in line or '|' not in line:
             continue
-        if "Additional" in line:
+        if "Additional" in line or "## Notes" in line:
             break
         target, state = line.split('|')[1:-1]
         status[target] = state
 
     return status
 
-def build_new_comment(status: Dict[str, str], check: str):
+def build_new_comment(status: Dict[str, str], check: str, baseline: str):
     result = f"## {check} Status (Beta - Ignore Results)\n"
     result += "|Target|Status|\n"
     result += "|---|---|\n"
     for k, v in status.items():
         result += f"|{k}|{v.strip()}|\n"
     result += "\n"
+    result += "## Notes"
+    result += f"Patch(es) were applied to the baseline hash https://github.com/gcc-mirror/gcc/commit/{baseline}. "
+    result += "If this patch commit depends on or conflicts with a recently committed patch, then these results may be outdated.\n"
     with open("comment.md", "w") as f:
         f.write(result)
 
@@ -96,7 +105,7 @@ def main():
         else:
             status = get_current_status(comment)
             status[args.target] = args.state
-        build_new_comment(status, args.check)
+        build_new_comment(status, args.check, args.baseline)
 
 if __name__ == "__main__":
     main()
