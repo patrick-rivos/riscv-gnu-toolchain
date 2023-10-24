@@ -88,7 +88,7 @@ def build_new_comment(status: Dict[str, str], check: str, baseline: str):
         result += f"|{k}|{v.strip()}|\n"
     result += "\n"
     result += "## Notes\n"
-    result += f"Patch(es) were applied to the baseline hash https://github.com/gcc-mirror/gcc/commit/{baseline}. "
+    result += f"Patch(es) were applied to the hash https://github.com/gcc-mirror/gcc/commit/{baseline}. "
     result += "If this patch commit depends on or conflicts with a recently committed patch, then these results may be outdated.\n"
     with open("comment.md", "w") as f:
         f.write(result)
