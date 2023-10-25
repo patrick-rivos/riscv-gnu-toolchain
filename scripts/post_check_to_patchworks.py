@@ -110,8 +110,8 @@ def main():
     headers = create_headers(args.token)
     print(f"data: {data}")
     print(args.event_name)
-    if args.event_name in {"schedule", "workflow_dispatch", "issue_comment"} and args.token != "PLACEHOLDER":
-        send(args.patch_id, data, headers)
+    # if args.event_name in {"schedule", "workflow_dispatch", "issue_comment"} and args.token != "PLACEHOLDER":
+    #     send(args.patch_id, data, headers)
 
 if __name__ == "__main__":
     main()
