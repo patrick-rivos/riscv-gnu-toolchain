@@ -75,7 +75,7 @@ def generate_report(patch_name: str, bhash: str, thash: str, bstatus: str, tstat
     if bstatus == "Failed" and tstatus == "Failed":
         result += "## Command\n"
         result += "```\n"
-        result += "> git am ../patches/*.patch --whitespace=fix -q --3way --empty=drop --reject\n"
+        result += "> git am ../patches/*.patch --whitespace=fix -q --3way --empty=drop\n"
         result += "```\n"
         result += "## Output\n"
         result += "```\n"
