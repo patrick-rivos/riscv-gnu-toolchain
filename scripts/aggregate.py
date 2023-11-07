@@ -83,6 +83,8 @@ title: Testsuite Status {current_hash if patch_name == "" else patch_name}
     labels.add(assign_labels("failed_testsuite.txt", "testsuite-failure"))
     if len(failures["New"]) > 0:
         labels.add("new-regressions")
+    if len(failures["Resolved"]) > 0:
+        labels.add("resolved-regressions")
     if "" in labels:
         labels.remove("")
     if len(labels) > 0:
