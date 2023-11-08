@@ -27,7 +27,7 @@ def get_issues(token: str):
 
 def get_patch_id(issue):
     body = issue["body"].split("\n")
-    for line in body():
+    for line in body:
         if line == "":
             continue
         if "Patch id:" in line:
