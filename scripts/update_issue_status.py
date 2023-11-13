@@ -82,8 +82,6 @@ def get_current_status(comment):
 
 def build_new_comment(status: Dict[str, str], check: str, baseline: str):
     result = f"## {check} Status"
-    if check != "Build GCC":
-        result += " (Beta - Ignore Results)"
     result += "\n"
     result += "|Target|Status|\n"
     result += "|---|---|\n"
