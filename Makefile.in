@@ -65,8 +65,8 @@ GLIBC_MULTILIB_NAMES := @glibc_multilib_names@
 NEWLIB_MULTILIB_NAMES := @newlib_multilib_names@
 GCC_MULTILIB_FLAGS := $(MULTILIB_FLAGS)
 else
-GLIBC_MULTILIB_NAMES := $(shell echo "$(MULTILIB_GEN)" | $(SED) 's/;/\n/g'| $(AWK) '{split($$0,a,"-"); printf "%s-%s ", a[1],a[2]}')
-NEWLIB_MULTILIB_NAMES := $(shell echo "$(MULTILIB_GEN)" | $(SED) 's/;/\n/g'| $(AWK) '{split($$0,a,"-"); printf "%s-%s ", a[1],a[2]}')
+GLIBC_MULTILIB_NAMES := $(shell echo "$(MULTILIB_GEN)" | $(SED) 's/;/\n/g'| $(SED) '/^$$/d' | $(AWK) '{split($$0,a,"-"); printf "%s-%s ", a[1],a[2]}')
+NEWLIB_MULTILIB_NAMES := $(shell echo "$(MULTILIB_GEN)" | $(SED) 's/;/\n/g'| $(SED) '/^$$/d' | $(AWK) '{split($$0,a,"-"); printf "%s-%s ", a[1],a[2]}')
 GCC_MULTILIB_FLAGS := $(MULTILIB_FLAGS) --with-multilib-generator="$(MULTILIB_GEN)"
 endif
 GCC_CHECKING_FLAGS := @gcc_checking@
