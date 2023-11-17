@@ -46,13 +46,16 @@ def check_issue_is_closable(issue):
     if patch_id is None:
         return False
     patch_state = get_patch_state(patch_id)
+    print(f"patch {patch_id} state: {patch_state}")
     if patch_state != "committed" and patch_state != "superseded":
         return False
     created_time = datetime.strptime(issue["created_at"], "%Y-%m-%dT%H:%M:%SZ") 
     now = datetime.now()
     diff = now - created_time
+    print(f"patch {patch_id} has an issue that has been open for {diff} days")
     if diff.days < 7:
         return False
+    print(f"patch {patch_id} can be closed")
     return True
 
 def close_issue(issue_number: int, token: str):
