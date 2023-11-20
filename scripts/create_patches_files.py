@@ -41,6 +41,7 @@ def parse_patches(patches, outdir="./patch_urls"):
     for patch in patches:
         assert len(patch["series"]) == 1
         found_series = patch["series"][0]["id"]
+        print(f"currently parsing:\n\t{patch['series'][0]}")
         if len(download_links[found_series]) == 0:
             download_links[found_series].append([patch["mbox"] + "\n"])
             patchworks_links[found_series].append([f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n"])
@@ -52,7 +53,10 @@ def parse_patches(patches, outdir="./patch_urls"):
             prev_patchworks_link.append(f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n")
             patchworks_links[found_series].append(prev_patchworks_link)
         if found_series not in series_name:
-            series_name[found_series] = "".join(letter for letter in patch["series"][0]["name"] if letter.isalnum() or letter == " ").replace(" ","_")
+            if patch["series"][0]["name"] is None:
+                series_name[found_series] = "unknown"
+            else:
+                series_name[found_series] = "".join(letter for letter in patch["series"][0]["name"] if letter.isalnum() or letter == " ").replace(" ","_")
             series_url[found_series] = patch["series"][0]["web_url"]
 
     return series_name, series_url, download_links, patchworks_links
@@ -93,11 +97,13 @@ def get_patches(start: str, end: str, backup: str):
     print(url.format(start, end))
     r = requests.get(url.format(start, end))
     patches = json.loads(r.text)
+    print(patches)
     series_name, series_url, download_links, patchworks_links = parse_patches(patches)
 
     print(url.format(backup, start))
     r = requests.get(url.format(backup, start))
     patches = json.loads(r.text)
+    print(patches)
     _early_series_name, _early_series_url, early_download_links, early_patchworks_links = parse_patches(patches)
 
     print("creating download links")
