@@ -21,6 +21,7 @@ while IFS="" read -r line; do
   if [[ "$line" == "" || "$line" == "\n" ]]; then
     continue
   fi
-  wget -O "patch-$num.patch" $line
+  new_name=$(printf "%04d-patch.patch" $num)
+  wget -O $new_name $line
   num=$(($num+1))
 done < "../patch_urls/$patch_name"
