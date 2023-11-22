@@ -11,7 +11,6 @@ def parse_arguments():
         "-start",
         "--start",
         metavar="<string>",
-        required=True,
         type=str,
         help="Start timestamp for patches",
     )
@@ -19,7 +18,6 @@ def parse_arguments():
         "-end",
         "--end",
         metavar="<string>",
-        required=True,
         type=str,
         help="End timestamp for patches",
     )
@@ -27,9 +25,15 @@ def parse_arguments():
         "-backup",
         "--backup",
         metavar="<string>",
-        required=True,
         type=str,
         help="Previous end timestamp for patches",
+    )
+    parser.add_argument(
+        "-patch",
+        "--patch-id",
+        metavar="<string>",
+        type=str,
+        help="Patch id to download",
     )
     return parser.parse_args()
 
@@ -90,21 +94,32 @@ def get_overlap_dict(download: Dict[str, List[str]], early: Dict[str, List[str]]
 
     return download
 
+def get_patch_info(url):
+    print(url)
+    r = requests.get(url)
+    patches = json.loads(r.text)
+    print(patches)
+    if isinstance(patches, list):
+        return parse_patches(patches)
+    else:
+        return parse_patches([patches])
 
-def get_patches(start: str, end: str, backup: str):
+def get_single_patch(patch: str):
+    url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch}"
+
+    series_name, series_url, download_links, patchwork_links = get_patch_info(url)
+
+    print("creating download links")
+    create_files(series_name, series_url, download_links, "./patch_urls")
+    print("creating patchworks links")
+    create_files(series_name, series_url, patchwork_links, "./patchworks_metadata")
+
+def get_multiple_patches(start: str, end: str, backup: str):
     url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project=6&since={}&before={}"
 
-    print(url.format(start, end))
-    r = requests.get(url.format(start, end))
-    patches = json.loads(r.text)
-    print(patches)
-    series_name, series_url, download_links, patchworks_links = parse_patches(patches)
+    series_name, series_url, download_links, patchworks_links = get_patch_info(url.format(start, end))
 
-    print(url.format(backup, start))
-    r = requests.get(url.format(backup, start))
-    patches = json.loads(r.text)
-    print(patches)
-    _early_series_name, _early_series_url, early_download_links, early_patchworks_links = parse_patches(patches)
+    _early_series_name, _early_series_url, early_download_links, early_patchworks_links = get_patch_info(url.format(backup, start))
 
     print("creating download links")
     new_download_links = get_overlap_dict(download_links, early_download_links)
@@ -115,7 +130,10 @@ def get_patches(start: str, end: str, backup: str):
 
 def main():
     args = parse_arguments()
-    get_patches(args.start, args.end, args.backup)
+    if args.patch_id is not None:
+        get_single_patch(args.patch_id)
+    else:
+        get_multiple_patches(args.start, args.end, args.backup)
 
 if __name__ == "__main__":
     main()
