@@ -93,12 +93,25 @@ GDB_NATIVE_FLAGS := $(GDB_NATIVE_FLAGS_EXTRA)
 GLIBC_TARGET_FLAGS := $(GLIBC_TARGET_FLAGS_EXTRA)
 GLIBC_CC_FOR_TARGET ?= $(LINUX_TUPLE)-gcc
 GLIBC_CXX_FOR_TARGET ?= $(LINUX_TUPLE)-g++
-GLIBC_TARGET_BOARDS ?= $(shell echo "$(GLIBC_MULTILIB_NAMES)" | sed 's!\([_a-z0-9]*\)-\([_a-z0-9]*\)!riscv-sim/-march=\1/-mabi=\2/@cmodel@!g')
+GLIBC_TARGET_BOARDS ?= $(shell $(srcdir)/scripts/generate_target_board \
+  --sim-name riscv-sim \
+  --cmodel $(shell echo @cmodel@ | cut -d '=' -f2) \
+  --build-arch-abi $(GLIBC_MULTILIB_NAMES) \
+  --extra-test-arch-abi-flags-list "$(GLIBC_BUILD_MULTILIB_ALL_ABI_NAMES)")
 
 NEWLIB_CC_FOR_TARGET ?= $(NEWLIB_TUPLE)-gcc
 NEWLIB_CXX_FOR_TARGET ?= $(NEWLIB_TUPLE)-g++
-NEWLIB_TARGET_BOARDS ?= $(shell echo "$(NEWLIB_MULTILIB_NAMES)" | sed 's!\([_a-z0-9]*\)-\([_a-z0-9]*\)!riscv-sim/-march=\1/-mabi=\2/@cmodel@!g')
-NEWLIB_NANO_TARGET_BOARDS ?= $(shell echo "$(NEWLIB_MULTILIB_NAMES)" | sed 's!\([_a-z0-9]*\)-\([_a-z0-9]*\)!riscv-sim-nano/-march=\1/-mabi=\2/@cmodel@!g')
+NEWLIB_TARGET_BOARDS ?= $(shell $(srcdir)/scripts/generate_target_board \
+  --sim-name riscv-sim \
+  --cmodel $(shell echo @cmodel@ | cut -d '=' -f2) \
+  --build-arch-abi $(NEWLIB_MULTILIB_NAMES) \
+  --extra-test-arch-abi-flags-list "$(GLIBC_BUILD_MULTILIB_ALL_ABI_NAMES)")
+
+NEWLIB_NANO_TARGET_BOARDS ?= $(shell $(srcdir)/scripts/generate_target_board \
+  --sim-name riscv-sim-nano \
+  --cmodel $(shell echo @cmodel@ | cut -d '=' -f2) \
+  --build-arch-abi $(NEWLIB_MULTILIB_NAMES) \
+  --extra-test-arch-abi-flags-list "$(GLIBC_BUILD_MULTILIB_ALL_ABI_NAMES)")
 NEWLIB_CC_FOR_MULTILIB_INFO := $(NEWLIB_CC_FOR_TARGET)
 
 MUSL_TARGET_FLAGS := $(MUSL_TARGET_FLAGS_EXTRA)
@@ -195,7 +208,7 @@ SIM_STAMP:= stamps/build-qemu stamps/install-python-package
 else
 ifeq ($(SIM),spike)
 # Using spike simulator.
-SIM_PATH:=$(srcdir)/scripts/wrapper/spike
+SIM_PATH:=$(srcdir)/scripts/wrapper/spike:$(srcdir)/scripts
 SIM_PREPARE:=PATH="$(SIM_PATH):$(INSTALL_DIR)/bin:$(PATH)" PK_PATH="$(INSTALL_DIR)/$(NEWLIB_TUPLE)/bin/" ARCH_STR="$(WITH_ARCH)"
 SIM_STAMP:= stamps/build-spike
 ifneq (,$(findstring rv32,$(NEWLIB_MULTILIB_NAMES)))
@@ -533,7 +546,7 @@ stamps/build-gcc-linux-native: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-gcc-lin
 		$(WITH_ARCH) \
 		$(WITH_TUNE) \
 		$(WITH_ISA_SPEC) \
-		$(GCC_EXTRA_CONFIGURE_FLAGS) \
+		$(GCC_EXTRA_CONFIGURE_FLAGS)
 	$(MAKE) -C $(notdir $@)
 	$(MAKE) -C $(notdir $@) install
 	cp -a $(INSTALL_DIR)/$(LINUX_TUPLE)/lib* $(SYSROOT)
