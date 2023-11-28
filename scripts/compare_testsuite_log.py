@@ -123,9 +123,9 @@ class ClassifedGccFailures:
         return result
 
     def __str__(self):
-        result = self.failure_dict_to_string(self.resolved, "Resolved Failures")
+        result = self.failure_dict_to_string(self.new, "New Failures")
+        result += self.failure_dict_to_string(self.resolved, "Resolved Failures")
         result += self.failure_dict_to_string(self.unresolved, "Unresolved Failures")
-        result += self.failure_dict_to_string(self.new, "New Failures")
         return result
 
 
@@ -344,9 +344,9 @@ def gccfailure_to_summary(failure: Dict[LibName, GccFailure], failure_name: str,
 
 def failures_to_summary(failures: ClassifedGccFailures, previous_hash: str, current_hash: str, current_hash_committed: bool):
     result = "# Summary\n"
+    result += gccfailure_to_summary(failures.new, "New Failures", previous_hash, current_hash, current_hash_committed)
     result += gccfailure_to_summary(failures.resolved, "Resolved Failures", previous_hash, current_hash, current_hash_committed)
     result += gccfailure_to_summary(failures.unresolved, "Unresolved Failures", previous_hash, current_hash, current_hash_committed)
-    result += gccfailure_to_summary(failures.new, "New Failures", previous_hash, current_hash, current_hash_committed)
     result += "\n"
     return result
 
