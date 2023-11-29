@@ -71,6 +71,9 @@ GCC_MULTILIB_FLAGS := $(MULTILIB_FLAGS) --with-multilib-generator="$(MULTILIB_GE
 endif
 GCC_CHECKING_FLAGS := @gcc_checking@
 
+GLIBC_MULTILIB_NAMES_NO_OPTS := $(shell echo $(GLIBC_MULTILIB_NAMES) | perl -pe 's|:.*?,|,|g' | perl -pe 's|:.*||')
+NEWLIB_MULTILIB_NAMES_NO_OPTS := $(shell echo $(NEWLIB_MULTILIB_NAMES) | perl -pe 's|:.*?,|,|g' | perl -pe 's|:.*||')
+
 XLEN := $(shell echo $(WITH_ARCH) | tr A-Z a-z | sed 's/.*rv\([0-9]*\).*/\1/')
 ifneq ($(XLEN),32)
 	XLEN := 64
@@ -171,7 +174,7 @@ check-gcc-linux: stamps/check-gcc-linux
 check-gcc-newlib: stamps/check-gcc-newlib
 check-gcc-newlib-nano: stamps/check-gcc-newlib-nano
 .PHONY: check-glibc-linux
-check-glibc-linux: $(addprefix stamps/check-glibc-linux-,$(GLIBC_MULTILIB_NAMES))
+check-glibc-linux: $(addprefix stamps/check-glibc-linux-,$(GLIBC_MULTILIB_NAMES_NO_OPTS))
 .PHONY: check-dhrystone check-dhrystone-linux check-dhrystone-newlib
 check-dhrystone: check-dhrystone-@default_target@
 .PHONY: check-binutils check-binutils-linux check-binutils-newlib
@@ -464,7 +467,7 @@ stamps/build-gcc-linux-stage1: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-binutil
 	mkdir -p $(dir $@) && touch $@
 
 stamps/build-gcc-linux-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) $(addprefix stamps/build-glibc-linux-,$(GLIBC_BUILD_MULTILIB_ALL_ABI_NAMES)) \
-                               $(addprefix stamps/build-glibc-linux-,$(GLIBC_MULTILIB_NAMES)) \
+                               $(addprefix stamps/build-glibc-linux-,$(GLIBC_MULTILIB_NAMES_NO_OPTS)) \
                                stamps/build-glibc-linux-headers
 	rm -rf $@ $(notdir $@)
 	mkdir $(notdir $@)
@@ -1001,7 +1004,7 @@ stamps/check-gcc-linux: stamps/build-gcc-linux-stage2 $(SIM_STAMP) stamps/build-
 	mkdir -p $(dir $@)
 	date > $@
 
-stamps/check-glibc-linux-%: $(addprefix stamps/build-glibc-linux-,$(GLIBC_MULTILIB_NAMES))
+stamps/check-glibc-linux-%: $(addprefix stamps/build-glibc-linux-,$(GLIBC_MULTILIB_NAMES_NO_OPTS))
 	$(eval $@_BUILD_DIR := $(notdir $@))
 	$(eval $@_BUILD_DIR := $(subst check-,build-,$($@_BUILD_DIR)))
 	$(SIM_PREPARE) $(MAKE) -C $($@_BUILD_DIR) check
@@ -1009,8 +1012,8 @@ stamps/check-glibc-linux-%: $(addprefix stamps/build-glibc-linux-,$(GLIBC_MULTIL
 	date > $@
 
 .PHONY: check-dhrystone-newlib check-dhrystone-newlib-nano
-check-dhrystone-newlib: $(patsubst %,stamps/check-dhrystone-newlib-%,$(NEWLIB_MULTILIB_NAMES))
-check-dhrystone-newlib-nano: $(patsubst %,stamps/check-dhrystone-newlib-nano-%,$(NEWLIB_MULTILIB_NAMES))
+check-dhrystone-newlib: $(patsubst %,stamps/check-dhrystone-newlib-%,$(NEWLIB_MULTILIB_NAMES_NO_OPTS))
+check-dhrystone-newlib-nano: $(patsubst %,stamps/check-dhrystone-newlib-nano-%,$(NEWLIB_MULTILIB_NAMES_NO_OPTS))
 
 stamps/check-dhrystone-newlib-%: \
 		stamps/build-gcc-newlib-stage2 \
@@ -1031,7 +1034,7 @@ stamps/check-dhrystone-newlib-nano-%: \
 	$(SIM_PREPARE) $(srcdir)/test/benchmarks/dhrystone/check -march=$($@_ARCH) -mabi=$($@_ABI) -specs=nano.specs -cc=riscv$(XLEN)-unknown-elf-gcc -objdump=riscv$(XLEN)-unknown-elf-objdump -sim=riscv$($@_XLEN)-unknown-elf-run -out=$@ $(filter %.c,$^) || true
 
 .PHONY: check-dhrystone-linux
-check-dhrystone-linux: $(patsubst %,stamps/check-dhrystone-linux-%,$(GLIBC_MULTILIB_NAMES))
+check-dhrystone-linux: $(patsubst %,stamps/check-dhrystone-linux-%,$(GLIBC_MULTILIB_NAMES_NO_OPTS))
 
 stamps/check-dhrystone-linux-%: \
 		stamps/build-gcc-linux-stage2 \
@@ -1078,13 +1081,13 @@ report-gcc-linux: stamps/check-gcc-linux
 	$(srcdir)/scripts/testsuite-filter gcc glibc $(srcdir)/test/allowlist `find build-gcc-linux-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`
 
 .PHONY: report-dhrystone-newlib report-dhrystone-newlib-nano
-report-dhrystone-newlib: $(patsubst %,stamps/check-dhrystone-newlib-%,$(NEWLIB_MULTILIB_NAMES))
+report-dhrystone-newlib: $(patsubst %,stamps/check-dhrystone-newlib-%,$(NEWLIB_MULTILIB_NAMES_NO_OPTS))
 	if cat $^ | grep -v '^PASS'; then false; else true; fi
-report-dhrystone-newlib-nano: $(patsubst %,stamps/check-dhrystone-newlib-nano-%,$(NEWLIB_MULTILIB_NAMES))
+report-dhrystone-newlib-nano: $(patsubst %,stamps/check-dhrystone-newlib-nano-%,$(NEWLIB_MULTILIB_NAMES_NO_OPTS))
 	if cat $^ | grep -v '^PASS'; then false; else true; fi
 
 .PHONY: report-dhrystone-linux
-report-dhrystone-linux: $(patsubst %,stamps/check-dhrystone-linux-%,$(GLIBC_MULTILIB_NAMES))
+report-dhrystone-linux: $(patsubst %,stamps/check-dhrystone-linux-%,$(GLIBC_MULTILIB_NAMES_NO_OPTS))
 	if cat $^ | grep -v '^PASS'; then false; else true; fi
 
 .PHONY: report-binutils-newlib report-binutils-newlib-nano
