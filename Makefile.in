@@ -99,7 +99,7 @@ GLIBC_CXX_FOR_TARGET ?= $(LINUX_TUPLE)-g++
 GLIBC_TARGET_BOARDS ?= $(shell $(srcdir)/scripts/generate_target_board \
   --sim-name riscv-sim \
   --cmodel $(shell echo @cmodel@ | cut -d '=' -f2) \
-  --build-arch-abi $(GLIBC_MULTILIB_NAMES) \
+  --build-arch-abi "" \
   --extra-test-arch-abi-flags-list "$(GLIBC_MULTILIB_NAMES)")
 
 NEWLIB_CC_FOR_TARGET ?= $(NEWLIB_TUPLE)-gcc
@@ -107,13 +107,13 @@ NEWLIB_CXX_FOR_TARGET ?= $(NEWLIB_TUPLE)-g++
 NEWLIB_TARGET_BOARDS ?= $(shell $(srcdir)/scripts/generate_target_board \
   --sim-name riscv-sim \
   --cmodel $(shell echo @cmodel@ | cut -d '=' -f2) \
-  --build-arch-abi $(NEWLIB_MULTILIB_NAMES) \
+  --build-arch-abi "" \
   --extra-test-arch-abi-flags-list "$(NEWLIB_MULTILIB_NAMES)")
 
 NEWLIB_NANO_TARGET_BOARDS ?= $(shell $(srcdir)/scripts/generate_target_board \
   --sim-name riscv-sim-nano \
   --cmodel $(shell echo @cmodel@ | cut -d '=' -f2) \
-  --build-arch-abi $(NEWLIB_MULTILIB_NAMES) \
+  --build-arch-abi "" \
   --extra-test-arch-abi-flags-list "$(NEWLIB_MULTILIB_NAMES)")
 NEWLIB_CC_FOR_MULTILIB_INFO := $(NEWLIB_CC_FOR_TARGET)
 
