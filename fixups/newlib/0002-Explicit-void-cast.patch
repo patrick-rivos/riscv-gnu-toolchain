@@ -1,0 +1,23 @@
+From 74537abdea75f595b69ff3cf2812eec9b11e2cc8 Mon Sep 17 00:00:00 2001
+From: Patrick O'Neill <patrick@rivosinc.com>
+Date: Fri, 1 Dec 2023 15:55:36 -0800
+Subject: [PATCH 2/3] Explicit void* cast
+
+---
+ newlib/libc/stdlib/aligned_alloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/newlib/libc/stdlib/aligned_alloc.c b/newlib/libc/stdlib/aligned_alloc.c
+index 06b3883cf..b065221ee 100644
+--- a/newlib/libc/stdlib/aligned_alloc.c
++++ b/newlib/libc/stdlib/aligned_alloc.c
+@@ -33,5 +33,5 @@
+ void *
+ aligned_alloc (size_t align, size_t size)
+ {
+-  return _memalign_r (_REENT, align, size);
++  return (void *) _memalign_r (_REENT, align, size);
+ }
+-- 
+2.34.1
+
