@@ -11,7 +11,7 @@
 	url = https://sourceware.org/git/glibc.git
 [submodule "dejagnu"]
 	path = dejagnu
-	url = https://git.savannah.gnu.org/git/dejagnu.git
+	url = https://git.linaro.org/toolchain/dejagnu.git
 	branch = dejagnu-1.6.3
 [submodule "newlib"]
 	path = newlib
