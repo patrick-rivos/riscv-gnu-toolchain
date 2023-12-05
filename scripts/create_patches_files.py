@@ -94,14 +94,24 @@ def get_overlap_dict(download: Dict[str, List[str]], early: Dict[str, List[str]]
 
     return download
 
-def get_patch_info(url):
+def make_api_request(url):
     print(url)
     r = requests.get(url)
     patches = json.loads(r.text)
-    print(patches)
+    return patches
+
+def get_patch_info(url):
+    patches = make_api_request(url)
     if isinstance(patches, list):
         return parse_patches(patches)
     else:
+        patch_id = patches["id"]
+        series_url = f"https://patchwork.sourceware.org/api/1.3/series/{patches['series'][0]['id']}"
+        series_info = make_api_request(series_url)
+        if series_info["received_total"] > 1:
+            patch_ids = [patch['id'] for patch in series_info['patches'] if patch['id'] <= patch_id]
+            patches = [make_api_request(f"https://patchwork.sourceware.org/api/1.3/patches/{pid}") for pid in patch_ids]
+            return parse_patches(patches)
         return parse_patches([patches])
 
 def get_single_patch(patch: str):
