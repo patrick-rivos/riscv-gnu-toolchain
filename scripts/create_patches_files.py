@@ -105,6 +105,7 @@ def get_patch_info(url):
     if isinstance(patches, list):
         return parse_patches(patches)
     else:
+        # Getting a single patch back from the API means we were invoked with a particular patch id, not a time range.
         patch_id = patches["id"]
         series_url = f"https://patchwork.sourceware.org/api/1.3/series/{patches['series'][0]['id']}"
         series_info = make_api_request(series_url)
