@@ -31,13 +31,15 @@ def get_workflow_runs(token: str, repo: str):
               "Authorization": f"token {token}",
               "X-GitHub-Api-Version": "2022-11-28",
               "branch": "main",
-              "event": "schedule"}
+              "event": "schedule",
+              "per_page": 100}
     url = f"https://api.github.com/repos/{repo}/actions/runs"
     r = requests.get(url, params)
     runs = json.loads(r.text)
     return runs
 
 def get_run_timestamp(runs, run_id: str):
+    runs = [run for run in runs if run["name"] == "Patchworks"]
     with open("date_cur.txt", "w") as f:
         if str(runs[0]['id']) != str(run_id):
             f.write(runs[0]['created_at'])
