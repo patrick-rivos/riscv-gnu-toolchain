@@ -82,7 +82,7 @@ def create_files(series_name: Dict[str, str], series_url: Dict[str, str], downlo
                 else:
                     f.writelines(links)
 
-    with open("./artifact_names.txt", "w") as f:
+    with open("./artifact_names.txt", "a") as f:
         f.write(str(artifact_names))
 
 def get_overlap_dict(download: Dict[str, List[str]], early: Dict[str, List[str]]):
