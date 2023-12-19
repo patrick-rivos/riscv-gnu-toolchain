@@ -1,7 +1,7 @@
 import argparse
 import os
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Tuple
 
 SUMMARIES = "./summaries"
 FAILURES = "./current_logs"
@@ -41,7 +41,7 @@ def build_summary(failures: Dict[str, List[str]], failure_name: str):
 def print_failed_tests(table: str):
     print(table.split('\n'))
     failures = table.split('\n')[2:-2]
-    allowlist = []
+    allowlist: List[str] = []
     for failure in failures:
         print(failure.split('|'))
         log_name = failure.split('|')[1]
@@ -55,9 +55,13 @@ def failures_to_summary(failures: Dict[str, List[str]]):
     """ Builds summary section """
     result = "# Summary\n"
     seen_failures: Set[str] = set()
-    additional_result, seen_failures = get_additional_failures("failed_build.txt", "Build Failures", seen_failures)
+    additional_result, seen_failures = get_additional_failures("failed_build.txt",
+                                                               "Build Failures",
+                                                               seen_failures)
     result += additional_result
-    additional_result, seen_failures = get_additional_failures("failed_testsuite.txt", "Testsuite Failures", seen_failures)
+    additional_result, seen_failures = get_additional_failures("failed_testsuite.txt",
+                                                               "Testsuite Failures",
+                                                               seen_failures)
     print_failed_tests(additional_result)
     result += additional_result
 
@@ -74,11 +78,11 @@ def assign_labels(file_name: str, label: str):
         return label
     return ""
 
-def failures_to_markdown(failures: Dict[str, List[str]], current_hash: str, patch_name: str):
+def failures_to_markdown(failures: Dict[str, List[str]], current_hash: str, patch_name: str, title_prefix: str):
     result = f"""---
-title: Testsuite Status {current_hash if patch_name == "" else patch_name}
+title: {title_prefix} {current_hash if patch_name == "" else patch_name}
 """
-    labels = set()
+    labels: Set[str] = set()
     labels.add(assign_labels("failed_build.txt", "build-failure"))
     labels.add(assign_labels("failed_testsuite.txt", "testsuite-failure"))
     if len(failures["New"]) > 0:
@@ -104,17 +108,18 @@ def parse_arch_info(name: str, target: str):
     parts = parts + target_parts
     return " ".join(parts)
 
-def get_common_intersection(failures: Dict[str, Dict[str, Set[str]]]):
+def get_common_intersection(failures: Dict[str, Dict[str, Set[str]]]) -> Tuple[Set[str], int]:
     """
     get common failures across all affected targets (ones that appear in the tables)
     """
     common = [i for v in failures.values() for i in v.values() if len(i) != 0]
     if len(common) == 0:
         return set(), 0
-    intersect = set.intersection(*common)
+    # Get the intersection of all the sets in the list
+    intersect: Set[str] = set.intersection(*common)
     return intersect, len(common)
 
-def get_unique_failures(failure_type: str, intersect: Set[str], failures: Dict[str, Set[str]]):
+def get_unique_failures(failure_type: str, intersect: Set[str], failures: Dict[str, Dict[str, Set[str]]]):
     """
     get set difference between common failures and failures for target libc/arch/abi
     """
@@ -134,7 +139,9 @@ def get_unique_failures(failure_type: str, intersect: Set[str], failures: Dict[s
                 result += "```\n"
     return result
 
-def additional_failures_to_markdown(failure_type: str, failures: Dict[str, Dict[str, Set[str]]], num_targets: int):
+def additional_failures_to_markdown(failure_type: str,
+                                    failures: Dict[str, Dict[str, Set[str]]],
+                                    num_targets: int):
     """
     Adds new sections to issue displaying what failures were added/resolved
     """
@@ -246,6 +253,14 @@ def parse_arguments():
         type=str,
         help="Patch name",
     )
+    parser.add_argument(
+        "-title",
+        "--title-prefix",
+        default="Testsuite Status",
+        metavar="<string>",
+        type=str,
+        help="Title prefix",
+    )
     return parser.parse_args()
 
 
@@ -260,9 +275,12 @@ def main():
         all_new[file] = new
 
     print([i.keys() for i in all_new.values()])
-    summary_markdown = failures_to_markdown(failures, args.current_hash, args.patch_name)
-    resolved_markdown = additional_failures_to_markdown("Resolved", all_resolved, len(failures['Unresolved']))
-    new_markdown = additional_failures_to_markdown("New", all_new, len(failures['Unresolved']))
+    summary_markdown = failures_to_markdown(failures, args.current_hash, args.patch_name, args.title_prefix)
+    resolved_markdown = additional_failures_to_markdown("Resolved",
+                                                        all_resolved,
+                                                        len(failures['Unresolved']))
+    new_markdown = additional_failures_to_markdown("New", all_new,
+                                                   len(failures['Unresolved']))
 
     markdown = summary_markdown + new_markdown + resolved_markdown
 
