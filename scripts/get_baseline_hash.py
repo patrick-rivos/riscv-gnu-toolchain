@@ -21,7 +21,8 @@ def filter_results(issue):
         if label['name'] in filter_labels:
             labels_check = False
             break
-    if 'pull_request' not in issue.keys() and labels_check:
+    title_check = "Testsuite Status" in issue["title"]
+    if 'pull_request' not in issue.keys() and labels_check and title_check:
         return True
 
 def parse_baseline_hash(url: str, token: str):
