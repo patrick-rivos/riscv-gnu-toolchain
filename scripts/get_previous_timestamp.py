@@ -47,8 +47,8 @@ def get_workflow_runs(token: str, repo: str, workflow: str):
             f.write(f"status code: {r.status_code}")
         return None
     run_info = json.loads(r.text)
-    print(run_info)
-    runs = [run for run in run_info if run["name"] == workflow]
+    print(f"Before filter have {len(run_info['workflow_runs'])} to consider")
+    runs = [run for run in run_info["workflow_runs"] if run["name"] == workflow]
     print(f"After filter have {len(runs)} to consider")
     return runs
 
@@ -60,22 +60,23 @@ def write_run_timestamp(runs, run_id: str):
             f.write(runs[1]['created_at'])
 
 def write_run_id(runs, run_id: str):
+    assert(len(runs) >= 1)
     with open("run_id.txt", "w") as f:
         if str(runs[0]['id']) != str(run_id):
-            f.write(runs[0]['id'])
+            f.write(str(runs[0]['id']))
         else:
-            f.write(runs[1]['id'])
+            f.write(str(runs[1]['id']))
 
 def main():
     args = parse_arguments()
     runs = get_workflow_runs(args.token, args.repo, args.workflow)
-    if runs == None:
+    if not runs:
         print("Server failure. Patchwork returned status code >= 500")
         sys.exit(1)
     with open("runs.log", "w") as f:
-        f.write(json.dumps(runs['workflow_runs'][:10], indent=4))
-    write_run_timestamp(runs['workflow_runs'], args.run_id)
-    write_run_id(runs['workflow_runs'], args.run_id)
+        f.write(json.dumps(runs[:10], indent=4))
+    write_run_timestamp(runs, args.run_id)
+    write_run_id(runs, args.run_id)
 
 if __name__ == "__main__":
     main()
