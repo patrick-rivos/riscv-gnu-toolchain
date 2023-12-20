@@ -66,7 +66,7 @@ def write_run_id(runs, run_id: str):
 
 def main():
     args = parse_arguments()
-    runs = get_workflow_runs(args.token, args.repo)
+    runs = get_workflow_runs(args.token, args.repo, args.workflow)
     if runs == None:
         print("Server failure. Patchwork returned status code >= 500")
         sys.exit(1)
