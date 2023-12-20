@@ -57,7 +57,7 @@ def write_run_timestamp(runs, run_id: str):
         else:
             f.write(runs[1]['created_at'])
 
-def write_run_id(runs, run_id: str)
+def write_run_id(runs, run_id: str):
     with open("run_id.txt", "w") as f:
         if str(runs[0]['id']) != str(run_id):
             f.write(runs[0]['id'])
