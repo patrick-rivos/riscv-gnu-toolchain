@@ -46,7 +46,9 @@ def get_workflow_runs(token: str, repo: str, workflow: str):
         with open("patchwork_down.txt", "w") as f:
             f.write(f"status code: {r.status_code}")
         return None
-    runs = [run for run in json.loads(r.text) if run["name"] == workflow]
+    run_info = json.loads(r.text)
+    print(run_info)
+    runs = [run for run in run_info if run["name"] == workflow]
     print(f"After filter have {len(runs)} to consider")
     return runs
 
