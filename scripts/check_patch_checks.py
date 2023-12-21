@@ -31,7 +31,7 @@ def make_api_request(url):
 def check_patch(patch):
     url = patch['checks']
     # Check if patch has been seen by ci
-    checks = [check for _,check in make_api_request(url) if check["user"]["username"] == "rivoscibot"]
+    checks = [check for check in make_api_request(url)[1] if check["user"]["username"] == "rivoscibot"]
 
     # first three checks should be lint start/finish and apply
     if len(checks) < 3:
@@ -49,11 +49,10 @@ def check_patch(patch):
     # If testsuite was not reported, mark for rerun
     # testsuite should be reported as long as it was applied
     # and run has completed (enough time has passed)
-    if not apply_failure and not testsuite_reported:
+    if apply_failure and testsuite_reported:
         return True
 
     return False
-
 
 def get_patches(start: str, end: str):
     page_num = 1
@@ -66,10 +65,14 @@ def get_patches(start: str, end: str):
             break
         page_num += 1
 
-    to_run = [patch['id'] for patch in patches if check_patch(patch)]
-    with open("patch_numbers_to_run.txt", "w") as f:
-        nums = " ".join(to_run)
-        f.write(nums)
+    print([patch['id'] for patch in patches])
+
+    to_run = [str(patch['id']) for patch in patches if check_patch(patch)]
+    print(to_run)
+    if to_run:
+        with open("patch_numbers_to_run.txt", "w") as f:
+            nums = " ".join(to_run)
+            f.write(nums)
 
 def main():
     args = parse_arguments()

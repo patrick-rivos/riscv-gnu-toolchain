@@ -35,6 +35,13 @@ def parse_arguments():
         type=str,
         help="Patch id to download",
     )
+    parser.add_argument(
+        "-file",
+        "--patches-file",
+        metavar="<file_path>",
+        type=str,
+        help="File of patch numbers to download",
+    )
     return parser.parse_args()
 
 def parse_patches(patches, outdir="./patch_urls"):
@@ -82,7 +89,7 @@ def create_files(series_name: Dict[str, str], series_url: Dict[str, str], downlo
                 else:
                     f.writelines(links)
 
-    with open("./artifact_names.txt", "a") as f:
+    with open("./artifact_names.txt", "w") as f:
         f.write(str(artifact_names))
 
 def get_overlap_dict(download: Dict[str, List[str]], early: Dict[str, List[str]]):
@@ -97,6 +104,7 @@ def get_overlap_dict(download: Dict[str, List[str]], early: Dict[str, List[str]]
 def make_api_request(url):
     print(url)
     r = requests.get(url)
+    print(r.status_code)
     patches = json.loads(r.text)
     return patches
 
@@ -125,6 +133,30 @@ def get_single_patch(patch: str):
     print("creating patchworks links")
     create_files(series_name, series_url, patchwork_links, "./patchworks_metadata")
 
+def get_patches_file(file_path: str):
+    patch_nums = None
+    with open(file_path, "r") as f:
+        patch_nums = f.read().strip().split(" ")
+
+    print(patch_nums)
+
+    super_series_name = {}
+    super_series_url = {}
+    super_download_links = {} 
+    super_patchwork_links = {}
+    for patch in patch_nums:
+        url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch}"
+        series_name, series_url, download_links, patchwork_links = get_patch_info(url)
+        super_series_name.update(series_name)
+        super_series_url.update(series_url)
+        super_download_links.update(download_links)
+        super_patchwork_links.update(patchwork_links)
+
+    print("creating download links")
+    create_files(super_series_name, super_series_url, super_download_links, "./patch_urls")
+    print("creating patchworks links")
+    create_files(super_series_name, super_series_url, super_patchwork_links, "./patchworks_metadata")
+
 def get_multiple_patches(start: str, end: str, backup: str):
     url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project=6&since={}&before={}"
 
@@ -143,6 +175,8 @@ def main():
     args = parse_arguments()
     if args.patch_id is not None:
         get_single_patch(args.patch_id)
+    elif args.patches_file is not None:
+        get_patches_file(args.patches_file)
     else:
         get_multiple_patches(args.start, args.end, args.backup)
 
