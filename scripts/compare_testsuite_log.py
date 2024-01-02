@@ -14,18 +14,20 @@ class LibName:
     abi: str
     model: str
     multilib: bool
+    other_args: str
 
-    def __init__(self, arch: str, abi: str, model: str, multilib: bool):
+    def __init__(self, arch: str, abi: str, model: str, multilib: bool, other_args: str):
         self.arch = arch.strip().lower()
         self.abi = abi.strip().lower()
         self.model = model.strip().lower()
         self.multilib = multilib
+        self.other_args = other_args.strip()
 
     def __str__(self):
-        return " ".join((self.arch, self.abi, self.model)) + (" multilib" if self.multilib else "")
+        return " ".join((self.arch, self.abi, self.model)) + (" multilib" if self.multilib else "") + f" {self.other_args}"
 
     def __hash__(self):
-        return hash((self.arch, self.abi, self.model, self.multilib))
+        return hash((self.arch, self.abi, self.model, self.multilib, self.other_args))
 
 
 @dataclass
@@ -199,7 +201,8 @@ def parse_description(line: str, multilib: bool) -> Description:
     arch = descriptions[5]
     abi = descriptions[6]
     model = descriptions[7]
-    description = Description(tool, LibName(arch, abi, model, multilib))
+    other_args = " ".join(descriptions[8:-1])
+    description = Description(tool, LibName(arch, abi, model, multilib, other_args))
     return description
 
 
