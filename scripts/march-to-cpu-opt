@@ -13,14 +13,15 @@ EXT_OPTS = {
   "zbc":             "zbc=true",
   "zbs":             "zbs=true",
   "v":               "v=true,vext_spec=v1.0",
-  "zve32f":          "Zve32f=true",
-  "zve64f":          "Zve64f=true",
-  "zfh":             "Zfh=true",
-  "zfhmin":             "Zfhmin=true",
+  "zve32f":          "zve32f=true",
+  "zve64f":          "zve64f=true",
+  "zfh":             "zfh=true",
+  "zfhmin":             "zfhmin=true",
   "zhinx":           "zhinx=true",
   "zfinx":           "zfinx=true",
   "zdinx":           "zdinx=true",
-  "zicond":          "x-zicond=true",
+  "zicond":          "zicond=true",
+  "zvbb":            "zvbb=true",
 }
 
 SUPPORTTED_EXTS = "iemafdcbvph"
