@@ -1,4 +1,6 @@
 import argparse
+import json
+import requests
 import os
 import re
 from typing import List, Tuple
@@ -141,30 +143,38 @@ def artifact_exists(artifact_name: str) -> bool:
     return True
 
 
-def gcc_hashes(git_hash: str, subsequent: bool):
-    """Get the most recent GCC hashes within a 100 commits (in order from closest to furthest)"""
-    if subsequent is False:  # Get prior commit
-        old_commit = (
-            os.popen(
-                f"cd gcc && git checkout master --quiet && git pull --quiet && git rev-parse {git_hash}~100"
-            )
-            .read()
-            .strip()
+def gcc_hashes(git_hash: str, issue_hashes: List[str]):
+    old_commit = (
+        os.popen(
+            f"cd gcc && git checkout master --quiet && git pull --quiet && git rev-parse {git_hash}~1000"
         )
-        print(f"git rev-list --ancestry-path {old_commit}~1..{git_hash}~1")
-        commits = os.popen(
-            f"cd gcc && git rev-list --ancestry-path {old_commit}^..{git_hash}^"
-        ).read()
-        commits = commits.splitlines()
-    else:
-        os.popen("cd gcc && git checkout master --quiet && git pull --quiet").read()
-        commits = os.popen(
-            f"cd gcc && git rev-list --ancestry-path {git_hash}..HEAD | head -100"
-        ).read()
-        commits = list(reversed(commits.splitlines()))
+        .read()
+        .strip()
+    )
+    print(f"git rev-list --topo-order {old_commit}..{git_hash}")
+    commits = os.popen(
+        f"cd gcc && git rev-list --topo-order {old_commit}..{git_hash}"
+    ).read()
+    commits = commits.splitlines()
+    sorted_issue_hashes = [commit for commit in commits if commit in issue_hashes]
 
-    return commits
+    return sorted_issue_hashes
 
+def issue_hashes(repo_name: str, token: str):
+    params = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"token {token}",
+        "X-Github-Api-Version": "2022-11-28",
+    }
+    response = requests.get(
+        f"https://api.github.com/repos/{repo_name}/issues?page=1&per_page=100&state=all",
+        headers=params,
+        timeout=15 * 60, # 15 min timeout
+    )
+    print(f"getting most recent 100 issues: {response.status_code}")
+    issues = json.loads(response.text)
+    hashes = [issue['title'].split(' ')[-1] for issue in issues if 'pull_request' not in issue.keys()]
+    return hashes
 
 def download_all_artifacts(
     current_hash: str, previous_hash: str, repo_name: str, token: str
@@ -175,7 +185,12 @@ def download_all_artifacts(
     as well. Runs comparison on the downloaded artifacts
     """
 
-    prev_commits = gcc_hashes(current_hash, False)
+    # get hashes from the most recent 100 issues
+    issue_commits = issue_hashes(repo_name, token)
+
+    # sort most recent issue commit hashes by topological order
+    prev_commits = gcc_hashes(current_hash, issue_commits)
+
     artifact_name_templates = get_possible_artifact_names()
     # TODO: Refactor this block
     for artifact_name_template in artifact_name_templates:
