@@ -146,7 +146,7 @@ def artifact_exists(artifact_name: str) -> bool:
 def gcc_hashes(git_hash: str, issue_hashes: List[str]):
     old_commit = (
         os.popen(
-            f"cd gcc && git checkout master --quiet && git pull --quiet && git rev-parse {git_hash}~1000"
+            f"cd gcc && git checkout master --quiet && git pull --quiet && git rev-parse {git_hash}~10000"
         )
         .read()
         .strip()
