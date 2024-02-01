@@ -42,6 +42,14 @@ def parse_arguments():
         type=str,
         help="File of patch numbers to download",
     )
+    parser.add_argument(
+        "-project",
+        "--project",
+        metavar="<int>",
+        type=int,
+        default=6,
+        help="Project number to pull from",
+    )
     return parser.parse_args()
 
 def parse_patches(patches, outdir="./patch_urls"):
@@ -157,12 +165,12 @@ def get_patches_file(file_path: str):
     print("creating patchworks links")
     create_files(super_series_name, super_series_url, super_patchwork_links, "./patchworks_metadata")
 
-def get_multiple_patches(start: str, end: str, backup: str):
-    url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project=6&since={}&before={}"
+def get_multiple_patches(start: str, end: str, backup: str, project: int):
+    url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project={}&since={}&before={}"
 
-    series_name, series_url, download_links, patchworks_links = get_patch_info(url.format(start, end))
+    series_name, series_url, download_links, patchworks_links = get_patch_info(url.format(project, start, end))
 
-    _early_series_name, _early_series_url, early_download_links, early_patchworks_links = get_patch_info(url.format(backup, start))
+    _early_series_name, _early_series_url, early_download_links, early_patchworks_links = get_patch_info(url.format(project, backup, start))
 
     print("creating download links")
     new_download_links = get_overlap_dict(download_links, early_download_links)
@@ -178,7 +186,8 @@ def main():
     elif args.patches_file is not None:
         get_patches_file(args.patches_file)
     else:
-        get_multiple_patches(args.start, args.end, args.backup)
+        print(f"project: {args.project}")
+        get_multiple_patches(args.start, args.end, args.backup, args.project)
 
 if __name__ == "__main__":
     main()
