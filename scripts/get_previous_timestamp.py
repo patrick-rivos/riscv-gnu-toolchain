@@ -53,19 +53,15 @@ def get_workflow_runs(token: str, repo: str, workflow: str):
     return runs
 
 def write_run_timestamp(runs, run_id: str):
-    with open("date_cur.txt", "w") as f:
-        if str(runs[0]['id']) != str(run_id):
-            f.write(runs[0]['created_at'])
-        else:
-            f.write(runs[1]['created_at'])
+    assert(str(runs[0]['id']) == str(run_id))
+    with open("date_prior.txt", "w") as f:
+        f.write(runs[1]['created_at'])
 
 def write_run_id(runs, run_id: str):
     assert(len(runs) >= 1)
+    assert(str(runs[0]['id']) == str(run_id))
     with open("run_id.txt", "w") as f:
-        if str(runs[0]['id']) != str(run_id):
-            f.write(str(runs[0]['id']))
-        else:
-            f.write(str(runs[1]['id']))
+        f.write(str(runs[1]['id']))
 
 def main():
     args = parse_arguments()
