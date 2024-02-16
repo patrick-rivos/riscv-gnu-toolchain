@@ -166,7 +166,10 @@ def get_patches_file(file_path: str):
     create_files(super_series_name, super_series_url, super_patchwork_links, "./patchworks_metadata")
 
 def get_multiple_patches(start: str, end: str, backup: str, project: int):
-    url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project={}&since={}&before={}"
+    if project == 6: #GCC
+        url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project={}&since={}&before={}"
+    else: # glibc
+        url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=riscv&project={}&since={}&before={}"
 
     series_name, series_url, download_links, patchworks_links = get_patch_info(url.format(project, start, end))
 
