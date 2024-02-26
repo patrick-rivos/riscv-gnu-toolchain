@@ -59,7 +59,7 @@ def write_run_timestamp(runs, run_id: str):
 
 def write_run_id(runs, run_id: str):
     assert(len(runs) >= 1)
-    assert(str(runs[0]['id']) == str(run_id))
+    assert(str(runs[0]['id']) == str(run_id)), f"The 10 most recent runs are: \n{runs[:10]}"
     with open("run_id.txt", "w") as f:
         f.write(str(runs[1]['id']))
 
@@ -71,8 +71,8 @@ def main():
         sys.exit(1)
     with open("runs.log", "w") as f:
         f.write(json.dumps(runs[:10], indent=4))
-    write_run_timestamp(runs, args.run_id)
     write_run_id(runs, args.run_id)
+    write_run_timestamp(runs, args.run_id)
 
 if __name__ == "__main__":
     main()
