@@ -59,7 +59,7 @@ def write_run_timestamp(runs, run_id: str):
 
 def write_run_id(runs, run_id: str):
     assert(len(runs) >= 1)
-    assert(str(runs[0]['id']) == str(run_id)), f"The 10 most recent runs are: \n{runs[:10]}"
+    assert str(runs[0]['id']) == str(run_id), f"The 10 most recent runs are: \n{runs[:10]}"
     with open("run_id.txt", "w") as f:
         f.write(str(runs[1]['id']))
 
