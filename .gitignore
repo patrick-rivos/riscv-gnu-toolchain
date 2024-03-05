@@ -8,3 +8,6 @@ Makefile
 /build-*/
 /install-newlib-nano/
 /stamps/
+*.swp
+*.swe
+*.swo
