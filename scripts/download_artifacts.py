@@ -200,7 +200,7 @@ def download_all_artifacts(
     # sort most recent issue commit hashes by topological order
     prev_commits = gcc_hashes(current_hash, issue_commits)
 
-    artifact_name_templates = get_possible_artifact_names()
+    artifact_name_templates = get_possible_artifact_names(prefix)
     # TODO: Refactor this block
     for artifact_name_template in artifact_name_templates:
         artifact = artifact_name_template.format(current_hash)
