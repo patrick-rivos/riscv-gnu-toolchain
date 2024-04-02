@@ -35,6 +35,14 @@ def parse_arguments():
         type=str,
         help="Github access token",
     )
+    parser.add_argument(
+        "-prefix",
+        required=False,
+        default="",
+        type=str,
+        help="Artifact prefix",
+    )
+
     return parser.parse_args()
 
 
@@ -61,7 +69,7 @@ def get_valid_artifact_hash(
     return "No valid hash", None
 
 
-def get_possible_artifact_names() -> List[str]:
+def get_possible_artifact_names(prefix: str) -> List[str]:
     """
     Generates all possible permutations of target artifact logs and
     removes unsupported targets
@@ -71,7 +79,7 @@ def get_possible_artifact_names() -> List[str]:
       Newlib: rv32/64 non-multilib
       Arch extensions: gc
     """
-    libc = ["gcc-linux", "gcc-newlib"]
+    libc = [f"{prefix}gcc-linux", f"{prefix}gcc-newlib"]
     arch = ["rv32{}-ilp32d-{}", "rv64{}-lp64d-{}"]
 
     multilib_arch_extensions = [
@@ -178,7 +186,7 @@ def issue_hashes(repo_name: str, token: str):
     return hashes
 
 def download_all_artifacts(
-    current_hash: str, previous_hash: str, repo_name: str, token: str
+    current_hash: str, previous_hash: str, repo_name: str, token: str, prefix: str
 ):
     """
     Goes through all possible artifact targets and downloads it
@@ -247,7 +255,7 @@ def download_all_artifacts(
 
 def main():
     args = parse_arguments()
-    download_all_artifacts(args.hash, args.phash, args.repo, args.token)
+    download_all_artifacts(args.hash, args.phash, args.repo, args.token, args.prefix)
 
 
 if __name__ == "__main__":
