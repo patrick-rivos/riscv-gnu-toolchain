@@ -82,15 +82,21 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
     libc = [f"{prefix}gcc-linux", f"{prefix}gcc-newlib"]
     arch = ["rv32{}-ilp32d-{}", "rv64{}-lp64d-{}"]
 
+    # Weekly arch extensions included since rv64gcv_zv* doesn't
+    # exist without a prefix
     multilib_arch_extensions = [
         "gcv",
+        "gcv_zve64d",
+        "gcv_zvl1024b",
+        "gcv_zvl512b",
+        "gcv_zvl256b",
     ]
 
+    # now have weekly runners rv32 zvl multilib variants
     multilib_lists = [
         "-".join([i, j, "multilib"])
         for i in libc
         for j in arch
-        if "rv64" in j
     ]
 
     multilib_names = [
