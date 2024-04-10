@@ -82,22 +82,45 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
     libc = [f"{prefix}gcc-linux", f"{prefix}gcc-newlib"]
     arch = ["rv32{}-ilp32d-{}", "rv64{}-lp64d-{}"]
 
+    multilib_arch_extensions = None
+    multilib_lists = None
+
     # Weekly arch extensions included since rv64gcv_zv* doesn't
     # exist without a prefix
-    multilib_arch_extensions = [
-        "gcv",
-        "gcv_zve64d",
-        "gcv_zvl1024b",
-        "gcv_zvl512b",
-        "gcv_zvl256b",
-    ]
+    if prefix == "":
+        multilib_arch_extensions = [
+            "gcv",
+        ]
 
-    # now have weekly runners rv32 zvl multilib variants
-    multilib_lists = [
-        "-".join([i, j, "multilib"])
-        for i in libc
-        for j in arch
-    ]
+        multilib_lists = [
+            "-".join([i, j, "multilib"])
+            for i in libc
+            for j in arch
+            if "rv64" in j
+        ]
+    else:
+        possible_arch_extensions = [
+            "gcv_zve64d",
+            "gcv_zvl1024b",
+            "gcv_zvl512b",
+            "gcv_zvl256b",
+        ]
+        # each extension ends in '_'. Use this since lmul extensions
+        # use the same arch extension but the prefix is
+        # currently structured as zvl_lmulx_ 
+        prefix = prefix.split('_')[0]
+        multilib_arch_extensions = [
+            ext
+            for ext in possible_arch_extensions
+            if prefix in ext
+        ]
+
+        # now have weekly runners rv32 zvl multilib variants
+        multilib_lists = [
+            "-".join([i, j, "multilib"])
+            for i in libc
+            for j in arch
+        ]
 
     multilib_names = [
         name.format(ext, "{}")
