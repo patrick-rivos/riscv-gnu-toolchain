@@ -90,6 +90,8 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
     if prefix == "":
         multilib_arch_extensions = [
             "gcv",
+            "imc",
+            "imc_zba_zbb_zbc_zbs",
         ]
 
         multilib_lists = [
