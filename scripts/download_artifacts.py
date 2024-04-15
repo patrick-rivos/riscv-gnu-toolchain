@@ -68,66 +68,88 @@ def get_valid_artifact_hash(
 
     return "No valid hash", None
 
-
-def get_possible_artifact_names(prefix: str) -> List[str]:
+def get_weekly_names(prefix: str) -> List[str]:
     """
-    Generates all possible permutations of target artifact logs and
-    removes unsupported targets
+    Generates all permutaions of target artifact logs for 
+    weekly runners
 
-    Current Support:
-      Linux: rv32/64 multilib non-multilib
-      Newlib: rv32/64 non-multilib
-      Arch extensions: gc
+    Current Weekly Builds (prefixes):
+    zve_
+    rvx_zvl_
+    rvx_zvl_lmulx_
     """
-    libc = [f"{prefix}gcc-linux", f"{prefix}gcc-newlib"]
+    # don't test newlib with weekly runs
+    libc = [f"{prefix}gcc-linux"]
     arch = ["rv32{}-ilp32d-{}", "rv64{}-lp64d-{}"]
 
-    multilib_arch_extensions = None
-    multilib_lists = None
+    possible_arch_extensions = [
+        "gcv_zve64d",
+        "gcv_zvl1024b",
+        "gcv_zvl512b",
+        "gcv_zvl256b",
+    ]
+    # each extension ends in '_'. Use this since lmul extensions
+    # use the same arch extension but the prefix is
+    # currently structured as rvx_zvl_lmulx_ 
+    comps = prefix.split('_')
+    prefix_arch = ''
 
-    # Weekly arch extensions included since rv64gcv_zv* doesn't
-    # exist without a prefix
-    if prefix == "":
-        multilib_arch_extensions = [
-            "gcv",
-            "imc",
-            "imc_zba_zbb_zbc_zbs",
-        ]
-
-        multilib_lists = [
-            "-".join([i, j, "multilib"])
-            for i in libc
-            for j in arch
-            if "rv64" in j
-        ]
+    if len(comps) == 2:
+        prefix = comps[0]
     else:
-        possible_arch_extensions = [
-            "gcv_zve64d",
-            "gcv_zvl1024b",
-            "gcv_zvl512b",
-            "gcv_zvl256b",
-        ]
-        # each extension ends in '_'. Use this since lmul extensions
-        # use the same arch extension but the prefix is
-        # currently structured as zvl_lmulx_ 
-        prefix = prefix.split('_')[0]
-        multilib_arch_extensions = [
-            ext
-            for ext in possible_arch_extensions
-            if prefix in ext
-        ]
+        prefix = comps[1]
+        prefix_arch = comps[0]
 
-        # now have weekly runners rv32 zvl multilib variants
-        multilib_lists = [
-            "-".join([i, j, "multilib"])
-            for i in libc
-            for j in arch
-        ]
+    multilib_arch_extensions = [
+        ext
+        for ext in possible_arch_extensions
+        if prefix in ext
+    ]
+    print("prefix arch:", prefix_arch)
+
+    # now have weekly runners rv32 zvl multilib variants
+    multilib_lists = [
+        "-".join([i, j, "multilib"])
+        for i in libc
+        for j in arch
+    ]
+    if prefix_arch != '':
+        multilib_lists = [name for name in multilib_lists if prefix_arch in name.split('-')[2]]
 
     multilib_names = [
         name.format(ext, "{}")
         for name in multilib_lists
         for ext in multilib_arch_extensions
+    ]
+
+    return multilib_names
+
+def get_frequent_names() -> List[str]:
+    """
+    Generates all permutaions of target artifact logs for 
+    build frequent runners
+    """
+    libc = [f"gcc-linux", f"gcc-newlib"]
+    arch = ["rv32{}-ilp32d-{}", "rv64{}-lp64d-{}"]
+
+    multilib_arch_extensions = [
+        "gcv",
+        "imc",
+        "imc_zba_zbb_zbc_zbs",
+    ]
+
+    multilib_lists = [
+        "-".join([i, j, "multilib"])
+        for i in libc
+        for j in arch
+        if "rv64" in j
+    ]
+
+    multilib_names = [
+        name.format(ext, "{}")
+        for name in multilib_lists
+        for ext in multilib_arch_extensions
+        if not ('linux' in name and 'imc' in ext) # only test uc on newlib
     ]
 
     non_multilib_arch_extensions = [
@@ -149,6 +171,22 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
 
     return multilib_names + non_multilib_names
 
+def get_possible_artifact_names(prefix: str) -> List[str]:
+    """
+    Generates all possible permutations of target artifact logs and
+    removes unsupported targets
+
+    Current Support:
+      Linux: rv32/64 multilib non-multilib
+      Newlib: rv32/64 non-multilib
+      Arch extensions: gc
+    """
+    # Weekly arch extensions included since rv64gcv_zv* doesn't
+    # exist without a prefix
+    if prefix == "":
+        return get_frequent_names()
+    else:
+        return get_weekly_names(prefix)
 
 def artifact_exists(artifact_name: str) -> bool:
     """
@@ -232,6 +270,8 @@ def download_all_artifacts(
     prev_commits = gcc_hashes(current_hash, issue_commits)
 
     artifact_name_templates = get_possible_artifact_names(prefix)
+    print(artifact_name_templates)
+
     # TODO: Refactor this block
     for artifact_name_template in artifact_name_templates:
         artifact = artifact_name_template.format(current_hash)
