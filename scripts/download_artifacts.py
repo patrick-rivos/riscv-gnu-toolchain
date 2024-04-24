@@ -70,7 +70,7 @@ def get_valid_artifact_hash(
 
 def get_weekly_names(prefix: str) -> List[str]:
     """
-    Generates all permutaions of target artifact logs for 
+    Generates all permutaions of target artifact logs for
     weekly runners
 
     Current Weekly Builds (prefixes):
@@ -90,7 +90,7 @@ def get_weekly_names(prefix: str) -> List[str]:
     ]
     # each extension ends in '_'. Use this since lmul extensions
     # use the same arch extension but the prefix is
-    # currently structured as rvx_zvl_lmulx_ 
+    # currently structured as rvx_zvl_lmulx_
     comps = prefix.split('_')
     prefix_arch = ''
 
@@ -126,7 +126,7 @@ def get_weekly_names(prefix: str) -> List[str]:
 
 def get_frequent_names() -> List[str]:
     """
-    Generates all permutaions of target artifact logs for 
+    Generates all permutaions of target artifact logs for
     build frequent runners
     """
     libc = [f"gcc-linux", f"gcc-newlib"]
@@ -134,8 +134,6 @@ def get_frequent_names() -> List[str]:
 
     multilib_arch_extensions = [
         "gcv",
-        "imc",
-        "imc_zba_zbb_zbc_zbs",
     ]
 
     multilib_lists = [
@@ -155,6 +153,8 @@ def get_frequent_names() -> List[str]:
     non_multilib_arch_extensions = [
         "gc",
         "gc_zba_zbb_zbc_zbs",
+        "imc",
+        "imc_zba_zbb_zbc_zbs",
     ]
 
     non_multilib_lists = [
