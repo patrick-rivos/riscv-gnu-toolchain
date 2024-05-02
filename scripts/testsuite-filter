@@ -2,10 +2,11 @@
 
 
 from __future__ import print_function
+import pathlib
 import sys
 import os
 import re
-import collections
+import argparse
 
 debug = False
 
@@ -278,21 +279,25 @@ def filter_result(tool, libc, white_list_base_dir, unexpected_results):
 
 
 def main():
-    if len(sys.argv) < 5:
-        usage()
-        sys.exit()
-    tool, libc, white_list_base_dir, sum_files = sys.argv[1:5]
+    parser = argparse.ArgumentParser(
+                    prog='testsuite-filter',
+                    description='Parse and filter testsuite results with allowlists')
 
-    rv = 0
+    parser.add_argument('toolname', choices=["gcc", "binutils"])
+    parser.add_argument('libc')
+    parser.add_argument('allow_list_base_dir', help="Base directory for the allowlist. Expected structure: <base_dir>/<tool>/<allowlist>.log", type=pathlib.Path)
+    parser.add_argument('sum_files', help="Testsuite .sum file(s)")
+    args = parser.parse_args()
+
+    tool = args.toolname
+    libc = args.libc
+    allow_list_base_dir = args.allow_list_base_dir
+    sum_files = args.sum_files
 
     sum_files = sum_files.split(',')
     unexpected_results = read_sum(sum_files)
-    if tool in ['gcc', 'binutils']:
-        rv = filter_result(tool, libc, white_list_base_dir,
-                           unexpected_results)
-    else:
-        print ("Unsupported tool: `%s`" % tool)
-        rv = 1
+    rv = filter_result(tool, libc, allow_list_base_dir,
+                        unexpected_results, target)
 
     sys.exit(rv)
 
