@@ -6,6 +6,7 @@ import pathlib
 import sys
 import os
 import re
+from typing import Dict, List, Set, Tuple
 import argparse
 
 debug = False
@@ -39,13 +40,13 @@ def usage():
           " <white-list-base-dir> <testsuite.sum>" % sys.argv[0])
 
 
-def get_white_list_files(raw_arch, abi, libc, white_list_base_dir):
+def get_white_list_files(raw_arch: str, abi: str, libc: str, white_list_base_dir: str):
     """ Return white file list according the arch, abi, libc name and component.
     """
-    white_list_files = []
+    white_list_files: List[str] = []
     arch = Arch(raw_arch)
 
-    def append_if_exist(filename):
+    def append_if_exist(filename: str):
         if debug:
             print ("Try append: %s" % filename)
         filepath = os.path.join(white_list_base_dir, filename)
@@ -106,11 +107,11 @@ def get_white_list_files(raw_arch, abi, libc, white_list_base_dir):
     return white_list_files
 
 
-def read_white_lists(white_list_files, is_gcc):
+def read_white_lists(white_list_files: List[str], is_gcc: bool):
     if is_gcc:
-        white_lists = dict()
+        white_lists: Dict[str, List[str]] = dict()
     else:
-        white_lists = set()
+        white_lists: Set[str] = set()
     for fname in white_list_files:
         with open(fname) as f:
             content = f.readlines()
@@ -138,15 +139,15 @@ def read_white_lists(white_list_files, is_gcc):
     return white_lists
 
 
-def read_sum(sum_files):
-    unexpected_results = dict()
+def read_sum(sum_files: List[str]):
+    unexpected_results: Dict[str, Dict[str, List[str]]] = dict()
     for sum_file in sum_files:
         with open(sum_file) as f:
             content = f.readlines()
             current_target = None
-            variations = []
+            variations: List[str] = []
             scan_variations = False
-            unexpected_result = dict()
+            unexpected_result: Dict[str, List[str]] = dict()
             tool = os.path.basename(sum_file).split(".")[0]
             for l in content:
                 if l.startswith("Schedule of variations"):
@@ -169,7 +170,7 @@ def read_sum(sum_files):
     return unexpected_results
 
 
-def get_white_list(arch, abi, libc, white_list_base_dir, is_gcc):
+def get_white_list(arch: str, abi: str, libc: str, white_list_base_dir: str, is_gcc: bool):
     white_list_files = \
         get_white_list_files(arch, abi, libc, white_list_base_dir)
     white_list = read_white_lists(white_list_files, is_gcc)
@@ -177,8 +178,8 @@ def get_white_list(arch, abi, libc, white_list_base_dir, is_gcc):
 
 
 
-def filter_result(tool, libc, white_list_base_dir, unexpected_results):
-    summary = dict()
+def filter_result(tool: str, libc: str, white_list_base_dir: str, unexpected_results: Dict[str, Dict[str, List[str]]], target: str | None):
+    summary: Dict[Tuple[str, str, str], Dict[str, Tuple[int, int] | int]] = dict()
     any_fail = False
     is_gcc = tool == 'gcc'
     # Filter with white list.
@@ -203,9 +204,9 @@ def filter_result(tool, libc, white_list_base_dir, unexpected_results):
             # filter!
             config = (arch, abi, cmodel)
             fail_count = 0
-            unexpected_result_list = []
+            unexpected_result_list: List[str] = []
             if is_gcc:
-                case_count = set()
+                case_count: Set[str] = set()
                 for ur in unexpected_result:
                     key = ur.split(' ')[1]
                     if key in white_list and \
