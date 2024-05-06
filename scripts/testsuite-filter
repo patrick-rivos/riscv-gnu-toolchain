@@ -2,10 +2,12 @@
 
 
 from __future__ import print_function
+import pathlib
 import sys
 import os
 import re
-import collections
+from typing import Dict, List, Set, Tuple
+import argparse
 
 debug = False
 
@@ -38,13 +40,13 @@ def usage():
           " <white-list-base-dir> <testsuite.sum>" % sys.argv[0])
 
 
-def get_white_list_files(raw_arch, abi, libc, white_list_base_dir):
+def get_white_list_files(raw_arch: str, abi: str, libc: str, white_list_base_dir: str):
     """ Return white file list according the arch, abi, libc name and component.
     """
-    white_list_files = []
+    white_list_files: List[str] = []
     arch = Arch(raw_arch)
 
-    def append_if_exist(filename):
+    def append_if_exist(filename: str):
         if debug:
             print ("Try append: %s" % filename)
         filepath = os.path.join(white_list_base_dir, filename)
@@ -105,11 +107,11 @@ def get_white_list_files(raw_arch, abi, libc, white_list_base_dir):
     return white_list_files
 
 
-def read_white_lists(white_list_files, is_gcc):
+def read_white_lists(white_list_files: List[str], is_gcc: bool):
     if is_gcc:
-        white_lists = dict()
+        white_lists: Dict[str, List[str]] = dict()
     else:
-        white_lists = set()
+        white_lists: Set[str] = set()
     for fname in white_list_files:
         with open(fname) as f:
             content = f.readlines()
@@ -137,16 +139,21 @@ def read_white_lists(white_list_files, is_gcc):
     return white_lists
 
 
-def read_sum(sum_files):
-    unexpected_results = dict()
+def read_sum(sum_files: List[str]):
+    unexpected_results: Dict[str, Dict[str, List[str]]] = dict()
     for sum_file in sum_files:
         with open(sum_file) as f:
             content = f.readlines()
             current_target = None
-            variations = []
+            variations: List[str] = []
             scan_variations = False
-            unexpected_result = dict()
+            unexpected_result: Dict[str, List[str]] = dict()
             tool = os.path.basename(sum_file).split(".")[0]
+
+            if tool == "glibc":
+                current_target = "glibc"
+                unexpected_result[current_target] = list()
+
             for l in content:
                 if l.startswith("Schedule of variations"):
                     scan_variations = True
@@ -162,13 +169,14 @@ def read_sum(sum_files):
                     unexpected_result[current_target] = list()
                 elif l.startswith("FAIL") or l.startswith("XPASS") \
                      or l.startswith("ERROR"):
+                    assert current_target is not None
                     unexpected_result[current_target].append(l.strip())
             unexpected_results[tool] = unexpected_result
     # tool -> variation(target) -> list of unexpected result
     return unexpected_results
 
 
-def get_white_list(arch, abi, libc, white_list_base_dir, is_gcc):
+def get_white_list(arch: str, abi: str, libc: str, white_list_base_dir: str, is_gcc: bool):
     white_list_files = \
         get_white_list_files(arch, abi, libc, white_list_base_dir)
     white_list = read_white_lists(white_list_files, is_gcc)
@@ -176,10 +184,11 @@ def get_white_list(arch, abi, libc, white_list_base_dir, is_gcc):
 
 
 
-def filter_result(tool, libc, white_list_base_dir, unexpected_results):
-    summary = dict()
+def filter_result(tool: str, libc: str, white_list_base_dir: str, unexpected_results: Dict[str, Dict[str, List[str]]], target: str | None):
+    summary: Dict[Tuple[str, str, str], Dict[str, Tuple[int, int] | int]] = dict()
     any_fail = False
     is_gcc = tool == 'gcc'
+    is_glibc = tool == 'glibc'
     # Filter with white list.
     for testtool, variation_unexpected_result in unexpected_results.items():
         for variation, unexpected_result in variation_unexpected_result.items():
@@ -197,6 +206,11 @@ def filter_result(tool, libc, white_list_base_dir, unexpected_results):
                     cmodel = info[9:]
                 elif info != 'riscv-sim':
                     other_args.append(info)
+            if is_glibc:
+                assert target is not None
+                arch = target.split('-')[0]
+                abi = target.split('-')[1]
+                cmodel = target.split('-')[2]
 
             white_list = \
                 get_white_list(arch, abi, libc,
@@ -205,9 +219,9 @@ def filter_result(tool, libc, white_list_base_dir, unexpected_results):
             # filter!
             config = (arch, abi, cmodel, ":".join(other_args))
             fail_count = 0
-            unexpected_result_list = []
+            unexpected_result_list: List[str] = []
             if is_gcc:
-                case_count = set()
+                case_count: Set[str] = set()
                 for ur in unexpected_result:
                     key = ur.split(' ')[1]
                     if key in white_list and \
@@ -248,6 +262,8 @@ def filter_result(tool, libc, white_list_base_dir, unexpected_results):
         toollist = ['gcc', 'g++', 'gfortran']
     elif tool == 'binutils':
         toollist = ['binutils', 'ld', 'gas']
+    elif tool == 'glibc':
+        toollist = ['glibc']
     else:
         raise Exception("Unsupported tool `%s`" % tool)
 
@@ -282,22 +298,38 @@ def filter_result(tool, libc, white_list_base_dir, unexpected_results):
         return 0
 
 
-def main():
-    if len(sys.argv) < 5:
-        usage()
-        sys.exit()
-    tool, libc, white_list_base_dir, sum_files = sys.argv[1:5]
+def target_regex_type(arg_value: str, pat=re.compile(r"^[a-z0-9A-Z]+-[a-z0-9A-Z]+-[a-z0-9A-Z]+$")):
+    if not pat.match(arg_value):
+        raise argparse.ArgumentTypeError("invalid value. Target must follow the format: 'arch-abi-cmodel'")
+    return arg_value
 
-    rv = 0
+
+def main():
+    parser = argparse.ArgumentParser(
+                    prog='testsuite-filter',
+                    description='Parse and filter testsuite results with allowlists')
+
+    parser.add_argument('toolname', choices=["gcc", "binutils", "glibc"])
+    parser.add_argument('libc')
+    parser.add_argument('allow_list_base_dir', help="Base directory for the allowlist. Expected structure: <base_dir>/<tool>/<allowlist>.log", type=pathlib.Path)
+    parser.add_argument('sum_files', help="Testsuite .sum file(s)")
+    parser.add_argument('-t', '--target', help='Required for glibc', required=False, type=target_regex_type)
+
+    args = parser.parse_args()
+
+    tool = args.toolname
+    libc = args.libc
+    allow_list_base_dir = args.allow_list_base_dir
+    sum_files = args.sum_files
+    target = args.target
+
+    if tool == "glibc":
+        assert target is not None, "Target must be provided for glibc runs"
 
     sum_files = sum_files.split(',')
     unexpected_results = read_sum(sum_files)
-    if tool in ['gcc', 'binutils']:
-        rv = filter_result(tool, libc, white_list_base_dir,
-                           unexpected_results)
-    else:
-        print ("Unsupported tool: `%s`" % tool)
-        rv = 1
+    rv = filter_result(tool, libc, allow_list_base_dir,
+                        unexpected_results, target)
 
     sys.exit(rv)
 
