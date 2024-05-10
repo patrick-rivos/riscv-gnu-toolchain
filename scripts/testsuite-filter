@@ -6,7 +6,7 @@ import pathlib
 import sys
 import os
 import re
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Set, Tuple, Union
 import argparse
 
 debug = False
@@ -184,8 +184,8 @@ def get_white_list(arch: str, abi: str, libc: str, white_list_base_dir: str, is_
 
 
 
-def filter_result(tool: str, libc: str, white_list_base_dir: str, unexpected_results: Dict[str, Dict[str, List[str]]], target: str | None):
-    summary: Dict[Tuple[str, str, str], Dict[str, Tuple[int, int] | int]] = dict()
+def filter_result(tool: str, libc: str, white_list_base_dir: str, unexpected_results: Dict[str, Dict[str, List[str]]], target: Union[str, None]):
+    summary: Dict[Tuple[str, str, str], Dict[str, Union[Tuple[int, int], int]]] = dict()
     any_fail = False
     is_gcc = tool == 'gcc'
     is_glibc = tool == 'glibc'
