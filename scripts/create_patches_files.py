@@ -3,7 +3,7 @@ import requests
 import json
 import os
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import DefaultDict, Dict, List
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Create Patch Files")
@@ -53,8 +53,8 @@ def parse_arguments():
     return parser.parse_args()
 
 def parse_patches(patches, outdir="./patch_urls"):
-    download_links: defaultdict[str, List[str]] = defaultdict(list)
-    patchworks_links: defaultdict[str, List[str]]  = defaultdict(list)
+    download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
+    patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
     series_name = {}
     series_url = {}
     for patch in patches:
