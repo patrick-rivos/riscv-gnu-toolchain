@@ -1,9 +1,10 @@
+"""Create a series of files listing patches to apply (pre-reqs + interesting patch) for a given time period"""
 import argparse
-import requests
 import json
 import os
 from collections import defaultdict
-from typing import Dict, List, Set
+from typing import DefaultDict, Dict, List, Any
+import requests
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Create Patch Files")
@@ -52,25 +53,34 @@ def parse_arguments():
     )
     return parser.parse_args()
 
-def parse_patches(patches, outdir="./patch_urls"):
-    download_links: defaultdict[str, List[str]] = defaultdict(list)
-    patchworks_links: defaultdict[str, List[str]]  = defaultdict(list)
-    series_name = {}
-    series_url = {}
+def parse_patches(patches: List[Dict[str, Any]]):
+    riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
+    all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
+    riscv_patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
+    all_patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
+    series_name: Dict[str, str] = {}
+    series_url: Dict[str, str] = {}
     for patch in patches:
         assert len(patch["series"]) == 1
         found_series = patch["series"][0]["id"]
         print(f"currently parsing:\n\t{patch['series'][0]}")
-        if len(download_links[found_series]) == 0:
-            download_links[found_series].append([patch["mbox"] + "\n"])
-            patchworks_links[found_series].append([f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n"])
+
+        if len(all_download_links[found_series]) == 0:
+            all_download_links[found_series].append([patch["mbox"] + "\n"])
+            all_patchworks_links[found_series].append([f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n"])
         else:
-            prev_download_link = list(download_links[found_series][-1])
+            prev_download_link = list(all_download_links[found_series][-1])
             prev_download_link.append(patch["mbox"] + "\n")
-            download_links[found_series].append(prev_download_link)
-            prev_patchworks_link = list(patchworks_links[found_series][-1])
+            all_download_links[found_series].append(prev_download_link)
+            prev_patchworks_link = list(all_patchworks_links[found_series][-1])
             prev_patchworks_link.append(f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n")
-            patchworks_links[found_series].append(prev_patchworks_link)
+            all_patchworks_links[found_series].append(prev_patchworks_link)
+
+        if "risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower():
+            print(f"Patch {patch['name']} is a risc-v patch")
+            riscv_download_links[found_series].append(all_download_links[found_series][-1])
+            riscv_patchworks_links[found_series].append(all_patchworks_links[found_series][-1])
+
         if found_series not in series_name:
             if patch["series"][0]["name"] is None:
                 series_name[found_series] = "unknown"
@@ -78,7 +88,7 @@ def parse_patches(patches, outdir="./patch_urls"):
                 series_name[found_series] = "".join(letter for letter in patch["series"][0]["name"] if letter.isalnum() or letter == " ").replace(" ","_")
             series_url[found_series] = patch["series"][0]["web_url"]
 
-    return series_name, series_url, download_links, patchworks_links
+    return series_name, series_url, riscv_download_links, riscv_patchworks_links
 
 
 def create_files(series_name: Dict[str, str], series_url: Dict[str, str], download_links: Dict[str, List[List[str]]], outdir: str):
@@ -100,7 +110,7 @@ def create_files(series_name: Dict[str, str], series_url: Dict[str, str], downlo
     with open("./artifact_names.txt", "w") as f:
         f.write(str(artifact_names))
 
-def get_overlap_dict(download: Dict[str, List[str]], early: Dict[str, List[str]]):
+def get_overlap_dict(download: Dict[str, List[List[str]]], early: Dict[str, List[List[str]]]):
     overlap = set(early.keys()).intersection(set(download.keys()))
     if len(overlap) != 0:
         print("found overlap, downloading sections")
@@ -109,27 +119,28 @@ def get_overlap_dict(download: Dict[str, List[str]], early: Dict[str, List[str]]
 
     return download
 
-def make_api_request(url):
+def make_api_request(url: str):
     print(url)
     r = requests.get(url)
     print(r.status_code)
     patches = json.loads(r.text)
     return patches
 
-def get_patch_info(url):
+def get_patch_info(url: str):
     patches = make_api_request(url)
     if isinstance(patches, list):
         return parse_patches(patches)
-    else:
-        # Getting a single patch back from the API means we were invoked with a particular patch id, not a time range.
-        patch_id = patches["id"]
-        series_url = f"https://patchwork.sourceware.org/api/1.3/series/{patches['series'][0]['id']}"
-        series_info = make_api_request(series_url)
-        if series_info["received_total"] > 1:
-            patch_ids = [patch['id'] for patch in series_info['patches'] if patch['id'] <= patch_id]
-            patches = [make_api_request(f"https://patchwork.sourceware.org/api/1.3/patches/{pid}") for pid in patch_ids]
-            return parse_patches(patches)
-        return parse_patches([patches])
+
+    # Getting a single patch back from the API means we were invoked with a
+    # particular patch id, not a time range.
+    patch_id = patches["id"]
+    series_url = f"https://patchwork.sourceware.org/api/1.3/series/{patches['series'][0]['id']}"
+    series_info = make_api_request(series_url)
+    if series_info["received_total"] > 1:
+        patch_ids = [patch['id'] for patch in series_info['patches'] if patch['id'] <= patch_id]
+        patches = [make_api_request(f"https://patchwork.sourceware.org/api/1.3/patches/{pid}") for pid in patch_ids]
+        return parse_patches(patches)
+    return parse_patches([patches])
 
 def get_single_patch(patch: str):
     url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch}"
@@ -148,10 +159,10 @@ def get_patches_file(file_path: str):
 
     print(patch_nums)
 
-    super_series_name = {}
-    super_series_url = {}
-    super_download_links = {} 
-    super_patchwork_links = {}
+    super_series_name: Dict[str, str] = {}
+    super_series_url: Dict[str, str] = {}
+    super_download_links: Dict[str, List[List[str]]] = {}
+    super_patchwork_links: Dict[str, List[List[str]]] = {}
     for patch in patch_nums:
         url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch}"
         series_name, series_url, download_links, patchwork_links = get_patch_info(url)
@@ -166,10 +177,7 @@ def get_patches_file(file_path: str):
     create_files(super_series_name, super_series_url, super_patchwork_links, "./patchworks_metadata")
 
 def get_multiple_patches(start: str, end: str, backup: str, project: int):
-    if project == 6: #GCC
-        url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project={}&since={}&before={}"
-    else: # glibc
-        url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=riscv&project={}&since={}&before={}"
+    url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&project={}&since={}&before={}"
 
     series_name, series_url, download_links, patchworks_links = get_patch_info(url.format(project, start, end))
 
