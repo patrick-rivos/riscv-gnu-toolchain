@@ -1,9 +1,10 @@
+"""Create a series of files listing patches to apply (pre-reqs + interesting patch) for a given time period"""
 import argparse
-import requests
 import json
 import os
 from collections import defaultdict
 from typing import DefaultDict, Dict, List, Any
+import requests
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Create Patch Files")
@@ -120,16 +121,17 @@ def get_patch_info(url: str):
     patches = make_api_request(url)
     if isinstance(patches, list):
         return parse_patches(patches)
-    else:
-        # Getting a single patch back from the API means we were invoked with a particular patch id, not a time range.
-        patch_id = patches["id"]
-        series_url = f"https://patchwork.sourceware.org/api/1.3/series/{patches['series'][0]['id']}"
-        series_info = make_api_request(series_url)
-        if series_info["received_total"] > 1:
-            patch_ids = [patch['id'] for patch in series_info['patches'] if patch['id'] <= patch_id]
-            patches = [make_api_request(f"https://patchwork.sourceware.org/api/1.3/patches/{pid}") for pid in patch_ids]
-            return parse_patches(patches)
-        return parse_patches([patches])
+
+    # Getting a single patch back from the API means we were invoked with a
+    # particular patch id, not a time range.
+    patch_id = patches["id"]
+    series_url = f"https://patchwork.sourceware.org/api/1.3/series/{patches['series'][0]['id']}"
+    series_info = make_api_request(series_url)
+    if series_info["received_total"] > 1:
+        patch_ids = [patch['id'] for patch in series_info['patches'] if patch['id'] <= patch_id]
+        patches = [make_api_request(f"https://patchwork.sourceware.org/api/1.3/patches/{pid}") for pid in patch_ids]
+        return parse_patches(patches)
+    return parse_patches([patches])
 
 def get_single_patch(patch: str):
     url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch}"
