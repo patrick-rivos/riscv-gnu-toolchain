@@ -54,24 +54,33 @@ def parse_arguments():
     return parser.parse_args()
 
 def parse_patches(patches: List[Dict[str, Any]]):
-    download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
-    patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
+    riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
+    all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
+    riscv_patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
+    all_patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
     series_name: Dict[str, str] = {}
     series_url: Dict[str, str] = {}
     for patch in patches:
         assert len(patch["series"]) == 1
         found_series = patch["series"][0]["id"]
         print(f"currently parsing:\n\t{patch['series'][0]}")
-        if len(download_links[found_series]) == 0:
-            download_links[found_series].append([patch["mbox"] + "\n"])
-            patchworks_links[found_series].append([f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n"])
+
+        if len(all_download_links[found_series]) == 0:
+            all_download_links[found_series].append([patch["mbox"] + "\n"])
+            all_patchworks_links[found_series].append([f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n"])
         else:
-            prev_download_link = list(download_links[found_series][-1])
+            prev_download_link = list(all_download_links[found_series][-1])
             prev_download_link.append(patch["mbox"] + "\n")
-            download_links[found_series].append(prev_download_link)
-            prev_patchworks_link = list(patchworks_links[found_series][-1])
+            all_download_links[found_series].append(prev_download_link)
+            prev_patchworks_link = list(all_patchworks_links[found_series][-1])
             prev_patchworks_link.append(f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n")
-            patchworks_links[found_series].append(prev_patchworks_link)
+            all_patchworks_links[found_series].append(prev_patchworks_link)
+
+        if "risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower():
+            print(f"Patch {patch['name']} is a risc-v patch")
+            riscv_download_links[found_series].append(all_download_links[found_series][-1])
+            riscv_patchworks_links[found_series].append(all_patchworks_links[found_series][-1])
+
         if found_series not in series_name:
             if patch["series"][0]["name"] is None:
                 series_name[found_series] = "unknown"
@@ -79,7 +88,7 @@ def parse_patches(patches: List[Dict[str, Any]]):
                 series_name[found_series] = "".join(letter for letter in patch["series"][0]["name"] if letter.isalnum() or letter == " ").replace(" ","_")
             series_url[found_series] = patch["series"][0]["web_url"]
 
-    return series_name, series_url, download_links, patchworks_links
+    return series_name, series_url, riscv_download_links, riscv_patchworks_links
 
 
 def create_files(series_name: Dict[str, str], series_url: Dict[str, str], download_links: Dict[str, List[List[str]]], outdir: str):
@@ -168,10 +177,7 @@ def get_patches_file(file_path: str):
     create_files(super_series_name, super_series_url, super_patchwork_links, "./patchworks_metadata")
 
 def get_multiple_patches(start: str, end: str, backup: str, project: int):
-    if project == 6: #GCC
-        url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project={}&since={}&before={}"
-    else: # glibc
-        url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=riscv&project={}&since={}&before={}"
+    url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&project={}&since={}&before={}"
 
     series_name, series_url, download_links, patchworks_links = get_patch_info(url.format(project, start, end))
 
