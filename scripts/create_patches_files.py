@@ -3,7 +3,7 @@ import requests
 import json
 import os
 from collections import defaultdict
-from typing import DefaultDict, Dict, List
+from typing import DefaultDict, Dict, List, Any
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Create Patch Files")
@@ -52,11 +52,11 @@ def parse_arguments():
     )
     return parser.parse_args()
 
-def parse_patches(patches, outdir="./patch_urls"):
+def parse_patches(patches: List[Dict[str, Any]]):
     download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
-    series_name = {}
-    series_url = {}
+    series_name: Dict[str, str] = {}
+    series_url: Dict[str, str] = {}
     for patch in patches:
         assert len(patch["series"]) == 1
         found_series = patch["series"][0]["id"]
@@ -100,7 +100,7 @@ def create_files(series_name: Dict[str, str], series_url: Dict[str, str], downlo
     with open("./artifact_names.txt", "w") as f:
         f.write(str(artifact_names))
 
-def get_overlap_dict(download: Dict[str, List[str]], early: Dict[str, List[str]]):
+def get_overlap_dict(download: Dict[str, List[List[str]]], early: Dict[str, List[List[str]]]):
     overlap = set(early.keys()).intersection(set(download.keys()))
     if len(overlap) != 0:
         print("found overlap, downloading sections")
@@ -109,14 +109,14 @@ def get_overlap_dict(download: Dict[str, List[str]], early: Dict[str, List[str]]
 
     return download
 
-def make_api_request(url):
+def make_api_request(url: str):
     print(url)
     r = requests.get(url)
     print(r.status_code)
     patches = json.loads(r.text)
     return patches
 
-def get_patch_info(url):
+def get_patch_info(url: str):
     patches = make_api_request(url)
     if isinstance(patches, list):
         return parse_patches(patches)
@@ -148,10 +148,10 @@ def get_patches_file(file_path: str):
 
     print(patch_nums)
 
-    super_series_name = {}
-    super_series_url = {}
-    super_download_links = {} 
-    super_patchwork_links = {}
+    super_series_name: Dict[str, str] = {}
+    super_series_url: Dict[str, str] = {}
+    super_download_links: Dict[str, List[List[str]]] = {}
+    super_patchwork_links: Dict[str, List[List[str]]] = {}
     for patch in patch_nums:
         url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch}"
         series_name, series_url, download_links, patchwork_links = get_patch_info(url)
