@@ -124,12 +124,12 @@ def get_weekly_names(prefix: str) -> List[str]:
 
     return multilib_names
 
-def get_frequent_names() -> List[str]:
+def get_frequent_names(prefix: str) -> List[str]:
     """
     Generates all permutaions of target artifact logs for 
     build frequent runners
     """
-    libc = [f"gcc-linux", f"gcc-newlib"]
+    libc = [f"{prefix}gcc-linux", f"{prefix}gcc-newlib"]
     arch = ["rv32{}-ilp32d-{}", "rv64{}-lp64d-{}"]
 
     multilib_arch_extensions = [
@@ -183,8 +183,8 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
     """
     # Weekly arch extensions included since rv64gcv_zv* doesn't
     # exist without a prefix
-    if prefix == "":
-        return get_frequent_names()
+    if prefix == "" or prefix == "coord_":
+        return get_frequent_names(prefix)
     else:
         return get_weekly_names(prefix)
 
