@@ -3,7 +3,7 @@ import argparse
 import json
 import os
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Any
+from typing import DefaultDict, Dict, List, Any, Union
 import requests
 
 def parse_arguments():
@@ -53,7 +53,7 @@ def parse_arguments():
     )
     return parser.parse_args()
 
-def parse_patches(patches: List[Dict[str, Any]], patch_id: None | str = None):
+def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = None):
     riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     riscv_patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
@@ -131,7 +131,7 @@ def make_api_request(url: str):
     patches = json.loads(r.text)
     return patches
 
-def get_patch_info(url: str, patch_id: str | None = None):
+def get_patch_info(url: str, patch_id: Union[str, None] = None):
     patches = make_api_request(url)
     if isinstance(patches, list):
         return parse_patches(patches, patch_id)
