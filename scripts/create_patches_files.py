@@ -53,7 +53,7 @@ def parse_arguments():
     )
     return parser.parse_args()
 
-def parse_patches(patches: List[Dict[str, Any]]):
+def parse_patches(patches: List[Dict[str, Any]], patch_id: None | str = None):
     riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     riscv_patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
@@ -76,8 +76,13 @@ def parse_patches(patches: List[Dict[str, Any]]):
             prev_patchworks_link.append(f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n")
             all_patchworks_links[found_series].append(prev_patchworks_link)
 
-        if "risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower():
+        if patch_id is None and ("risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower()):
             print(f"Patch {patch['name']} is a risc-v patch")
+            riscv_download_links[found_series].append(all_download_links[found_series][-1])
+            riscv_patchworks_links[found_series].append(all_patchworks_links[found_series][-1])
+
+        if patch_id is not None and patch["id"] == patch_id:
+            print(f"Patch {patch['name']} is the specified patch")
             riscv_download_links[found_series].append(all_download_links[found_series][-1])
             riscv_patchworks_links[found_series].append(all_patchworks_links[found_series][-1])
 
@@ -126,10 +131,10 @@ def make_api_request(url: str):
     patches = json.loads(r.text)
     return patches
 
-def get_patch_info(url: str):
+def get_patch_info(url: str, patch_id: str | None = None):
     patches = make_api_request(url)
     if isinstance(patches, list):
-        return parse_patches(patches)
+        return parse_patches(patches, patch_id)
 
     # Getting a single patch back from the API means we were invoked with a
     # particular patch id, not a time range.
@@ -137,15 +142,15 @@ def get_patch_info(url: str):
     series_url = f"https://patchwork.sourceware.org/api/1.3/series/{patches['series'][0]['id']}"
     series_info = make_api_request(series_url)
     if series_info["received_total"] > 1:
-        patch_ids = [patch['id'] for patch in series_info['patches'] if patch['id'] <= patch_id]
+        patch_ids = [patch['id'] for patch in series_info['patches']]
         patches = [make_api_request(f"https://patchwork.sourceware.org/api/1.3/patches/{pid}") for pid in patch_ids]
-        return parse_patches(patches)
-    return parse_patches([patches])
+        return parse_patches(patches, patch_id)
+    return parse_patches([patches], patch_id)
 
-def get_single_patch(patch: str):
-    url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch}"
+def get_single_patch(patch_id: str):
+    url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch_id}"
 
-    series_name, series_url, download_links, patchwork_links = get_patch_info(url)
+    series_name, series_url, download_links, patchwork_links = get_patch_info(url, patch_id)
 
     print("creating download links")
     create_files(series_name, series_url, download_links, "./patch_urls")
