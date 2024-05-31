@@ -34,7 +34,7 @@ def parse_arguments():
 def filter_issue(issue):
     title_check = "Testsuite Status" in issue["title"]
     issue_labels = issue["labels"]
-    filter_labels = ["staging", "bisect"]
+    filter_labels = ["staging", "bisect", "coord", "invalid"]
     labels_check = True
     for label in issue_labels:
         if label["name"] in filter_labels:
