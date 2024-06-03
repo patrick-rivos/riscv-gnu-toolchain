@@ -53,6 +53,26 @@ def parse_arguments():
     )
     return parser.parse_args()
 
+
+def create_files(series_name: Dict[str, str], series_url: Dict[str, str], download_links: Dict[str, List[List[str]]], outdir: str):
+    artifact_names: List[str] = []
+    for series_number, links_list in download_links.items():
+        for links in links_list:
+            fname = f"{series_number}-{series_name[series_number]}-{len(links)}"
+            artifact_names.append(fname)
+            with open(os.path.join(outdir, fname), "w") as f:
+                if outdir == './patchworks_metadata':
+                    _pname, url, pid = links[-1].split("\t")
+                    f.write(f"Applied patches: 1 -> {len(links)}\n")
+                    f.write(f"Associated series: {series_url[series_number]}\n")
+                    f.write(f"Last patch applied: {url}\n")
+                    f.write(f"{pid}")
+                else:
+                    f.writelines(links)
+
+    with open("./artifact_names.txt", "w") as f:
+        f.write(str(artifact_names))
+
 def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = None):
     riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
@@ -95,58 +115,12 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
 
     return series_name, series_url, riscv_download_links, riscv_patchworks_links
 
-
-def create_files(series_name: Dict[str, str], series_url: Dict[str, str], download_links: Dict[str, List[List[str]]], outdir: str):
-    artifact_names: List[str] = []
-    for series_number, links_list in download_links.items():
-        for links in links_list:
-            fname = f"{series_number}-{series_name[series_number]}-{len(links)}"
-            artifact_names.append(fname)
-            with open(os.path.join(outdir, fname), "w") as f:
-                if outdir == './patchworks_metadata':
-                    _pname, url, pid = links[-1].split("\t")
-                    f.write(f"Applied patches: 1 -> {len(links)}\n")
-                    f.write(f"Associated series: {series_url[series_number]}\n")
-                    f.write(f"Last patch applied: {url}\n")
-                    f.write(f"{pid}")
-                else:
-                    f.writelines(links)
-
-    with open("./artifact_names.txt", "w") as f:
-        f.write(str(artifact_names))
-
-def get_overlap_dict(download: Dict[str, List[List[str]]], early: Dict[str, List[List[str]]]):
-    overlap = set(early.keys()).intersection(set(download.keys()))
-    if len(overlap) != 0:
-        print("found overlap, downloading sections")
-        for series in overlap:
-            download[series] = [list(early[series][-1]) + list(val) for val in download[series]]
-
-    return download
-
 def make_api_request(url: str):
     print(url)
     r = requests.get(url)
     print(r.status_code)
     patches = json.loads(r.text)
     return patches
-
-def make_api_request_and_get_headers(url: str):
-    print(url)
-    r = requests.get(url)
-    print(r.status_code)
-    patches = json.loads(r.text)
-    return r.headers, patches
-
-def get_patch_info(url: str):
-    patches: List[Dict[str, Any]] = []
-    for page_num in range(1, 10):
-        headers, page = make_api_request_and_get_headers(url + f"&page={page_num}")
-        patches += page
-        if 'rel="next"' not in headers['Link']:
-            break
-
-    return parse_patches(patches)
 
 def get_single_patch_info(url: str, patch_id: Union[str, None] = None):
     patches = make_api_request(url)
@@ -161,6 +135,8 @@ def get_single_patch_info(url: str, patch_id: Union[str, None] = None):
         return parse_patches(patches, patch_id)
     return parse_patches([patches], patch_id)
 
+## Single patch ID
+
 def get_single_patch(patch_id: str):
     url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch_id}"
 
@@ -170,6 +146,8 @@ def get_single_patch(patch_id: str):
     create_files(series_name, series_url, download_links, "./patch_urls")
     print("creating patchworks links")
     create_files(series_name, series_url, patchwork_links, "./patchworks_metadata")
+
+## File full of patch IDs
 
 def get_patches_file(file_path: str):
     patch_nums = None
@@ -194,6 +172,34 @@ def get_patches_file(file_path: str):
     create_files(super_series_name, super_series_url, super_download_links, "./patch_urls")
     print("creating patchworks links")
     create_files(super_series_name, super_series_url, super_patchwork_links, "./patchworks_metadata")
+
+def get_overlap_dict(download: Dict[str, List[List[str]]], early: Dict[str, List[List[str]]]):
+    overlap = set(early.keys()).intersection(set(download.keys()))
+    if len(overlap) != 0:
+        print("found overlap, downloading sections")
+        for series in overlap:
+            download[series] = [list(early[series][-1]) + list(val) for val in download[series]]
+
+    return download
+
+def make_api_request_and_get_headers(url: str):
+    print(url)
+    r = requests.get(url)
+    print(r.status_code)
+    patches = json.loads(r.text)
+    return r.headers, patches
+
+def get_patch_info(url: str):
+    patches: List[Dict[str, Any]] = []
+    for page_num in range(1, 10):
+        headers, page = make_api_request_and_get_headers(url + f"&page={page_num}")
+        patches += page
+        if 'rel="next"' not in headers['Link']:
+            break
+
+    return parse_patches(patches)
+
+## Time range of patches
 
 def get_multiple_patches(start: str, end: str, backup: str, project: int):
     url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&project={}&since={}&before={}"
