@@ -131,13 +131,27 @@ def make_api_request(url: str):
     patches = json.loads(r.text)
     return patches
 
-def get_patch_info(url: str, patch_id: Union[str, None] = None):
-    patches = make_api_request(url)
-    if isinstance(patches, list):
-        return parse_patches(patches, patch_id)
+def make_api_request_and_get_headers(url: str):
+    print(url)
+    r = requests.get(url)
+    print(r.status_code)
+    patches = json.loads(r.text)
+    return r.headers, patches
 
-    # Getting a single patch back from the API means we were invoked with a
-    # particular patch id, not a time range.
+def get_patch_info(url: str):
+    patches: List[Dict[str, Any]] = []
+    for page_num in range(1, 10):
+        headers, page = make_api_request_and_get_headers(url + f"&page={page_num}")
+        patches += page
+        if 'rel="next"' not in headers['Link']:
+            break
+
+    return parse_patches(patches)
+
+def get_single_patch_info(url: str, patch_id: Union[str, None] = None):
+    patches = make_api_request(url)
+
+    # Check for dependencies
     patch_id = patches["id"]
     series_url = f"https://patchwork.sourceware.org/api/1.3/series/{patches['series'][0]['id']}"
     series_info = make_api_request(series_url)
@@ -150,7 +164,7 @@ def get_patch_info(url: str, patch_id: Union[str, None] = None):
 def get_single_patch(patch_id: str):
     url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch_id}"
 
-    series_name, series_url, download_links, patchwork_links = get_patch_info(url, patch_id)
+    series_name, series_url, download_links, patchwork_links = get_single_patch_info(url, patch_id)
 
     print("creating download links")
     create_files(series_name, series_url, download_links, "./patch_urls")
@@ -170,7 +184,7 @@ def get_patches_file(file_path: str):
     super_patchwork_links: Dict[str, List[List[str]]] = {}
     for patch in patch_nums:
         url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch}"
-        series_name, series_url, download_links, patchwork_links = get_patch_info(url)
+        series_name, series_url, download_links, patchwork_links = get_single_patch_info(url)
         super_series_name.update(series_name)
         super_series_url.update(series_url)
         super_download_links.update(download_links)
