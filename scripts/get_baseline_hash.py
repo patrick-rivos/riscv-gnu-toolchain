@@ -22,7 +22,7 @@ def filter_results(issue):
         if label['name'] in filter_labels:
             labels_check = False
             break
-    title_check = re.search("^Testsuite Status [0-9a-f]{7,40}$", issue["title"]) is not None # re.search returns None if pattern not found
+    title_check = re.search("^Testsuite Status [0-9a-f]{40}$", issue["title"]) is not None # re.search returns None if pattern not found
     if 'pull_request' not in issue.keys() and labels_check and title_check:
         return True
 
@@ -35,7 +35,7 @@ def parse_baseline_hash(url: str, token: str):
     filtered = [issue for issue in issues if filter_results(issue)]
     issue = filtered[0]
     print(f"Baseline from {issue['title']}")
-    assert(re.search("^Testsuite Status [0-9a-f]{7,40}$", issue["title"]) is not None) # re.search returns None if pattern not found
+    assert(re.search("^Testsuite Status [0-9a-f]{40}$", issue["title"]) is not None) # re.search returns None if pattern not found
     with open("./baseline.txt", "w") as f:
         f.write(issue["title"].split(" ")[-1])
 

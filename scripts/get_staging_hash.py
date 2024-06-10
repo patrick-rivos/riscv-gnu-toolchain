@@ -33,7 +33,7 @@ def parse_arguments():
 
 
 def filter_issue(issue):
-    title_check = re.search("^Testsuite Status [0-9a-f]{7,40}$", issue["title"]) is not None # re.search returns None if pattern not found
+    title_check = re.search("^Testsuite Status [0-9a-f]{40}$", issue["title"]) is not None # re.search returns None if pattern not found
     issue_labels = issue["labels"]
     filter_labels = ["staging", "bisect", "coord", "invalid"]
     labels_check = True
