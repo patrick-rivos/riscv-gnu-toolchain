@@ -2,6 +2,7 @@ import argparse
 import json
 import requests
 import os
+import re
 from typing import List, Tuple
 
 
@@ -32,7 +33,7 @@ def parse_arguments():
 
 
 def filter_issue(issue):
-    title_check = "Testsuite Status" in issue["title"]
+    title_check = re.search("^Testsuite Status", issue["title"]) is not None # re.search returns None if pattern not found
     issue_labels = issue["labels"]
     filter_labels = ["staging", "bisect", "coord", "invalid"]
     labels_check = True
