@@ -1,9 +1,12 @@
 import argparse
 import os
-from zipfile import ZipFile
-from github import Auth, Github
 import requests
 
+from pathlib import Path
+from zipfile import ZipFile
+from github import Auth, Github
+from tempfile import TemporaryDirectory
+from shutil import move
 
 def parse_arguments():
     """Parse command line arguments"""
@@ -51,9 +54,9 @@ def search_for_artifact(
     return None
 
 
-def download_artifact(artifact_name: str, artifact_id: str, token: str, repo: str) -> str:
+def download_artifact(artifact_name: str, artifact_id: str, token: str, repo: str, output_dir: str) -> str:
     """
-    Uses GitHub api endpoint to download the given artifact into ./temp/.
+    Uses GitHub api endpoint to download the given artifact into output_dir.
     Returns the path of the downloaded zip
     """
     params = {
@@ -69,39 +72,44 @@ def download_artifact(artifact_name: str, artifact_id: str, token: str, repo: st
     print(f"download for {artifact_name}: {response.status_code}")
 
     artifact_zip_name = artifact_name.replace(".log", ".zip")
-    artifact_zip = f"./temp/{artifact_zip_name}"
 
+    # Create missing output_dir
+    output_dir_path = Path(output_dir)
+    output_dir_path.mkdir(parents=True, exist_ok=True)
+
+    # Write artifact to designated path
+    artifact_zip = f"{str(output_dir_path.resolve())}/{artifact_zip_name}"
     with open(artifact_zip, "wb") as artifact:
         artifact.write(response.content)
-
     return artifact_zip
 
 
-def extract_artifact(
-    artifact_name: str, artifact_zip: str, outdir: str = "current_logs"
+def extract_artifact(artifact_zip: str, outdir: str = "current_logs"
 ):
     """
     Extracts a given artifact into the outdir.
     """
-    with ZipFile(artifact_zip, "r") as zf:
-        zf.extractall(path="./temp/")
+    with TemporaryDirectory() as tmpdir:
+        # Extract all the contents to the temporary directory for easier cleanup
+        with ZipFile(artifact_zip, "r") as zf:
+            zf.extractall(path=tmpdir)
+        tmpdir_path = Path(f"{tmpdir}")
+        # Artifact consists of either 1. files (normally a zip file) 2. Directory
+        # Case 1
+        artifact_path = tmpdir_path
 
-    nested_folder = os.path.splitext(artifact_zip)[0]
+        # The name of the directory always follows the zip file name. Thus use stem attribute for convenience
+        directory_path = Path(f"{tmpdir}/{Path(artifact_zip).stem}")
+        # Case 2
+        if directory_path.exists():
+            artifact_path = directory_path
 
-    # Move the artifact into the outdir
-    # TODO: Only produce non-nested zip files
-    if os.path.isdir(nested_folder):
-        print("Removing the nested artifact folder")
-        os.rename(
-            f"{nested_folder}/{artifact_name}",
-            f"./{outdir}/{artifact_name}",
-        )
-    else:
-        print("This artifact doesn't contain a directory, moving the artifact directly")
-        os.rename(
-            f"./temp/{artifact_name}",
-            f"./{outdir}/{artifact_name}",
-        )
+        # Create missing outdir
+        output_dir_path = Path(outdir)
+        output_dir_path.mkdir(parents=True, exist_ok=True)
+        # Move all the files/directory unzipped from the artifact
+        for file in artifact_path.iterdir():
+            move(file, outdir)
 
 
 def main():
@@ -111,9 +119,9 @@ def main():
     if artifact_id is None:
         raise ValueError(f"Could not find artifact {args.name} in {args.repo}")
 
-    artifact_zip = download_artifact(args.name, artifact_id, args.token, args.repo)
-
-    extract_artifact(args.name, artifact_zip, args.outdir)
+    with TemporaryDirectory() as tmpdir:
+        artifact_zip = download_artifact(args.name, artifact_id, args.token, args.repo, tmpdir)
+        extract_artifact(artifact_zip, args.outdir)
 
 
 if __name__ == "__main__":
