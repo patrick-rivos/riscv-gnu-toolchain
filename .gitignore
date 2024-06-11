@@ -11,3 +11,5 @@ Makefile
 *.swp
 *.swe
 *.swo
+__pycache__/
+.pytest_cache/
