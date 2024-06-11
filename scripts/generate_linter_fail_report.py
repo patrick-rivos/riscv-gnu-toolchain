@@ -24,7 +24,6 @@ def generate_markdown(linter_log: str, patch_name: str, outdir: str="./linter_fa
     header = f"""
 The following issues have been found with {patch_name} using gcc's [./contrib/check_GNU_style.py](https://github.com/gcc-mirror/gcc/blob/master/contrib/check_GNU_style.py).
 Please use your best judgement when resolving these issues. These are only warnings and do not need to be resolved in order to merge your patch.
-If any of these warnings seem like false-positives that could be guarded against please contact me: patchworks-ci@rivosinc.com.
 
 """
 
