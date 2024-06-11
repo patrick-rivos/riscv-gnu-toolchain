@@ -92,7 +92,7 @@ def generate_report(patch_name: str, bhash: str, thash: str, bstatus: str, tstat
             result += f.read()
         result += "```"
     elif bstatus == "Failed" and tstatus == "Applied":
-        git_log_wrapper("gcc/git_log_tot.txt", thash)
+        result += git_log_wrapper("gcc/git_log_tot.txt", thash)
         result += "## Notes\n"
         result += f"""Failed to apply to the [post-commit baseline](https://github.com/patrick-rivos/gcc-postcommit-ci/issues?q=is%3Aissue+{bhash}). This can happen
 if your commit requires a recently-commited patch in order to apply.
@@ -104,14 +104,14 @@ different hash, please email us at patchworks-ci@rivosinc.com with a link
 to your patch.
 """
     elif bstatus == "Applied" and tstatus == "Failed":
-        git_log_wrapper("gcc/git_log_bl.txt", bhash)
+        result += git_log_wrapper("gcc/git_log_bl.txt", bhash)
         result += "## Notes\n"
         result += """Failed to apply to tip-of-tree. The patch will still
 be tested against the baseline hash. A rebase may be necessary
 before merging.
 """
     else:
-        git_log_wrapper("gcc/git_log_bl.txt", bhash)
+        result += git_log_wrapper("gcc/git_log_bl.txt", bhash)
         result += "## Notes\n"
         result += "Patch applied successfully"
 
