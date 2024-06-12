@@ -109,7 +109,7 @@ def extract_artifact(artifact_zip: str, outdir: str = "current_logs"
         output_dir_path.mkdir(parents=True, exist_ok=True)
         # Move all the files/directory unzipped from the artifact
         for file in artifact_path.iterdir():
-            move(file, outdir)
+            move(str(file), outdir)
 
 
 def main():
