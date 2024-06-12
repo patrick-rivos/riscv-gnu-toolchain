@@ -70,7 +70,7 @@ def get_valid_artifact_hash(
 
 def get_weekly_names(prefix: str) -> List[str]:
     """
-    Generates all permutaions of target artifact logs for 
+    Generates all permutaions of target artifact logs for
     weekly runners
 
     Current Weekly Builds (prefixes):
@@ -120,6 +120,22 @@ def get_weekly_names(prefix: str) -> List[str]:
         name.format(ext, "{}")
         for name in multilib_lists
         for ext in multilib_arch_extensions
+    ]
+
+    return multilib_names
+
+def get_binutils_names(prefix: str) -> List[str]:
+    """
+    Generates all permutaions of target artifact logs for
+    binutils runs
+    """
+    assert prefix == "binutils_"
+
+    multilib_names = [
+        "binutils_gcc-linux-rv64gc-lp64d-{}-multilib"
+        "binutils_gcc-linux-rv32gc-ilp32d-{}-multilib"
+        "binutils_gcc-newlib-rv64gc-lp64d-{}-multilib"
+        "binutils_gcc-newlib-rv32gc-ilp32d-{}-multilib"
     ]
 
     return multilib_names
@@ -185,6 +201,8 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
     # exist without a prefix
     if prefix == "" or prefix == "coord_":
         return get_frequent_names(prefix)
+    elif prefix == "binutils_":
+        return get_binutils_names(prefix)
     else:
         return get_weekly_names(prefix)
 
@@ -220,11 +238,11 @@ def artifact_exists(artifact_name: str) -> bool:
     return True
 
 
-def gcc_hashes(git_hash: str, issue_hashes: List[str]):
+def gcc_hashes(git_hash: str, issue_hashes: List[str], project: str):
     """ Sort the given issue hashes from closest to furthest. """
     old_commit = (
         os.popen(
-            f"cd gcc && git checkout master --quiet && git pull --quiet && git rev-parse {git_hash}~10000"
+            f"cd {project} && git checkout master --quiet && git pull --quiet && git rev-parse {git_hash}~10000"
         )
         .read()
         .strip()
@@ -267,7 +285,8 @@ def download_all_artifacts(
     issue_commits = issue_hashes(repo_name, token)
 
     # sort most recent issue commit hashes by topological order
-    prev_commits = gcc_hashes(current_hash, issue_commits)
+    prev_commits = gcc_hashes(current_hash, issue_commits,
+                              'binutils' if prefix == 'binutils_' else 'gcc')
 
     artifact_name_templates = get_possible_artifact_names(prefix)
     print(artifact_name_templates)
