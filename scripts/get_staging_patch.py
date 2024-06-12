@@ -123,6 +123,9 @@ def main():
     with open("timestamp.txt", "w") as f:
         f.write(str(timestamp))
 
+    with open("issue_num.txt", "w") as f:
+        f.write(str(issue_num))
+
 
 if __name__ == "__main__":
     main()
