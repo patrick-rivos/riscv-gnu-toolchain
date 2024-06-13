@@ -108,26 +108,15 @@ def write_file(file_name: str, outdir: str, multilib: str, indir: str = "./"):
 def main():
     args = parse_arguments()
     assert(args.directory_name is not None or args.file_name is not None)
+    # Currently all precommit uses self-hosted runners all running multilib builds
+    # Postfix everything to multilib for matching purposes
+    multilib = "multilib"
     if args.directory_name is not None:
         for file in os.listdir(args.directory_name):
             if "failed" in file: # failed_build.txt failed_testsuite.txt
                 continue
-            multilib = "multilib"
-            if "non-multilib" in file:
-                # postcommit has gc builds as non-multilib builds but precommit has
-                # them as multilib builds. This step will rename the postcommit builds
-                # to multilib builds so the comparison regex matches
-                rename_to_multilib = ["rv32gc", "rv64gc"]
-                multilib = "multilib" if file.split("-")[2] in rename_to_multilib else "non-multilib"
             write_file(file, args.outdir, multilib, args.directory_name)
     if args.file_name is not None:
-        multilib = "multilib"
-        if "non-multilib" in args.file_name:
-            # postcommit has gc builds as non-multilib builds but precommit has
-            # them as multilib builds. This step will rename the postcommit builds
-            # to multilib builds so the comparison regex matches
-            rename_to_multilib = ["rv32gc", "rv64gc"]
-            multilib = "multilib" if args.file_name.split("-")[2] in rename_to_multilib else "non-multilib"
         write_file(args.file_name, args.outdir, multilib)
     
 if __name__ == "__main__":
