@@ -4,7 +4,9 @@ import requests
 import os
 import re
 from typing import List, Tuple
+from pathlib import Path
 from github import Auth, Github
+from tempfile import TemporaryDirectory
 from download_artifact import download_artifact, extract_artifact, search_for_artifact
 
 
@@ -41,6 +43,17 @@ def parse_arguments():
         default="",
         type=str,
         help="Artifact prefix",
+    )
+    parser.add_argument(
+        "-build-logs",
+        action='store_true',
+        help="If specified, also download the build log artifacts",
+    )
+    parser.add_argument(
+        "-build-logs-dir",
+        required=False,
+        type=str,
+        default="previous_build_logs"
     )
 
     return parser.parse_args()
@@ -272,8 +285,103 @@ def issue_hashes(repo_name: str, token: str):
     hashes = [issue['title'].split(' ')[-1] for issue in issues if 'pull_request' not in issue.keys()]
     return hashes
 
+def search_and_download_previous_report_artifact(
+    artifact_name_template:str, previous_hash: str, prev_commits: List[str], repo_name: str, token: str
+):
+    """Download a most recent previous report artifact and return the corresponding hash.
+       Return None if no corresponding hash has been found
+    """
+    artifact_name_template += "-report.log"
+
+    # check if we already have a previous artifact available
+    # mostly for regenerate issues
+    if previous_hash:
+        name_components = artifact_name_template.split("-")
+        name_components[4] = "{}"
+        previous_name = "-".join(name_components).format(previous_hash)
+        name_components[4] = "[^-]*"
+        name_regex = "-".join(name_components)
+        dir_contents = " ".join(os.listdir("./previous_logs"))
+        possible_previous_logs = re.findall(name_regex, dir_contents)
+        if len(possible_previous_logs) > 1:
+            print(
+                f"found more than 1 previous log for {name_regex}: {possible_previous_logs}"
+            )
+            for log in possible_previous_logs:  # remove non-recent logs
+                if previous_name not in log:
+                    print(f"removing {log} from previous_logs")
+                    os.remove(os.path.join("./previous_logs", log))
+            return previous_hash
+        if len(possible_previous_logs) == 1:
+            print(
+                f"found single log: {possible_previous_logs[0]}. Skipping download"
+            )
+            return previous_hash    
+
+    # download previous artifact
+    base_hash, base_id = get_valid_artifact_hash(
+        prev_commits, repo_name, token, artifact_name_template
+    )
+    if base_hash != "No valid hash":
+        artifact_zip = download_artifact(
+            artifact_name_template.format(base_hash), str(base_id), token, repo_name, "./temp/"
+        )
+        extract_artifact(
+            artifact_zip,
+            outdir="previous_logs",
+        )
+        return base_hash
+
+    print(
+        f"found no valid hash for {artifact_name_template}. possible hashes: {prev_commits}"
+    )
+    return None
+
+def download_build_log_artifact(
+    artifact_name_template:str, base_hash: str, repo_name: str, token: str, output_dir: str
+):
+    """Download the build log zipfiles for a corresponding base_hash and extract them to output_dir"""
+    # input validation
+    if not base_hash:
+        print("Missing base hash, skipping downloading the build log artifact")
+        return
+
+    target_format_pat = re.compile(r"^gcc-")
+    BUILD_LOG_SUFFIX = "-build-log"
+    # Remove the starting gcc- and concatenate with the suffix
+    artifact_name = target_format_pat.sub('', artifact_name_template.format(base_hash) + BUILD_LOG_SUFFIX)
+
+    # Check if the artifact name exists inside the output directory
+    previous_build_log_path = Path(f'./{output_dir}/{artifact_name}')
+    if previous_build_log_path.exists():
+        # Remove this line and uncomment the print, return line if build log artifact is downloaded more than once in the future. https://github.com/patrick-rivos/riscv-gnu-toolchain/pull/526#discussion_r1647981167
+        raise RuntimeError("Build log artifact is currently downloaded only once.")
+        # print(f"This artifact already exists in {previous_build_log_path}. Skip download.")
+        # return
+
+    # Search for the artifact id
+    auth = Auth.Token(token)
+    github = Github(auth=auth)
+    artifact_id = search_for_artifact(
+        artifact_name, repo_name, token, github
+    )
+    if not artifact_id:
+        print(f"{artifact_name} doesn't exist in {repo_name}")
+        return
+
+    # download the zip file in a temporary directory to minimize side effect
+    with TemporaryDirectory() as tmp_dir:
+        artifact_zip = download_artifact(
+            artifact_name, artifact_id, token, repo_name, tmp_dir
+        )
+        extract_artifact(
+            artifact_zip,
+            outdir=output_dir,
+        )
+
+
 def download_all_artifacts(
-    current_hash: str, previous_hash: str, repo_name: str, token: str, prefix: str
+    current_hash: str, previous_hash: str, repo_name: str, token: str, prefix: str, build_logs: bool, build_logs_dir: str
 ):
     """
     Goes through all possible artifact targets and downloads it
@@ -291,60 +399,21 @@ def download_all_artifacts(
     artifact_name_templates = get_possible_artifact_names(prefix)
     print(artifact_name_templates)
 
-    # TODO: Refactor this block
     for artifact_name_template in artifact_name_templates:
         artifact = artifact_name_template.format(current_hash)
+        # If this target failed to generate an artifact, skip
         if not artifact_exists(artifact):
             continue
 
-        artifact_name_template += "-report.log"
-
-        # check if we already have a previous artifact available
-        # mostly for regenerate issues
-        if previous_hash:
-            name_components = artifact_name_template.split("-")
-            name_components[4] = "{}"
-            previous_name = "-".join(name_components).format(previous_hash)
-            name_components[4] = "[^-]*"
-            name_regex = "-".join(name_components)
-            dir_contents = " ".join(os.listdir("./previous_logs"))
-            possible_previous_logs = re.findall(name_regex, dir_contents)
-            if len(possible_previous_logs) > 1:
-                print(
-                    f"found more than 1 previous log for {name_regex}: {possible_previous_logs}"
-                )
-                for log in possible_previous_logs:  # remove non-recent logs
-                    if previous_name not in log:
-                        print(f"removing {log} from previous_logs")
-                        os.remove(os.path.join("./previous_logs", log))
-                continue
-            if len(possible_previous_logs) == 1:
-                print(
-                    f"found single log: {possible_previous_logs[0]}. Skipping download"
-                )
-                continue
-
-        # download previous artifact
-        base_hash, base_id = get_valid_artifact_hash(
-            prev_commits, repo_name, token, artifact_name_template
-        )
-        if base_hash != "No valid hash":
-            artifact_zip = download_artifact(
-                artifact_name_template.format(base_hash), str(base_id), token, repo_name, './temp/'
-            )
-            extract_artifact(
-                artifact_zip,
-                outdir="previous_logs",
-            )
-        else:
-            print(
-                f"found no valid hash for {artifact_name_template}. possible hashes: {prev_commits}"
-            )
+        # Download all the required artifacts
+        base_hash = search_and_download_previous_report_artifact(artifact_name_template, previous_hash, prev_commits, repo_name, token)
+        if build_logs:
+            download_build_log_artifact(artifact_name_template, base_hash, repo_name, token, build_logs_dir)
 
 
 def main():
     args = parse_arguments()
-    download_all_artifacts(args.hash, args.phash, args.repo, args.token, args.prefix)
+    download_all_artifacts(args.hash, args.phash, args.repo, args.token, args.prefix, args.build_logs, args.build_logs_dir)
 
 
 if __name__ == "__main__":
