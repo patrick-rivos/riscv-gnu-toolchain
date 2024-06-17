@@ -330,7 +330,7 @@ def download_all_artifacts(
         )
         if base_hash != "No valid hash":
             artifact_zip = download_artifact(
-                artifact_name_template.format(base_hash), str(base_id), token, repo_name
+                artifact_name_template.format(base_hash), str(base_id), token, repo_name, './temp/'
             )
             extract_artifact(
                 artifact_name_template.format(base_hash),
