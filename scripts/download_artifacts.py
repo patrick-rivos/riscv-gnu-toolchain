@@ -333,7 +333,6 @@ def download_all_artifacts(
                 artifact_name_template.format(base_hash), str(base_id), token, repo_name, './temp/'
             )
             extract_artifact(
-                artifact_name_template.format(base_hash),
                 artifact_zip,
                 outdir="previous_logs",
             )
