@@ -26,7 +26,7 @@ def filter_results(issue):
     if 'pull_request' not in issue.keys() and labels_check and title_check:
         return True
 
-def parse_baseline_hash(url: str, token: str):
+def parse_baseline_hash(url: str, token: str)->str:
     params = {"Accept": "application/vnd.github+json",
               "Authorization": f"token {token}",
               "X-GitHub-Api-Version": "2022-11-28"}
@@ -36,8 +36,10 @@ def parse_baseline_hash(url: str, token: str):
     issue = filtered[0]
     print(f"Baseline from {issue['title']}")
     assert(re.search("^Testsuite Status [0-9a-f]{40}$", issue["title"]) is not None) # re.search returns None if pattern not found
+    baseline_hash = issue["title"].split(" ")[-1]
     with open("./baseline.txt", "w") as f:
-        f.write(issue["title"].split(" ")[-1])
+        f.write(baseline_hash)
+    return baseline_hash
 
 def main():
     args = parse_arguments()
