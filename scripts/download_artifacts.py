@@ -132,10 +132,10 @@ def get_binutils_names(prefix: str) -> List[str]:
     assert prefix == "binutils_"
 
     multilib_names = [
-        "binutils_gcc-linux-rv64gc-lp64d-{}-multilib"
-        "binutils_gcc-linux-rv32gc-ilp32d-{}-multilib"
-        "binutils_gcc-newlib-rv64gc-lp64d-{}-multilib"
-        "binutils_gcc-newlib-rv32gc-ilp32d-{}-multilib"
+        "binutils_gcc-linux-rv64gc-lp64d-{}-multilib",
+        "binutils_gcc-linux-rv32gc-ilp32d-{}-multilib",
+        "binutils_gcc-newlib-rv64gc-lp64d-{}-multilib",
+        "binutils_gcc-newlib-rv32gc-ilp32d-{}-multilib",
     ]
 
     return multilib_names
