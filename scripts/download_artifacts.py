@@ -262,7 +262,7 @@ def gcc_hashes(git_hash: str, issue_hashes: List[str], project: str):
     )
     print(f"git rev-list --topo-order {old_commit}..{git_hash}~1")
     commits = os.popen(
-        f"cd gcc && git rev-list --topo-order {old_commit}..{git_hash}~1"
+        f"cd {project} && git rev-list --topo-order {old_commit}..{git_hash}~1"
     ).read()
     commits = commits.splitlines()
     sorted_issue_hashes = [commit for commit in commits if commit in issue_hashes]
