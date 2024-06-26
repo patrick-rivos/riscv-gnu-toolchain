@@ -14,6 +14,15 @@ def parse_arguments():
         help="Current gcc hash",
     )
     parser.add_argument(
+        "-project",
+        "--project",
+        required=False,
+        default="gcc",
+        choices=["gcc", "binutils"],
+        type=str,
+        help="Project to test",
+    )
+    parser.add_argument(
         '-ccommitted',
         '--current-hash-committed',
         help="The current hash is an existing GCC hash",
@@ -36,7 +45,7 @@ def get_file_name_regex(file_name: str):
 def get_hash_from_file_name(file_name: str):
     return file_name.split("-")[4]
 
-def compare_all_artifacts(current_hash: str, current_hash_committed: bool):
+def compare_all_artifacts(current_hash: str, current_hash_committed: bool, project: str):
     current_logs_dir = "./current_logs"
     previous_logs_dir = "./previous_logs"
     output_dir = "./summaries"
@@ -56,7 +65,8 @@ def compare_all_artifacts(current_hash: str, current_hash_committed: bool):
                     current_hash,
                     os.path.join(current_logs_dir, file),
                     os.path.join(output_dir, output_file_name),
-                    current_hash_committed
+                    current_hash_committed,
+                    project
                 )
             except (RuntimeError, ValueError) as err:
                 with open(os.path.join(current_logs_dir, "failed_testsuite.txt"), "a+") as f:
@@ -70,7 +80,8 @@ def compare_all_artifacts(current_hash: str, current_hash_committed: bool):
                     no_baseline_hash,
                     os.path.join(current_logs_dir, file),
                     os.path.join(output_dir, output_file_name),
-                    current_hash_committed
+                    current_hash_committed,
+                    project
                 )
             except (RuntimeError, ValueError) as err:
                 with open(os.path.join(current_logs_dir, "failed_testsuite.txt"), "a+") as f:
@@ -79,7 +90,7 @@ def compare_all_artifacts(current_hash: str, current_hash_committed: bool):
 
 def main():
     args = parse_arguments()
-    compare_all_artifacts(args.hash, args.current_hash_committed)
+    compare_all_artifacts(args.hash, args.current_hash_committed, args.project)
 
 if __name__ == "__main__":
     main()
