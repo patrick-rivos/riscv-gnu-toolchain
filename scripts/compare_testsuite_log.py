@@ -3,12 +3,15 @@ from pathlib import Path
 import argparse
 from dataclasses import dataclass, field
 from typing import List, Dict, Tuple
-from collections import Counter
+from collections import Counter, defaultdict
 
-PROJECT_URL = {
-    "gcc": "https://github.com/gcc-mirror/gcc",
-    "binutils": "https://github.com/bminor/binutils-gdb",
-}
+compare_urls = defaultdict(lambda : "https://github.com/gcc-mirror/gcc/compare/{}...{}")
+compare_urls["binutils_"] = "https://github.com/bminor/binutils-gdb/compare/{}...{}"
+compare_urls["coord_"] = "https://gcc.gnu.org/cgit/gcc/log/?qt=range&q={}...{}"
+
+commit_urls = defaultdict(lambda : "https://github.com/gcc-mirror/gcc/commit/{}")
+commit_urls["binutils_"] = "https://github.com/bminor/binutils-gdb/commit/{}"
+commit_urls["coord_"] = "https://gcc.gnu.org/git/gitweb.cgi?p=gcc.git;h={}"
 
 @dataclass
 class LibName:
@@ -189,14 +192,13 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-project",
-        "--project",
+        "-prefix",
+        "--prefix",
         metavar="<string>",
         required=False,
-        default="gcc",
-        choices=["gcc", "binutils"],
+        default="",
         type=str,
-        help="Project tool (gcc/binutils)",
+        help="Prefix",
     )
 
     return parser.parse_args()
@@ -343,7 +345,7 @@ def compare_testsuite_log(previous_log_path: str, current_log_path: str):
 
 def gccfailure_to_summary(failure: Dict[LibName, GccFailure], failure_name: str,
                           previous_hash: str, current_hash: str,
-                          current_hash_committed: bool, project: str):
+                          current_hash_committed: bool, prefix: str):
     tools = ("gcc", "g++", "gfortran")
     result = f"|{failure_name}|{tools[0]}|{tools[1]}|{tools[2]}|Previous Hash|\n"
     result +="|---|---|---|---|---|\n"
@@ -355,38 +357,38 @@ def gccfailure_to_summary(failure: Dict[LibName, GccFailure], failure_name: str,
             result += f"{'/'.join(gccfailure[tool_failure_key])}|"
 
         if current_hash_committed:
-            result += f"[{previous_hash}]({PROJECT_URL[project]}/compare/{previous_hash}...{current_hash})|\n"
+            result += f"[{previous_hash}]({compare_urls[prefix].format(previous_hash, current_hash)})|\n"
         else:
-           result += f"{PROJECT_URL[project]}/commit/{previous_hash}|\n"
+           result += f"{commit_urls[prefix].format(previous_hash)}|\n"
     result += "\n"
     return result
 
 
 def failures_to_summary(failures: ClassifedGccFailures, previous_hash: str,
-                        current_hash: str, current_hash_committed: bool, project: str):
+                        current_hash: str, current_hash_committed: bool, prefix: str):
     result = "# Summary\n"
     result += gccfailure_to_summary(failures.resolved, "Resolved Failures",
                                     previous_hash, current_hash,
-                                    current_hash_committed, project)
+                                    current_hash_committed, prefix)
     result += gccfailure_to_summary(failures.unresolved, "Unresolved Failures",
                                     previous_hash, current_hash,
-                                    current_hash_committed, project)
+                                    current_hash_committed, prefix)
     result += gccfailure_to_summary(failures.new, "New Failures", previous_hash,
-                                    current_hash, current_hash_committed, project)
+                                    current_hash, current_hash_committed, prefix)
     result += "\n"
     return result
 
 
 def failures_to_markdown(
     failures: ClassifedGccFailures, previous_hash: str, current_hash: str,
-    current_hash_committed: bool, project: str
+    current_hash_committed: bool, prefix: str
 ) -> str:
     result = f"""---
 title: {previous_hash}->{current_hash}
 labels: bug
 ---\n"""
     result += failures_to_summary(failures, previous_hash, current_hash,
-                                  current_hash_committed, project)
+                                  current_hash_committed, prefix)
     result += str(failures)
     return result
 
@@ -426,21 +428,21 @@ def is_result_valid(log_path: str):
 
 def compare_logs(previous_hash: str, previous_log: str, current_hash: str,
                  current_log: str, output_markdown: str,
-                 current_hash_committed: bool, project: str):
+                 current_hash_committed: bool, prefix: str):
     if not is_result_valid(previous_log):
         raise RuntimeError(f"{previous_log} doesn't include Summary of the testsuite")
     if not is_result_valid(current_log):
         raise RuntimeError(f"{current_log} doesn't include Summary of the testsuite")
     failures = compare_testsuite_log(previous_log, current_log)
     markdown = failures_to_markdown(failures, previous_hash, current_hash,
-                                    current_hash_committed, project)
+                                    current_hash_committed, prefix)
     with open(output_markdown, "w") as markdown_file:
         markdown_file.write(markdown)
 
 
 def main():
     args = parse_arguments()
-    compare_logs(args.previous_hash, args.previous_log, args.current_hash, args.current_log, args.output_markdown, args.current_hash_committed, args.project)
+    compare_logs(args.previous_hash, args.previous_log, args.current_hash, args.current_log, args.output_markdown, args.current_hash_committed, args.prefix)
 
 
 if __name__ == "__main__":
