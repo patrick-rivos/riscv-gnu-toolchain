@@ -59,7 +59,7 @@ def failures_to_summary(failures: Dict[str, List[str]]):
     print(result)
 
     # Add an invalid label when no failures are detected. Something probably went wrong.
-    no_failures = len(build_failures) != 0 or len(testsuite_failures) != 0 or len(failures) != 0
+    no_failures = not (len(build_failures) != 0 or len(testsuite_failures) != 0 or len(failures) != 0)
 
     return result, no_failures
 
@@ -83,16 +83,16 @@ title: {title_prefix} {current_hash if patch_name == "" else patch_name}
         labels.add("resolved-regressions")
     if "" in labels:
         labels.remove("")
+    summary, no_failures = failures_to_summary(failures)
+    if no_failures:
+        # Something went wrong
+        labels.add("invalid")
     if len(labels) > 0:
         result += f"labels: {', '.join(labels)}\n"
     with open("./labels.txt", "w") as f:
         f.write(f"{','.join(labels)}")
     result += "---\n\n"
-    summary, no_failures = failures_to_summary(failures)
     result += summary
-    if no_failures:
-        # Something went wrong
-        labels.add("invalid")
 
     return result
 
