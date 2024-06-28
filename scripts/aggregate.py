@@ -58,9 +58,10 @@ def failures_to_summary(failures: Dict[str, List[str]]):
 
     print(result)
 
-    assert (len(build_failures) != 0 or len(testsuite_failures) != 0 or len(failures) != 0), "There aren't any errors, something has probably gone wrong!"
+    # Add an invalid label when no failures are detected. Something probably went wrong.
+    no_failures = len(build_failures) != 0 or len(testsuite_failures) != 0 or len(failures) != 0
 
-    return result
+    return result, no_failures
 
 def assign_labels(file_name: str, label: str):
     """Creates label for issue"""
@@ -87,7 +88,12 @@ title: {title_prefix} {current_hash if patch_name == "" else patch_name}
     with open("./labels.txt", "w") as f:
         f.write(f"{','.join(labels)}")
     result += "---\n\n"
-    result += failures_to_summary(failures)
+    summary, no_failures = failures_to_summary(failures)
+    result += summary
+    if no_failures:
+        # Something went wrong
+        labels.add("invalid")
+
     return result
 
 def parse_arch_info(name: str, target: str):
