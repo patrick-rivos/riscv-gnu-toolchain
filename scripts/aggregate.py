@@ -59,7 +59,7 @@ def failures_to_summary(failures: Dict[str, List[str]]):
     print(result)
 
     # Add an invalid label when no failures are detected. Something probably went wrong.
-    no_failures = not (len(build_failures) != 0 or len(testsuite_failures) != 0 or len(failures) != 0)
+    no_failures = len(build_failures) == 0 and len(testsuite_failures) == 0 and len(failures) == 0
 
     return result, no_failures
 
