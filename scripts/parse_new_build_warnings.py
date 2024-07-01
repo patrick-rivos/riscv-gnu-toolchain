@@ -95,7 +95,7 @@ def append_warnings_to_file(output_file: str, warning_set: Set[str], old_build_n
     """Append the warnings to a given file_path"""
     output_path = Path(output_file)
     # Create possible missing output file directory
-    output_path.parent.mkdir(parents=True, exist_ok=True)  
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, 'a') as file:
         introduction = f"# New Warnings from new build: {new_build_name} old build: {old_build_name}\n\n"
@@ -115,7 +115,7 @@ def parse_new_build_warnings_from_directory(old_build_directory: str, new_build_
         raise ValueError(f"{old_build_directory} doesn't exist")
     new_build_path = Path(new_build_directory)
     if not new_build_path.exists():
-        raise ValueError(f"{new_build_directory} doesn't exist")  
+        raise ValueError(f"{new_build_directory} doesn't exist")
 
     def create_regex_pattern(file_name:str):
         parts = file_name.split('-')
