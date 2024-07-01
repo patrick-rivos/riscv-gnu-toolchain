@@ -304,7 +304,7 @@ def main():
         markdown_file.write(markdown)
 
     with open("unresolved_important_failures.md", "w") as markdown_file:
-        markdown_file.write(markdown)
+        markdown_file.write(unresolved_markdown)
 
 if __name__ == "__main__":
     main()
