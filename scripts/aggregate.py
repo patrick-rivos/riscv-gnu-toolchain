@@ -203,10 +203,23 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
             if line != "\n":
                 resolved[cur_target].add(line)
         # begin unresolved failures
+        unresolved: Dict[str, Set[str]] = defaultdict(set)
+        cur_target = None
         while True:
             line = f.readline()
             if not line or line.startswith("# New Failures"):
                 break
+            temp_comps = line.split(" ")
+            if temp_comps[0] == "##":
+                cur_target = " ".join(temp_comps[1:]).strip()
+                continue
+            if temp_comps[0] == "###":
+                continue
+            if line != "\n":
+                if "internal compiler error" in line or
+                   "Segmentation fault" in line or
+                   "test for excess errors" in line:
+                    unresolved[cur_target].add(line)
         # begin new failures
         new: Dict[str, Set[str]] = defaultdict(set)
         cur_target = None
@@ -223,7 +236,7 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
             if line != "\n":
                 new[cur_target].add(line)
 
-    return failures, resolved, new
+    return failures, resolved, unresolved, new
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Testsuite Compare Options")
@@ -266,15 +279,20 @@ def main():
     args = parse_arguments()
     failures: Dict[str, List[str]] = { "Resolved": [], "Unresolved": [], "New": [] }
     all_resolved: Dict[str, Dict[str, Set[str]]] = {}
+    all_unresolved: Dict[str, Dict[str, Set[str]]] = {}
     all_new: Dict[str, Dict[str, Set[str]]] = {}
     for file in os.listdir(SUMMARIES):
-        failures, resolved, new = aggregate_summary(failures, os.path.join(SUMMARIES, file))
+        failures, resolved, unresolved, new = aggregate_summary(failures, os.path.join(SUMMARIES, file))
         all_resolved[file] = resolved
+        all_unresolved[file] = unresolved
         all_new[file] = new
 
     print([i.keys() for i in all_new.values()])
     summary_markdown = failures_to_markdown(failures, args.current_hash, args.patch_name, args.title_prefix)
     resolved_markdown = additional_failures_to_markdown("Resolved",
+                                                        all_resolved,
+                                                        len(failures['Unresolved']))
+    unresolved_markdown = additional_failures_to_markdown("Unresolved",
                                                         all_resolved,
                                                         len(failures['Unresolved']))
     new_markdown = additional_failures_to_markdown("New", all_new,
@@ -283,6 +301,9 @@ def main():
     markdown = summary_markdown + new_markdown + resolved_markdown
 
     with open(args.output_markdown, "w") as markdown_file:
+        markdown_file.write(markdown)
+
+    with open("unresolved_important_failures.md", "w") as markdown_file:
         markdown_file.write(markdown)
 
 if __name__ == "__main__":
