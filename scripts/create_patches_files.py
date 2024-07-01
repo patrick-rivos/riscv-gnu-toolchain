@@ -83,10 +83,11 @@ def interesting_patch(patch: Dict[str, Any]):
     r = requests.get(patch["mbox"], timeout=300) # 5 minutes
     # https://stackoverflow.com/questions/44203397/python-requests-get-returns-improperly-decoded-text-instead-of-utf-8/52615216#52615216
     r.encoding = r.apparent_encoding
-    patch_mbox = r.text
+    patch_mbox = r.text.lower()
 
     # Search for riscv, risc-v, patchworks-ci@rivosinc.com
-    return "riscv" in patch_mbox.lower() or "risc-v" in patch_mbox.lower() or  "patchworks-ci@rivosinc.com" in patch_mbox.lower()
+    # mbox is already lowercased
+    return "riscv" in patch_mbox or "risc-v" in patch_mbox or  "patchworks-ci@rivosinc.com" in patch_mbox.lower()
 
 def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = None):
     riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
@@ -97,8 +98,8 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
     series_url: Dict[str, str] = {}
 
     # Used for asserts
-    riscv_title_patch_links: List[Tuple[str, ...]] = []
-    riscv_title_patchworks_links: List[Tuple[str, ...]] = []
+    riscv_title_patch_links: List[List[str]] = []
+    riscv_title_patchworks_links: List[List[str]] = []
 
     for patch in patches:
         assert len(patch["series"]) == 1
@@ -123,8 +124,8 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
 
         # Old check, used for asserts
         if patch_id is None and ("risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower()):
-            riscv_title_patch_links.append(tuple(all_download_links[found_series][-1]))
-            riscv_title_patchworks_links.append(tuple(all_patchworks_links[found_series][-1]))
+            riscv_title_patch_links.append(all_download_links[found_series][-1])
+            riscv_title_patchworks_links.append(all_patchworks_links[found_series][-1])
 
         if patch_id is not None and patch["id"] == patch_id:
             print(f"Patch {patch['name']} is the specified patch")
@@ -146,11 +147,11 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
 
     for patch_links in riscv_title_patch_links:
         assert any(
-            patch_links == tuple(links) for links in download_links
+            patch_links == links for links in download_links
         ), f"Expected match (risc-v/riscv in title): {patch_links} not in links: {download_links}"
     for patch_links in riscv_title_patchworks_links:
         assert any(
-            patch_links == tuple(links) for links in patchworks_links
+            patch_links == links for links in patchworks_links
         ), f"Expected match (risc-v/riscv in title): {patch_links} not in patchworks links: {patchworks_links}"
 
     return series_name, series_url, riscv_download_links, riscv_patchworks_links
