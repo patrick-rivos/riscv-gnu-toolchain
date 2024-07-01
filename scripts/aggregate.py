@@ -293,7 +293,7 @@ def main():
                                                         all_resolved,
                                                         len(failures['Unresolved']))
     unresolved_markdown = additional_failures_to_markdown("Unresolved",
-                                                        all_resolved,
+                                                        all_unresolved,
                                                         len(failures['Unresolved']))
     new_markdown = additional_failures_to_markdown("New", all_new,
                                                    len(failures['Unresolved']))
