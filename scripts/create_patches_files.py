@@ -80,7 +80,8 @@ def create_files(series_name: Dict[str, str], series_url: Dict[str, str], downlo
 
 def interesting_patch(patch: Dict[str, Any]):
     """Grep the patch mbox file for key terms/email addresses."""
-    r = requests.get(patch["mbox"])
+    r = requests.get(patch["mbox"], timeout=300) # 5 minutes
+    # https://stackoverflow.com/questions/44203397/python-requests-get-returns-improperly-decoded-text-instead-of-utf-8/52615216#52615216
     r.encoding = r.apparent_encoding
     patch_mbox = r.text
 
