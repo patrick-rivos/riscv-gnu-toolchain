@@ -3,7 +3,8 @@ import argparse
 import json
 import os
 from collections import defaultdict
-from typing import DefaultDict, Dict, List, Any, Union
+from pathlib import Path
+from typing import DefaultDict, Dict, List, Any, Tuple, Union
 import requests
 
 def parse_arguments():
@@ -55,6 +56,10 @@ def parse_arguments():
 
 
 def create_files(series_name: Dict[str, str], series_url: Dict[str, str], download_links: Dict[str, List[List[str]]], outdir: str):
+    # Create possible missing output file directory
+    outdir = Path(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+
     artifact_names: List[str] = []
     for series_number, links_list in download_links.items():
         for links in links_list:
@@ -73,6 +78,15 @@ def create_files(series_name: Dict[str, str], series_url: Dict[str, str], downlo
     with open("./artifact_names.txt", "w") as f:
         f.write(str(artifact_names))
 
+def interesting_patch(patch: Dict[str, Any]):
+    """Grep the patch mbox file for key terms/email addresses."""
+    r = requests.get(patch["mbox"])
+    r.encoding = r.apparent_encoding
+    patch_mbox = r.text
+
+    # Search for riscv, risc-v, patchworks-ci@rivosinc.com
+    return "riscv" in patch_mbox.lower() or "risc-v" in patch_mbox.lower() or  "patchworks-ci@rivosinc.com" in patch_mbox.lower()
+
 def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = None):
     riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
@@ -80,6 +94,11 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
     all_patchworks_links: DefaultDict[str, List[List[str]]]  = defaultdict(list)
     series_name: Dict[str, str] = {}
     series_url: Dict[str, str] = {}
+
+    # Used for asserts
+    riscv_title_patch_links: List[Tuple[str, ...]] = []
+    riscv_title_patchworks_links: List[Tuple[str, ...]] = []
+
     for patch in patches:
         assert len(patch["series"]) == 1
         found_series = patch["series"][0]["id"]
@@ -96,10 +115,15 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
             prev_patchworks_link.append(f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n")
             all_patchworks_links[found_series].append(prev_patchworks_link)
 
-        if patch_id is None and ("risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower()):
-            print(f"Patch {patch['name']} is a risc-v patch")
+        if patch_id is None and interesting_patch(patch):
+            print(f"Patch {patch['name']} is an interesting patch")
             riscv_download_links[found_series].append(all_download_links[found_series][-1])
             riscv_patchworks_links[found_series].append(all_patchworks_links[found_series][-1])
+
+        # Old check, used for asserts
+        if patch_id is None and ("risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower()):
+            riscv_title_patch_links.append(tuple(all_download_links[found_series][-1]))
+            riscv_title_patchworks_links.append(tuple(all_patchworks_links[found_series][-1]))
 
         if patch_id is not None and patch["id"] == patch_id:
             print(f"Patch {patch['name']} is the specified patch")
@@ -112,6 +136,21 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
             else:
                 series_name[found_series] = "".join(letter for letter in patch["series"][0]["name"] if letter.isalnum() or letter == " ").replace(" ","_")
             series_url[found_series] = patch["series"][0]["web_url"]
+
+    # flatten link values and assert the lists are the same
+    download_links = list(riscv_download_links.values())
+    download_links = [item for sublist in download_links for item in sublist]
+    patchworks_links = list(riscv_patchworks_links.values())
+    patchworks_links = [item for sublist in patchworks_links for item in sublist]
+
+    for patch_links in riscv_title_patch_links:
+        assert any(
+            patch_links == tuple(links) for links in download_links
+        ), f"Expected match (risc-v/riscv in title): {patch_links} not in links: {download_links}"
+    for patch_links in riscv_title_patchworks_links:
+        assert any(
+            patch_links == tuple(links) for links in patchworks_links
+        ), f"Expected match (risc-v/riscv in title): {patch_links} not in patchworks links: {patchworks_links}"
 
     return series_name, series_url, riscv_download_links, riscv_patchworks_links
 
@@ -199,9 +238,8 @@ def get_patch_info(url: str):
 
     return parse_patches(patches)
 
-## Time range of patches
-
 def get_multiple_patches(start: str, end: str, backup: str, project: int):
+    """Get all patches within a timeframe"""
     url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&project={}&since={}&before={}"
 
     series_name, series_url, download_links, patchworks_links = get_patch_info(url.format(project, start, end))
