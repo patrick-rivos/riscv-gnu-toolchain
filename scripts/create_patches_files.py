@@ -57,8 +57,8 @@ def parse_arguments():
 
 def create_files(series_name: Dict[str, str], series_url: Dict[str, str], download_links: Dict[str, List[List[str]]], outdir: str):
     # Create possible missing output file directory
-    outdir = Path(outdir)
-    outdir.mkdir(parents=True, exist_ok=True)
+    outdir_path = Path(outdir)
+    outdir_path.mkdir(parents=True, exist_ok=True)
 
     artifact_names: List[str] = []
     for series_number, links_list in download_links.items():
