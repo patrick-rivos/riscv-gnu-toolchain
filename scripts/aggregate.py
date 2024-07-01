@@ -292,9 +292,6 @@ def main():
     resolved_markdown = additional_failures_to_markdown("Resolved",
                                                         all_resolved,
                                                         len(failures['Unresolved']))
-    unresolved_markdown = additional_failures_to_markdown("Unresolved",
-                                                        all_unresolved,
-                                                        len(failures['Unresolved']))
     new_markdown = additional_failures_to_markdown("New", all_new,
                                                    len(failures['Unresolved']))
 
@@ -302,6 +299,10 @@ def main():
 
     with open(args.output_markdown, "w") as markdown_file:
         markdown_file.write(markdown)
+
+    unresolved_markdown = additional_failures_to_markdown("Unresolved",
+                                                        all_unresolved,
+                                                        len(failures['Unresolved']))
 
     with open("unresolved_important_failures.md", "w") as markdown_file:
         markdown_file.write(unresolved_markdown)
