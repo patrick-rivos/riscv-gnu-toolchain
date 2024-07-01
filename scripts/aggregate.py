@@ -38,38 +38,30 @@ def build_summary(failures: Dict[str, List[str]], failure_name: str):
     result += "\n"
     return result
 
-def print_failed_tests(table: str):
-    print(table.split('\n'))
-    failures = table.split('\n')[2:-2]
-    allowlist: List[str] = []
-    for failure in failures:
-        print(failure.split('|'))
-        log_name = failure.split('|')[1]
-        components = log_name.split('-')
-        allowlist.append(f"{components[1]}:{components[2]}-{components[3]}")
-    print(";".join(allowlist))
-    with open("allowlist.txt", "w") as f:
-        f.write(";".join(allowlist) + "\n")
-
 def failures_to_summary(failures: Dict[str, List[str]]):
     """ Builds summary section """
     result = "# Summary\n"
     seen_failures: Set[str] = set()
-    additional_result, seen_failures = get_additional_failures("failed_build.txt",
-                                                               "Build Failures",
-                                                               seen_failures)
-    result += additional_result
-    additional_result, seen_failures = get_additional_failures("failed_testsuite.txt",
-                                                               "Testsuite Failures",
-                                                               seen_failures)
-    print_failed_tests(additional_result)
-    result += additional_result
+    build_failures, seen_failures = get_additional_failures("failed_build.txt",
+                                                            "Build Failures",
+                                                            seen_failures)
+    result += build_failures
+    testsuite_failures, seen_failures = get_additional_failures("failed_testsuite.txt",
+                                                                "Testsuite Failures",
+                                                                seen_failures)
+    result += testsuite_failures
 
     result += build_summary(failures, "New Failures")
     result += build_summary(failures, "Resolved Failures")
     result += build_summary(failures, "Unresolved Failures")
     result += "\n"
-    return result
+
+    print(result)
+
+    # Add an invalid label when no failures are detected. Something probably went wrong.
+    no_failures = len(build_failures) == 0 and len(testsuite_failures) == 0 and len(failures) == 0
+
+    return result, no_failures
 
 def assign_labels(file_name: str, label: str):
     """Creates label for issue"""
@@ -91,12 +83,17 @@ title: {title_prefix} {current_hash if patch_name == "" else patch_name}
         labels.add("resolved-regressions")
     if "" in labels:
         labels.remove("")
+    summary, no_failures = failures_to_summary(failures)
+    if no_failures:
+        # Something went wrong
+        labels.add("invalid")
     if len(labels) > 0:
         result += f"labels: {', '.join(labels)}\n"
     with open("./labels.txt", "w") as f:
         f.write(f"{','.join(labels)}")
     result += "---\n\n"
-    result += failures_to_summary(failures)
+    result += summary
+
     return result
 
 def parse_arch_info(name: str, target: str):
