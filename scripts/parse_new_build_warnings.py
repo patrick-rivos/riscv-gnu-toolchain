@@ -3,6 +3,9 @@ from pathlib import Path
 import re
 import argparse
 
+PRE_COMMIT = "pre-commit"
+POST_COMMIT = "post-commit"
+
 class WarningParser:
     def __init__(self):
         self.message = ""
@@ -91,21 +94,28 @@ def remove_duplicate_warnings(new_build_warnings: Set[str], old_build_path: str)
     RemoveFromSet(parsed)
     return new_build_warnings
 
-def append_warnings_to_file(output_file: str, warning_set: Set[str], old_build_name: str, new_build_name: str):
-    """Append the warnings to a given file_path"""
-    output_path = Path(output_file)
-    # Create possible missing output file directory
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+def parse_target(file_name: str)-> str:
+    """Parse only the target info from the post commit build log formatted file name. 
+    Convert mode-arch-abi-hash-multilib-build-log-stderr.log into mode-arch-abi-multilib"""
+    parts = file_name.split('-')
+    HASH_INDEX = 3
+    # Remove hash and build-log-stderr.log
+    del parts[HASH_INDEX]
+    BUILD_LOG_INDEX=-3
+    return '-'.join(parts[:BUILD_LOG_INDEX])
 
-    with open(output_path, 'a') as file:
-        introduction = f"# New Warnings from new build: {new_build_name} old build: {old_build_name}\n\n"
-        file.write(introduction)
-        for warning in warning_set:
-            file.write(warning)
-        # Add extra new lines for better visual
-        file.write("\n\n")
+def convert_pre_to_post_format(file_name: str):
+    """Convert pre-commit's build log file format to post-commit's format
+    pre-commit's build log format: ${patch_number}-{}
+    """
+    parts = file_name.split('-')
+    PATCH_NUMBER_INDEX = 0
+    HASH_INDEX = 3
+    patch_name = parts.pop(PATCH_NUMBER_INDEX)
+    parts.insert(HASH_INDEX, patch_name)
+    return '-'.join(parts)
 
-def parse_new_build_warnings_from_directory(old_build_directory: str, new_build_directory: str, output: str):
+def parse_new_build_warnings_from_directory(old_build_directory: str, new_build_directory: str, repo: str)->Dict[str, Set[str]]:
     """Iterate through new build logs in the new_build_directory to compare with the old build logs from old_build_directory
     After constructing a set of new warnings for each build log, the set of new warnings is printed out to the output file
     """
@@ -115,29 +125,35 @@ def parse_new_build_warnings_from_directory(old_build_directory: str, new_build_
         raise ValueError(f"{old_build_directory} doesn't exist")
     new_build_path = Path(new_build_directory)
     if not new_build_path.exists():
-        raise ValueError(f"{new_build_directory} doesn't exist")
+        raise ValueError(f"{new_build_directory} doesn't exist")  
 
-    def create_regex_pattern(file_name:str):
-        parts = file_name.split('-')
-        # Replace the hash with a wildcard regex
-        HASH_INDEX = 3
-        parts[HASH_INDEX] = '[^-]+'
-        pattern = '-'.join(parts)
-        return re.compile(f'^{pattern}$')
+    new_build_counterpart = dict()
+    # Construct the new build counterpart while unrolling the old_build_path.iterdir(). Then searching for the counterpart is not required.
+    for file in old_build_path.iterdir():
+        hashless = parse_target(file.name)
+        new_build_counterpart[hashless] = file
 
-    old_build_files = [ file for file in old_build_path.iterdir()]
+    new_warnings = dict()
     for new_build_file in new_build_path.iterdir():
-        # Find the old build file with the same target as the new build file for comparison
-        file_regex = create_regex_pattern(new_build_file.name)
-        old_build_file = ""
-        for file in old_build_files:
-            if file_regex.match(file.name):
-                old_build_file = str(file)
-                break
+        # Pre-commit build log files have a different format from post-commit build log files
+        new_build_file_name = new_build_file.name
+        if repo==PRE_COMMIT:
+            new_build_file_name = convert_pre_to_post_format(new_build_file_name)
+        hashless = parse_target(new_build_file_name)
+        old_build_file = new_build_counterpart[hashless]
         if old_build_file == "":
             raise RuntimeError(f"Older build for {new_build_file} doesn't exist")
-        new_warnings = parse_new_build_warnings(old_build_file, str(new_build_file))
-        append_warnings_to_file(output, new_warnings, old_build_file, str(new_build_file))
+        new_warnings[hashless] = parse_new_build_warnings(old_build_file, new_build_file)
+    return new_warnings
+
+def export_build_warnings(warnings_dict: Dict[str, Set[str]], output: str):
+    with open(output, "w") as f:
+        for target, warnings in warnings_dict.items():
+            f.write(f"New build warnings from target: {target}\n")
+            for warning in warnings:
+                f.write(warning)
+            f.write("==================================================\n")
+
 
 def parse_arguments():
     """Parse command line arguments"""
@@ -160,12 +176,20 @@ def parse_arguments():
         type=str,
         help="Path to the output file that will store all warnings",
     )
+    parser.add_argument(
+        "--repo",
+        required=True,
+        choices=[PRE_COMMIT, POST_COMMIT],
+        type=str,
+        help="Repo that is running the script. It affects the build log file name format"
+    )
     return parser.parse_args()
 
 
 def main():
     args = parse_arguments()
-    parse_new_build_warnings_from_directory(args.old_dir, args.new_dir, args.output)
+    new_warnings = parse_new_build_warnings_from_directory(args.old_dir, args.new_dir, args.repo)
+    export_build_warnings(new_warnings, args.output)
 
 if __name__ == '__main__':
     main()

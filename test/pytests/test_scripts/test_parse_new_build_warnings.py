@@ -7,7 +7,7 @@ import sys
 scripts_path = Path(__file__).parent.parent.parent.parent / "scripts"
 sys.path.append(str(scripts_path))
 
-from parse_new_build_warnings import parse_new_build_warnings, construct_warning_set, parse_new_build_warnings_from_directory
+from parse_new_build_warnings import parse_new_build_warnings, construct_warning_set, parse_new_build_warnings_from_directory, parse_target, POST_COMMIT, PRE_COMMIT
 
 @pytest.fixture
 def build_warning_string_1()->str:
@@ -69,7 +69,7 @@ def build_warning_2(build_warning_string_2 : str)->str:
     tmp.close()
 
 @pytest.fixture
-def build_warnings_directory_1(build_warning_string_1, build_warning_string_3)->str:
+def build_warnings_directory_1(build_warning_string_1, build_warning_string_3)->tuple[str, Path, Path]:
     tmp_dir = TemporaryDirectory()
     tmp_dir_path = Path(tmp_dir.name)
 
@@ -80,11 +80,11 @@ def build_warnings_directory_1(build_warning_string_1, build_warning_string_3)->
     with open(build_2_path, "w") as f:
         f.write(build_warning_string_3)
         
-    yield tmp_dir.name, str(build_1_path), str(build_2_path)
+    yield tmp_dir.name, build_1_path, build_2_path
     tmp_dir.cleanup()
 
 @pytest.fixture
-def build_warnings_directory_2(build_warning_string_2, build_warning_string_4)->str:
+def build_warnings_directory_2(build_warning_string_2, build_warning_string_4)->tuple[str, Path, Path]:
     tmp_dir = TemporaryDirectory()
     tmp_dir_path = Path(tmp_dir.name)
 
@@ -95,7 +95,22 @@ def build_warnings_directory_2(build_warning_string_2, build_warning_string_4)->
     with open(build_2_path, "w") as f:
         f.write(build_warning_string_4)
 
-    yield tmp_dir.name, str(build_1_path), str(build_2_path)
+    yield tmp_dir.name, build_1_path, build_2_path
+    tmp_dir.cleanup()
+
+@pytest.fixture
+def build_warnings_directory_3(build_warning_string_2, build_warning_string_4)->tuple[str, Path, Path]:
+    tmp_dir = TemporaryDirectory()
+    tmp_dir_path = Path(tmp_dir.name)
+
+    build_1_path = tmp_dir_path / "c-linux-rv64gc-lp64d-non-multilib-build-log-stderr.log"
+    with open(build_1_path, "w") as f:
+        f.write(build_warning_string_2)
+    build_2_path = tmp_dir_path / "c-newlib-rv32gc-lp64d-non-multilib-build-log-stderr.log"
+    with open(build_2_path, "w") as f:
+        f.write(build_warning_string_4)
+
+    yield tmp_dir.name, build_1_path, build_2_path
     tmp_dir.cleanup()
 
 
@@ -114,27 +129,56 @@ def test_parse_new_build_warnings(build_warning_1, build_warning_2):
     expected = {'../../../gcc/gcc/analyzer/access-diagram.cc:1509:35: warning: unknown conversion type character ‘@’ in format [-Wformat=]\n 1509 |      s = fmt_styled_string (sm, _("buffer allocated on heap at %@"),\n../../../gcc/gcc/intl.h:40:26: note: in definition of macro ‘gettext’\n   40 | # define gettext(msgid) (msgid)\n      |                          ^~~~~\n../../../gcc/gcc/analyzer/access-diagram.cc:1509:33: note: in expansion of macro ‘_’\n 1509 |      s = fmt_styled_string (sm, _("buffer allocated on heap at %@"),\n      |                                 ^\n'}
     assert(warning_set == expected)
 
-def test_parse_new_build_warnings_from_directory(build_warnings_directory_1, build_warnings_directory_2):
+def test_pre_commit_parse_new_build_warnings_from_directory(build_warnings_directory_1, build_warnings_directory_3):
     old_build_dir, old_a, old_b = build_warnings_directory_1
-    new_build_dir, new_a, new_b = build_warnings_directory_2
-    expected =[f'''# New Warnings from new build: {new_b} old build: {old_b}''']
-    expected.append(
-        '''../Rules:360: warning: overriding recipe for target 'riscv-gnu-toolchain/build/build-glibc-linux-rv64gc_zba_zbb_zbc_zbs-lp64d/string/tst-strerror.out'''
-    )
-    expected.append('''plural.y:52.1-7: warning: POSIX Yacc does not support %expect [-Wyacc]
+    new_build_dir, _, _ = build_warnings_directory_3
+    a_target = parse_target(old_a.name)
+    b_target = parse_target(old_b.name)
+
+    expected = {a_target:set(), b_target: set()}
+    expected[b_target].add("../Rules:360: warning: overriding recipe for target 'riscv-gnu-toolchain/build/build-glibc-linux-rv64gc_zba_zbb_zbc_zbs-lp64d/string/tst-strerror.out'\n")
+    expected[b_target].add('''plural.y:52.1-7: warning: POSIX Yacc does not support %expect [-Wyacc]
    52 | %expect 7
-      | ^~~~~~~''')
-    expected.append(f'''# New Warnings from new build: {new_a} old build: {old_a}''')
-    expected.append('''../../../gcc/gcc/analyzer/access-diagram.cc:1509:35: warning: unknown conversion type character ‘@’ in format [-Wformat=]
+      | ^~~~~~~\n''')
+    expected[a_target].add('''../../../gcc/gcc/analyzer/access-diagram.cc:1509:35: warning: unknown conversion type character ‘@’ in format [-Wformat=]
  1509 |      s = fmt_styled_string (sm, _("buffer allocated on heap at %@"),
 ../../../gcc/gcc/intl.h:40:26: note: in definition of macro ‘gettext’
    40 | # define gettext(msgid) (msgid)
       |                          ^~~~~
 ../../../gcc/gcc/analyzer/access-diagram.cc:1509:33: note: in expansion of macro ‘_’
  1509 |      s = fmt_styled_string (sm, _("buffer allocated on heap at %@"),
-      |                                 ^''')
-    with NamedTemporaryFile() as tmp_file:
-        parse_new_build_warnings_from_directory(old_build_dir, new_build_dir, tmp_file.name)
-        real_string = tmp_file.read().decode('utf-8')
-        for warning in expected:
-            assert(warning in real_string)
+      |                                 ^\n''')
+    new_warnings = parse_new_build_warnings_from_directory(old_build_dir, new_build_dir, PRE_COMMIT)
+    print("pre-commit test\n\n\n")
+    for target, warning_set in expected.items():
+        print("expected: ", warning_set)
+        print("\n\nnew_warnings: ", new_warnings[target])
+        assert(new_warnings[target] == warning_set)
+
+
+
+def test_post_commit_parse_new_build_warnings_from_directory(build_warnings_directory_1, build_warnings_directory_2):
+    old_build_dir, old_a, old_b = build_warnings_directory_1
+    new_build_dir, _, _ = build_warnings_directory_2
+    a_target = parse_target(old_a.name)
+    b_target = parse_target(old_b.name)
+
+    expected = {a_target:set(), b_target: set()}
+    expected[b_target].add("../Rules:360: warning: overriding recipe for target 'riscv-gnu-toolchain/build/build-glibc-linux-rv64gc_zba_zbb_zbc_zbs-lp64d/string/tst-strerror.out'\n")
+    expected[b_target].add('''plural.y:52.1-7: warning: POSIX Yacc does not support %expect [-Wyacc]
+   52 | %expect 7
+      | ^~~~~~~\n''')
+    expected[a_target].add('''../../../gcc/gcc/analyzer/access-diagram.cc:1509:35: warning: unknown conversion type character ‘@’ in format [-Wformat=]
+ 1509 |      s = fmt_styled_string (sm, _("buffer allocated on heap at %@"),
+../../../gcc/gcc/intl.h:40:26: note: in definition of macro ‘gettext’
+   40 | # define gettext(msgid) (msgid)
+      |                          ^~~~~
+../../../gcc/gcc/analyzer/access-diagram.cc:1509:33: note: in expansion of macro ‘_’
+ 1509 |      s = fmt_styled_string (sm, _("buffer allocated on heap at %@"),
+      |                                 ^\n''')
+    new_warnings = parse_new_build_warnings_from_directory(old_build_dir, new_build_dir, POST_COMMIT)
+    print("post-commit test\n\n\n")
+    for target, warning_set in expected.items():
+        print("expected: ", warning_set)
+        print("\n\nnew_warnings: ", new_warnings[target])
+        assert(new_warnings[target] == warning_set)
