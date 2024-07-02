@@ -117,27 +117,75 @@ def parse_new_build_warnings_from_directory(old_build_directory: str, new_build_
     if not new_build_path.exists():
         raise ValueError(f"{new_build_directory} doesn't exist")
 
-    def create_regex_pattern(file_name:str):
+    def remove_build_hash(file_name: str):
         parts = file_name.split('-')
         # Replace the hash with a wildcard regex
         HASH_INDEX = 3
-        parts[HASH_INDEX] = '[^-]+'
-        pattern = '-'.join(parts)
-        return re.compile(f'^{pattern}$')
+        del parts[HASH_INDEX]
+        return '-'.join(parts)
 
-    old_build_files = [ file for file in old_build_path.iterdir()]
+    new_build_counterpart = dict()
+    # Construct the new build counterpart while unrolling the old_build_path.iterdir(). Then searching for the counterpart is not required.
+    for file in old_build_path.iterdir():
+        hashless = remove_build_hash(file)
+        new_build_counterpart[hashless] = file
+        
     for new_build_file in new_build_path.iterdir():
         # Find the old build file with the same target as the new build file for comparison
-        file_regex = create_regex_pattern(new_build_file.name)
-        old_build_file = ""
-        for file in old_build_files:
-            if file_regex.match(file.name):
-                old_build_file = str(file)
-                break
+        hashless = remove_build_hash(str(new_build_file))
+        old_build_file = new_build_counterpart[hashless]
         if old_build_file == "":
             raise RuntimeError(f"Older build for {new_build_file} doesn't exist")
         new_warnings = parse_new_build_warnings(old_build_file, str(new_build_file))
         append_warnings_to_file(output, new_warnings, old_build_file, str(new_build_file))
+
+def parse_new_build_warnings_from_directory_pre_commit(old_build_directory: str, new_build_directory: str, output: str):
+    """Iterate through new build logs in the new_build_directory to compare with the old build logs from old_build_directory
+    After constructing a set of new warnings for each build log, the set of new warnings is printed out to the output file
+    """
+    # input validation
+    old_build_path = Path(old_build_directory)
+    if not old_build_path.exists():
+        raise ValueError(f"{old_build_directory} doesn't exist")
+    new_build_path = Path(new_build_directory)
+    if not new_build_path.exists():
+        raise ValueError(f"{new_build_directory} doesn't exist")  
+
+    # Convert pre-commit's build log file format to post-commit's format
+    def convert_pre_to_post_format(file_name: str):
+        parts = file_name.split('-')
+        PATCH_NAME_INDEX = 0
+        HASH_INDEX = 3
+        patch_name = parts.pop(PATCH_NAME_INDEX)
+        parts.insert(HASH_INDEX, patch_name)
+        return '-'.join(parts)
+
+    def remove_build_hash(file_name: str):
+        parts = file_name.split('-')
+        # Replace the hash with a wildcard regex
+        HASH_INDEX = 3
+        del parts[HASH_INDEX]
+        return '-'.join(parts)
+
+    # Since multiple current build files with the same target but different hash 
+    # should be compared with one old build file, cache the searched result
+    new_build_counterpart = dict()
+    # Construct the new build counterpart while unrolling the old_build_path.iterdir(). Then searching for the counterpart is not required.
+    for file in old_build_path.iterdir():
+        hashless = remove_build_hash(file)
+        new_build_counterpart[hashless] = file
+
+    new_warnings = dict()
+    for new_build_file in new_build_path.iterdir():
+        # convert new build file name to old build file format
+        # Find the old build file with the same target as the new build file for comparison
+        new_build_file = convert_pre_to_post_format(str(new_build_file))
+        hashless = remove_build_hash(new_build_file)
+        old_build_file = new_build_counterpart[hashless]
+        if old_build_file == "":
+            raise RuntimeError(f"Older build for {new_build_file} doesn't exist")
+        new_warnings[hashless] = parse_new_build_warnings(old_build_file, new_build_file)
+
 
 def parse_arguments():
     """Parse command line arguments"""
