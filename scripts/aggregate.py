@@ -216,9 +216,9 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
             if temp_comps[0] == "###":
                 continue
             if line != "\n":
-                if "internal compiler error" in line or
+                if ("internal compiler error" in line or
                    "Segmentation fault" in line or
-                   "test for excess errors" in line:
+                   "test for excess errors" in line):
                     unresolved[cur_target].add(line)
         # begin new failures
         new: Dict[str, Set[str]] = defaultdict(set)
