@@ -87,7 +87,7 @@ def interesting_patch(patch: Dict[str, Any]):
 
     # Search for riscv, risc-v, patchworks-ci@rivosinc.com
     # mbox is already lowercased
-    return "riscv" in patch_mbox or "risc-v" in patch_mbox or  "patchworks-ci@rivosinc.com" in patch_mbox.lower()
+    return "riscv" in patch_mbox or "risc-v" in patch_mbox or "patchworks-ci@rivosinc.com" in patch_mbox
 
 def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = None):
     riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
