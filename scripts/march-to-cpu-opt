@@ -167,8 +167,8 @@ def print_qemu_cpu():
         cpu_options.append("vlen={0}".format(CPU_OPTIONS['vlen']))
         # Enable fill one semantic for tail/mask agnostic, this could discover
         # more potential bug.
-        cpu_options.append("rvv_ta_all_1s=true")
-        cpu_options.append("rvv_ma_all_1s=true")
+        # cpu_options.append("rvv_ta_all_1s=true")
+        # cpu_options.append("rvv_ma_all_1s=true")
 
     disable_all_fd = False
     for ext in CPU_OPTIONS['extensions']:
