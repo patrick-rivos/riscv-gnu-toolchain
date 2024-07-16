@@ -140,9 +140,13 @@ def parse_new_build_warnings_from_directory(old_build_directory: str, new_build_
         if repo==PRE_COMMIT:
             new_build_file_name = convert_pre_to_post_format(new_build_file_name)
         hashless = parse_target(new_build_file_name)
-        old_build_file = new_build_counterpart[hashless]
-        if old_build_file == "":
-            raise RuntimeError(f"Older build for {new_build_file} doesn't exist")
+        old_build_file = new_build_counterpart.get(hashless, "")
+        # Pre-commit compares the build log against post-commit runs, which has different targets
+        if old_build_file == "": 
+            if repo == POST_COMMIT:
+                raise RuntimeError(f"Older build for {new_build_file} doesn't exist")
+            else:
+                continue
         new_warnings[hashless] = parse_new_build_warnings(old_build_file, new_build_file)
     return new_warnings
 
