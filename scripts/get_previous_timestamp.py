@@ -52,16 +52,24 @@ def get_workflow_runs(token: str, repo: str, workflow: str):
     print(f"After filter have {len(runs)} to consider")
     return runs
 
-def write_run_timestamp(runs, run_id: str):
-    assert(str(runs[0]['id']) == str(run_id))
-    with open("date_prior.txt", "w") as f:
-        f.write(runs[1]['created_at'])
+def find_run_index(runs, run_id: str):
+    for i, run in enumerate(runs):
+        if str(run['id']) == str(run_id):
+            return i
+    return None
 
-def write_run_id(runs, run_id: str):
+def write_run_timestamp(runs, run_id: str, run_index: int):
+    assert(str(runs[run_index]['id']) == str(run_id))
+    with open("date_current.txt", "w") as f:
+        f.write(runs[run_index]['created_at'])
+    with open("date_prior.txt", "w") as f:
+        f.write(runs[run_index + 1]['created_at'])
+
+def write_run_id(runs, run_id: str, run_index: int):
     assert(len(runs) >= 1)
-    assert str(runs[0]['id']) == str(run_id), f"The 10 most recent runs are: \n{runs[:10]}"
+    assert str(runs[run_index]['id']) == str(run_id), f"The 10 most recent runs are: \n{runs[:10]}"
     with open("run_id.txt", "w") as f:
-        f.write(str(runs[1]['id']))
+        f.write(str(runs[run_index + 1]['id']))
 
 def main():
     args = parse_arguments()
@@ -71,8 +79,10 @@ def main():
         sys.exit(1)
     with open("runs.log", "w") as f:
         f.write(json.dumps(runs[:10], indent=4))
-    write_run_id(runs, args.run_id)
-    write_run_timestamp(runs, args.run_id)
+    run_index = find_run_index(runs, args.run_id)
+    assert(run_index is not None, f"{args.run_id} is not found in list of the 100 most recent runs")
+    write_run_id(runs, args.run_id, run_index)
+    write_run_timestamp(runs, args.run_id, run_index)
 
 if __name__ == "__main__":
     main()
