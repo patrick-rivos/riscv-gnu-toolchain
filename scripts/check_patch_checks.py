@@ -5,6 +5,7 @@ import os
 from collections import defaultdict
 from typing import Dict, List, Set
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Create Patch Files")
     parser.add_argument(
@@ -23,15 +24,21 @@ def parse_arguments():
     )
     return parser.parse_args()
 
+
 def make_api_request(url):
     print(url)
     r = requests.get(url)
     return r.headers, json.loads(r.text)
 
+
 def check_patch(patch):
-    url = patch['checks']
+    url = patch["checks"]
     # Check if patch has been seen by ci
-    checks = [check for check in make_api_request(url)[1] if check["user"]["username"] == "rivoscibot"]
+    checks = [
+        check
+        for check in make_api_request(url)[1]
+        if check["user"]["username"] == "rivoscibot"
+    ]
 
     # first three checks should be lint start/finish and apply
     if len(checks) < 3:
@@ -39,7 +46,7 @@ def check_patch(patch):
 
     apply_failure = False
     testsuite_reported = False
-    
+
     for check in checks:
         if check["description"] == "Patch failed to apply":
             apply_failure = True
@@ -54,6 +61,7 @@ def check_patch(patch):
 
     return False
 
+
 def get_patches(start: str, end: str):
     page_num = 1
     patches = []
@@ -61,23 +69,24 @@ def get_patches(start: str, end: str):
         url = f"https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project=6&since={start}&before={end}&page={page_num}"
         headers, page = make_api_request(url)
         patches += page
-        if 'rel="next"' not in headers['Link']:
+        if 'rel="next"' not in headers["Link"]:
             break
         page_num += 1
 
-    print([patch['id'] for patch in patches])
+    print([patch["id"] for patch in patches])
 
-    to_run = [str(patch['id']) for patch in patches if check_patch(patch)]
+    to_run = [str(patch["id"]) for patch in patches if check_patch(patch)]
     print(to_run)
     if to_run:
         with open("patch_numbers_to_run.txt", "w") as f:
             nums = " ".join(to_run)
             f.write(nums)
 
+
 def main():
     args = parse_arguments()
     get_patches(args.start, args.end)
 
+
 if __name__ == "__main__":
     main()
-

@@ -67,9 +67,7 @@ def parse_target_board(target_board_input: list):
         parsed_target_board = target_board.split("-")
         if len(parsed_target_board) != 2:
             raise ValueError(f"Invalid target board format: {target_board}")
-        result += (
-            f"riscv-sim/-march={parsed_target_board[0]}/-mabi={parsed_target_board[1]}/-mcmodel=medlow "
-        )
+        result += f"riscv-sim/-march={parsed_target_board[0]}/-mabi={parsed_target_board[1]}/-mcmodel=medlow "
     return result
 
 
@@ -103,6 +101,7 @@ def parse_directories(args):
                 return root_directory, install_directory
     return None, None
 
+
 def parse_target_test(target_test: str):
     """
     dejagnu expects target test case to be in form of exp_file.exp=testcase.c
@@ -127,12 +126,11 @@ def parse_target_test(target_test: str):
     return "Cannot find exp file"
 
 
-
 def setup_environment(args):
     current_environment = os.environ.copy()
-    current_environment[
-        "PATH"
-    ] = f'{args.root_directory}/scripts/wrapper/qemu:{args.install_directory}/bin:{current_environment["PATH"]}'
+    current_environment["PATH"] = (
+        f'{args.root_directory}/scripts/wrapper/qemu:{args.install_directory}/bin:{current_environment["PATH"]}'
+    )
 
     prerequisite_command = (
         f"make stamps/build-qemu stamps/build-dejagnu -C {args.root_directory}"

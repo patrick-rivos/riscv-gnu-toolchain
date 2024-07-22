@@ -3,68 +3,84 @@
 import argparse
 import sys
 
+
 def parse_options(argv):
-  parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-  parser.add_argument('--sim-name', type = str, required = True,
-                      help = 'The sim name of target board, like riscv-sim.')
-  parser.add_argument('--target-arch-abi-flags-list', type=str,
-                      help = 'The arch, abi and flags list for testing,' +
-                             'like =rv64gcv_zvl256b-lp64d:' +
-                             '--param=riscv-autovec-lmul=dynamic:' +
-                             '--param=riscv-autovec-preference=fixed-vlmax.',
-                      default = '')
-  parser.add_argument('--cmodel', type = str, default = 'medlow',
-                      help = 'The name of the cmodel, like medlow.')
+    parser.add_argument(
+        "--sim-name",
+        type=str,
+        required=True,
+        help="The sim name of target board, like riscv-sim.",
+    )
+    parser.add_argument(
+        "--target-arch-abi-flags-list",
+        type=str,
+        help="The arch, abi and flags list for testing,"
+        + "like =rv64gcv_zvl256b-lp64d:"
+        + "--param=riscv-autovec-lmul=dynamic:"
+        + "--param=riscv-autovec-preference=fixed-vlmax.",
+        default="",
+    )
+    parser.add_argument(
+        "--cmodel",
+        type=str,
+        default="medlow",
+        help="The name of the cmodel, like medlow.",
+    )
 
-  options = parser.parse_args()
-  return options
+    options = parser.parse_args()
+    return options
+
 
 # Generate only one target board like below:
 #   riscv-sim/-march=rv64gcv_zvl256b/-mabi=lp64d/-mcmodel=medlow
 # From the config_string like below, --param is optional
 #   rv64gcv_zvl128b-lp64d:--param=riscv-autovec-lmul=m1
 def generate_one_target_board(arch_abi, flags, options):
-  arch_and_abi = arch_abi.split("-")
-  arch = arch_and_abi[0]
-  abi = arch_and_abi[1]
+    arch_and_abi = arch_abi.split("-")
+    arch = arch_and_abi[0]
+    abi = arch_and_abi[1]
 
-  if len(flags) == 0:
-    return "{0}/-march={1}/-mabi={2}/-mcmodel={3}".format(
-      options.sim_name, arch, abi, options.cmodel)
+    if len(flags) == 0:
+        return "{0}/-march={1}/-mabi={2}/-mcmodel={3}".format(
+            options.sim_name, arch, abi, options.cmodel
+        )
 
-  flags = flags.replace(":", "/")
+    flags = flags.replace(":", "/")
 
-  return "{0}/-march={1}/-mabi={2}/-mcmodel={3}/{4}".format(
-    options.sim_name, arch, abi, options.cmodel, flags)
- 
+    return "{0}/-march={1}/-mabi={2}/-mcmodel={3}/{4}".format(
+        options.sim_name, arch, abi, options.cmodel, flags
+    )
+
+
 def main(argv):
-  options = parse_options(argv)
+    options = parse_options(argv)
 
-  if not options.sim_name or not options.target_arch_abi_flags_list:
-    print ("The --sim-name and/or --build-arch-abi cannot be empty or null.")
-    return
+    if not options.sim_name or not options.target_arch_abi_flags_list:
+        print("The --sim-name and/or --build-arch-abi cannot be empty or null.")
+        return
 
-  test_list = options.target_arch_abi_flags_list.strip().replace("::", ":").split(" ")
-  
-  target_board_list = []
+    test_list = options.target_arch_abi_flags_list.strip().replace("::", ":").split(" ")
+
+    target_board_list = []
+
+    for extra_test in test_list:
+        idx = extra_test.find(":")
+
+        if idx == -1:
+            one_target_board = generate_one_target_board(extra_test, "", options)
+            target_board_list.append(one_target_board)
+        else:
+            arch_abi = extra_test[:idx]
+            flags = extra_test[idx + 1 :]
+
+            for flag in flags.split(","):
+                one_target_board = generate_one_target_board(arch_abi, flag, options)
+                target_board_list.append(one_target_board)
+
+    print(" ".join(target_board_list))
 
 
-  for extra_test in test_list:
-    idx = extra_test.find(":")
-
-    if idx == -1:
-      one_target_board = generate_one_target_board(extra_test, "", options)
-      target_board_list.append(one_target_board)
-    else:
-      arch_abi = extra_test[:idx]
-      flags = extra_test[idx + 1:]
-
-      for flag in flags.split(","):
-        one_target_board = generate_one_target_board(arch_abi, flag, options)
-        target_board_list.append(one_target_board)
-
-  print(' '.join(target_board_list))
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main(sys.argv))

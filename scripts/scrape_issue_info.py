@@ -2,8 +2,9 @@ import argparse
 import requests
 import json
 
+
 def parse_arguments():
-    """ parse command line arguments """
+    """parse command line arguments"""
     parser = argparse.ArgumentParser(description="Get issue information")
     parser.add_argument(
         "-num",
@@ -19,6 +20,7 @@ def parse_arguments():
     )
     return parser.parse_args()
 
+
 def get_issue_hash(issue_num: str, token: str):
     issue_url = f"https://api.github.com/repos/patrick-rivos/gcc-postcommit-ci/issues/{issue_num}"
     params = {
@@ -30,9 +32,11 @@ def get_issue_hash(issue_num: str, token: str):
     response = json.loads(r.text)
     print(response["title"].split(" ")[-1])
 
+
 def main():
     args = parse_arguments()
     issue_hash = get_issue_hash(args.num, args.token)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

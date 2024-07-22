@@ -33,7 +33,9 @@ def parse_arguments():
 
 
 def filter_issue(issue):
-    title_check = re.search("^Testsuite Status [0-9a-f]{40}$", issue["title"]) is not None # re.search returns None if pattern not found
+    title_check = (
+        re.search("^Testsuite Status [0-9a-f]{40}$", issue["title"]) is not None
+    )  # re.search returns None if pattern not found
     issue_labels = issue["labels"]
     filter_labels = ["staging", "bisect", "coord", "invalid"]
     labels_check = True
@@ -41,7 +43,7 @@ def filter_issue(issue):
         if label["name"] in filter_labels:
             labels_check = False
             break
-    if 'pull_request' not in issue.keys() and labels_check and title_check:
+    if "pull_request" not in issue.keys() and labels_check and title_check:
         return True
     return False
 
@@ -64,7 +66,7 @@ def issue_hashes(repo_name: str, token: str):
     response = requests.get(
         f"https://api.github.com/repos/{repo_name}/issues?page=1&per_page=100&state=all",
         headers=params,
-        timeout=15 * 60, # 15 min timeout
+        timeout=15 * 60,  # 15 min timeout
     )
     print(f"getting most recent 100 issues: {response.status_code}")
     issues = json.loads(response.text)

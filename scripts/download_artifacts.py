@@ -46,14 +46,11 @@ def parse_arguments():
     )
     parser.add_argument(
         "-build-logs",
-        action='store_true',
+        action="store_true",
         help="If specified, also download the build log artifacts",
     )
     parser.add_argument(
-        "-build-logs-dir",
-        required=False,
-        type=str,
-        default="previous_build_logs"
+        "-build-logs-dir", required=False, type=str, default="previous_build_logs"
     )
 
     return parser.parse_args()
@@ -81,6 +78,7 @@ def get_valid_artifact_hash(
 
     return "No valid hash", None
 
+
 def get_weekly_names(prefix: str) -> List[str]:
     """
     Generates all permutaions of target artifact logs for
@@ -103,9 +101,9 @@ def get_weekly_names(prefix: str) -> List[str]:
     ]
     # each extension ends in '_'. Use this since lmul extensions
     # use the same arch extension but the prefix is
-    # currently structured as rvx_zvl_lmulx_ 
-    comps = prefix.split('_')
-    prefix_arch = ''
+    # currently structured as rvx_zvl_lmulx_
+    comps = prefix.split("_")
+    prefix_arch = ""
 
     if len(comps) == 2:
         prefix = comps[0]
@@ -114,20 +112,16 @@ def get_weekly_names(prefix: str) -> List[str]:
         prefix_arch = comps[0]
 
     multilib_arch_extensions = [
-        ext
-        for ext in possible_arch_extensions
-        if prefix in ext
+        ext for ext in possible_arch_extensions if prefix in ext
     ]
     print("prefix arch:", prefix_arch)
 
     # now have weekly runners rv32 zvl multilib variants
-    multilib_lists = [
-        "-".join([i, j, "multilib"])
-        for i in libc
-        for j in arch
-    ]
-    if prefix_arch != '':
-        multilib_lists = [name for name in multilib_lists if prefix_arch in name.split('-')[2]]
+    multilib_lists = ["-".join([i, j, "multilib"]) for i in libc for j in arch]
+    if prefix_arch != "":
+        multilib_lists = [
+            name for name in multilib_lists if prefix_arch in name.split("-")[2]
+        ]
 
     multilib_names = [
         name.format(ext, "{}")
@@ -136,6 +130,7 @@ def get_weekly_names(prefix: str) -> List[str]:
     ]
 
     return multilib_names
+
 
 def get_binutils_names(prefix: str) -> List[str]:
     """
@@ -153,9 +148,10 @@ def get_binutils_names(prefix: str) -> List[str]:
 
     return multilib_names
 
+
 def get_frequent_names(prefix: str) -> List[str]:
     """
-    Generates all permutaions of target artifact logs for 
+    Generates all permutaions of target artifact logs for
     build frequent runners
     """
     libc = [f"{prefix}gcc-linux", f"{prefix}gcc-newlib"]
@@ -168,17 +164,14 @@ def get_frequent_names(prefix: str) -> List[str]:
     ]
 
     multilib_lists = [
-        "-".join([i, j, "multilib"])
-        for i in libc
-        for j in arch
-        if "rv64" in j
+        "-".join([i, j, "multilib"]) for i in libc for j in arch if "rv64" in j
     ]
 
     multilib_names = [
         name.format(ext, "{}")
         for name in multilib_lists
         for ext in multilib_arch_extensions
-        if not ('linux' in name and 'imc' in ext) # only test uc on newlib
+        if not ("linux" in name and "imc" in ext)  # only test uc on newlib
     ]
 
     non_multilib_arch_extensions = [
@@ -186,11 +179,7 @@ def get_frequent_names(prefix: str) -> List[str]:
         "gc_zba_zbb_zbc_zbs",
     ]
 
-    non_multilib_lists = [
-        "-".join([i, j, "non-multilib"])
-        for i in libc
-        for j in arch
-    ]
+    non_multilib_lists = ["-".join([i, j, "non-multilib"]) for i in libc for j in arch]
 
     non_multilib_names = [
         name.format(ext, "{}")
@@ -199,6 +188,7 @@ def get_frequent_names(prefix: str) -> List[str]:
     ]
 
     return multilib_names + non_multilib_names
+
 
 def get_possible_artifact_names(prefix: str) -> List[str]:
     """
@@ -218,6 +208,7 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
         return get_binutils_names(prefix)
     else:
         return get_weekly_names(prefix)
+
 
 def artifact_exists(artifact_name: str) -> bool:
     """
@@ -252,7 +243,7 @@ def artifact_exists(artifact_name: str) -> bool:
 
 
 def gcc_hashes(git_hash: str, issue_hashes: List[str], project: str):
-    """ Sort the given issue hashes from closest to furthest. """
+    """Sort the given issue hashes from closest to furthest."""
     old_commit = (
         os.popen(
             f"cd {project} && git checkout master --quiet && git pull --quiet && git rev-parse {git_hash}~10000"
@@ -269,6 +260,7 @@ def gcc_hashes(git_hash: str, issue_hashes: List[str], project: str):
 
     return sorted_issue_hashes
 
+
 def issue_hashes(repo_name: str, token: str):
     params = {
         "Accept": "application/vnd.github+json",
@@ -278,18 +270,27 @@ def issue_hashes(repo_name: str, token: str):
     response = requests.get(
         f"https://api.github.com/repos/{repo_name}/issues?page=1&per_page=100&state=all",
         headers=params,
-        timeout=15 * 60, # 15 min timeout
+        timeout=15 * 60,  # 15 min timeout
     )
     print(f"getting most recent 100 issues: {response.status_code}")
     issues = json.loads(response.text)
-    hashes = [issue['title'].split(' ')[-1] for issue in issues if 'pull_request' not in issue.keys()]
+    hashes = [
+        issue["title"].split(" ")[-1]
+        for issue in issues
+        if "pull_request" not in issue.keys()
+    ]
     return hashes
 
+
 def search_and_download_previous_report_artifact(
-    artifact_name_template:str, previous_hash: str, prev_commits: List[str], repo_name: str, token: str
+    artifact_name_template: str,
+    previous_hash: str,
+    prev_commits: List[str],
+    repo_name: str,
+    token: str,
 ):
     """Download a most recent previous report artifact and return the corresponding hash.
-       Return None if no corresponding hash has been found
+    Return None if no corresponding hash has been found
     """
     artifact_name_template += "-report.log"
 
@@ -313,10 +314,8 @@ def search_and_download_previous_report_artifact(
                     os.remove(os.path.join("./previous_logs", log))
             return previous_hash
         if len(possible_previous_logs) == 1:
-            print(
-                f"found single log: {possible_previous_logs[0]}. Skipping download"
-            )
-            return previous_hash    
+            print(f"found single log: {possible_previous_logs[0]}. Skipping download")
+            return previous_hash
 
     # download previous artifact
     base_hash, base_id = get_valid_artifact_hash(
@@ -324,7 +323,11 @@ def search_and_download_previous_report_artifact(
     )
     if base_hash != "No valid hash":
         artifact_zip = download_artifact(
-            artifact_name_template.format(base_hash), str(base_id), token, repo_name, "./temp/"
+            artifact_name_template.format(base_hash),
+            str(base_id),
+            token,
+            repo_name,
+            "./temp/",
         )
         extract_artifact(
             artifact_zip,
@@ -337,8 +340,13 @@ def search_and_download_previous_report_artifact(
     )
     return None
 
+
 def download_build_log_artifact(
-    artifact_name_template:str, base_hash: str, repo_name: str, token: str, output_dir: str
+    artifact_name_template: str,
+    base_hash: str,
+    repo_name: str,
+    token: str,
+    output_dir: str,
 ):
     """Download the build log zipfiles for a corresponding base_hash and extract them to output_dir"""
     # input validation
@@ -349,10 +357,12 @@ def download_build_log_artifact(
     target_format_pat = re.compile(r"^gcc-")
     BUILD_LOG_SUFFIX = "-build-log"
     # Remove the starting gcc- and concatenate with the suffix
-    artifact_name = target_format_pat.sub('', artifact_name_template.format(base_hash) + BUILD_LOG_SUFFIX)
+    artifact_name = target_format_pat.sub(
+        "", artifact_name_template.format(base_hash) + BUILD_LOG_SUFFIX
+    )
 
     # Check if the artifact name exists inside the output directory
-    previous_build_log_path = Path(f'./{output_dir}/{artifact_name}')
+    previous_build_log_path = Path(f"./{output_dir}/{artifact_name}")
     if previous_build_log_path.exists():
         # Remove this line and uncomment the print, return line if build log artifact is downloaded more than once in the future. https://github.com/patrick-rivos/riscv-gnu-toolchain/pull/526#discussion_r1647981167
         raise RuntimeError("Build log artifact is currently downloaded only once.")
@@ -362,9 +372,7 @@ def download_build_log_artifact(
     # Search for the artifact id
     auth = Auth.Token(token)
     github = Github(auth=auth)
-    artifact_id = search_for_artifact(
-        artifact_name, repo_name, token, github
-    )
+    artifact_id = search_for_artifact(artifact_name, repo_name, token, github)
     if not artifact_id:
         print(f"{artifact_name} doesn't exist in {repo_name}")
         return
@@ -381,7 +389,13 @@ def download_build_log_artifact(
 
 
 def download_all_artifacts(
-    current_hash: str, previous_hash: str, repo_name: str, token: str, prefix: str, build_logs: bool, build_logs_dir: str
+    current_hash: str,
+    previous_hash: str,
+    repo_name: str,
+    token: str,
+    prefix: str,
+    build_logs: bool,
+    build_logs_dir: str,
 ):
     """
     Goes through all possible artifact targets and downloads it
@@ -393,8 +407,9 @@ def download_all_artifacts(
     issue_commits = issue_hashes(repo_name, token)
 
     # sort most recent issue commit hashes by topological order
-    prev_commits = gcc_hashes(current_hash, issue_commits,
-                              'binutils' if prefix == 'binutils_' else 'gcc')
+    prev_commits = gcc_hashes(
+        current_hash, issue_commits, "binutils" if prefix == "binutils_" else "gcc"
+    )
 
     artifact_name_templates = get_possible_artifact_names(prefix)
     print(artifact_name_templates)
@@ -406,14 +421,26 @@ def download_all_artifacts(
             continue
 
         # Download all the required artifacts
-        base_hash = search_and_download_previous_report_artifact(artifact_name_template, previous_hash, prev_commits, repo_name, token)
+        base_hash = search_and_download_previous_report_artifact(
+            artifact_name_template, previous_hash, prev_commits, repo_name, token
+        )
         if build_logs:
-            download_build_log_artifact(artifact_name_template, base_hash, repo_name, token, build_logs_dir)
+            download_build_log_artifact(
+                artifact_name_template, base_hash, repo_name, token, build_logs_dir
+            )
 
 
 def main():
     args = parse_arguments()
-    download_all_artifacts(args.hash, args.phash, args.repo, args.token, args.prefix, args.build_logs, args.build_logs_dir)
+    download_all_artifacts(
+        args.hash,
+        args.phash,
+        args.repo,
+        args.token,
+        args.prefix,
+        args.build_logs,
+        args.build_logs_dir,
+    )
 
 
 if __name__ == "__main__":

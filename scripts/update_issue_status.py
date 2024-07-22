@@ -3,8 +3,9 @@ import argparse
 import json
 from typing import Dict, List, Set
 
+
 def parse_arguments():
-    """ parse command line arguments """
+    """parse command line arguments"""
     parser = argparse.ArgumentParser(description="Download valid log artifacts")
     parser.add_argument(
         "-token",
@@ -55,10 +56,13 @@ def parse_arguments():
     )
     return parser.parse_args()
 
+
 def get_comment(token: str, comment: str, check: str, repo: str):
-    params = {"Accept": "application/vnd.github+json",
-              "Authorization": f"token {token}",
-              "X-GitHub-Api-Version": "2022-11-28"}
+    params = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"token {token}",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
     url = f"https://api.github.com/repos/{repo}/issues/comments/{comment}"
     r = requests.get(url, params)
     print(f"status code: {r.status_code}")
@@ -67,18 +71,20 @@ def get_comment(token: str, comment: str, check: str, repo: str):
         print(f"Can't find comment body. api returned: {found_comment}")
     return found_comment
 
+
 def get_current_status(comment):
     status = {}
-    for line in comment['body'].split('\n'):
+    for line in comment["body"].split("\n"):
         print(line)
-        if 'Target' in line or '---' in line or '|' not in line:
+        if "Target" in line or "---" in line or "|" not in line:
             continue
         if "Additional" in line or "## Notes" in line:
             break
-        target, state = line.split('|')[1:-1]
+        target, state = line.split("|")[1:-1]
         status[target] = state
 
     return status
+
 
 def build_new_comment(status: Dict[str, str], check: str, baseline: str):
     result = f"## {check} Status"
@@ -93,6 +99,7 @@ def build_new_comment(status: Dict[str, str], check: str, baseline: str):
     result += "If this patch commit depends on or conflicts with a recently committed patch, then these results may be outdated.\n"
     with open("comment.md", "w") as f:
         f.write(result)
+
 
 def main():
     args = parse_arguments()
@@ -110,6 +117,7 @@ def main():
             status = get_current_status(comment)
             status[args.target] = args.state
         build_new_comment(status, args.check, args.baseline)
+
 
 if __name__ == "__main__":
     main()

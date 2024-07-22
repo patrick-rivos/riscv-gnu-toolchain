@@ -2,6 +2,7 @@ import requests
 import argparse
 from typing import Dict
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Send api response")
     parser.add_argument(
@@ -76,6 +77,7 @@ def parse_arguments():
     )
     return parser.parse_args()
 
+
 def create_data(desc: str, issue: str, rid: str, state: str, context: str, repo: str):
     target_url = None
     if issue is None or issue == "":
@@ -86,12 +88,13 @@ def create_data(desc: str, issue: str, rid: str, state: str, context: str, repo:
         "state": state,
         "target_url": target_url,
         "context": f"toolchain-ci-rivos-{context}",
-        "description": desc
+        "description": desc,
     }
     return data
 
+
 def create_headers(token: str):
-    headers = { "Authorization": f"Token {token}" }
+    headers = {"Authorization": f"Token {token}"}
     return headers
 
 
@@ -104,14 +107,26 @@ def send(patch_id: str, data: Dict[str, str], headers: Dict[str, str]):
     print(response.status_code)
     print(response.text)
 
+
 def main():
     args = parse_arguments()
-    data = create_data(args.description, args.issue_id, args.run_id, args.state, args.context, args.repo)
+    data = create_data(
+        args.description,
+        args.issue_id,
+        args.run_id,
+        args.state,
+        args.context,
+        args.repo,
+    )
     headers = create_headers(args.token)
     print(f"data: {data}")
     print(args.event_name)
-    if args.event_name in {"schedule", "workflow_dispatch", "issue_comment"} and args.token != "PLACEHOLDER":
+    if (
+        args.event_name in {"schedule", "workflow_dispatch", "issue_comment"}
+        and args.token != "PLACEHOLDER"
+    ):
         send(args.patch_id, data, headers)
+
 
 if __name__ == "__main__":
     main()

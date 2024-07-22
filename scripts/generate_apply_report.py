@@ -1,5 +1,6 @@
 import argparse
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Apply patch report generator")
     parser.add_argument(
@@ -52,14 +53,22 @@ def parse_arguments():
     )
     return parser.parse_args()
 
-def build_status(bhash:str, thash: str, bstatus: str, tstatus: str):
+
+def build_status(bhash: str, thash: str, bstatus: str, tstatus: str):
     result = "## Apply Status\n"
     result += "|Target|Status|\n"
     result += "|---|---|\n"
-    result += f"|Baseline hash: https://github.com/gcc-mirror/gcc/commit/{bhash}|{bstatus}|\n"
-    thash = 'pending' if thash == '' else f"https://github.com/gcc-mirror/gcc/commit/{thash}"
+    result += (
+        f"|Baseline hash: https://github.com/gcc-mirror/gcc/commit/{bhash}|{bstatus}|\n"
+    )
+    thash = (
+        "pending"
+        if thash == ""
+        else f"https://github.com/gcc-mirror/gcc/commit/{thash}"
+    )
     result += f"|Tip of tree hash: {thash}|{tstatus}|\n"
     return result
+
 
 def git_log_wrapper(logfile: str, hash: str):
     result = "## Git log\n"
@@ -71,7 +80,10 @@ def git_log_wrapper(logfile: str, hash: str):
     result += "```\n\n"
     return result
 
-def generate_report(patch_name: str, bhash: str, thash: str, bstatus: str, tstatus: str):
+
+def generate_report(
+    patch_name: str, bhash: str, thash: str, bstatus: str, tstatus: str
+):
     result = ""
     if bstatus != "pending":
         bstatus = "Applied" if bstatus == "true" else "Failed"
@@ -84,7 +96,9 @@ def generate_report(patch_name: str, bhash: str, thash: str, bstatus: str, tstat
     if bstatus == "Failed" and tstatus == "Failed":
         result += "## Command\n"
         result += "```\n"
-        result += "> git am ../patches/*.patch --whitespace=fix -q --3way --empty=drop\n"
+        result += (
+            "> git am ../patches/*.patch --whitespace=fix -q --3way --empty=drop\n"
+        )
         result += "```\n"
         result += "## Output\n"
         result += "```\n"
@@ -119,11 +133,19 @@ before merging.
 
     return result
 
+
 def main():
     args = parse_arguments()
-    issue = generate_report(args.patch_name, args.base_hash, args.tree_hash, args.base_status, args.tree_status)
+    issue = generate_report(
+        args.patch_name,
+        args.base_hash,
+        args.tree_hash,
+        args.base_status,
+        args.tree_status,
+    )
     with open(args.output_markdown, "w") as f:
         f.write(issue)
+
 
 if __name__ == "__main__":
     main()

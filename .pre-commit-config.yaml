@@ -1,0 +1,19 @@
+# Only run on .github and scripts directory
+files: ^(\.github|scripts|\.pre-commit-config\.yaml).*$
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-case-conflict
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+    -   id: black

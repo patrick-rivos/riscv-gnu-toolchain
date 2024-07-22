@@ -8,6 +8,7 @@ from github import Auth, Github
 from tempfile import TemporaryDirectory
 from shutil import move
 
+
 def parse_arguments():
     """Parse command line arguments"""
     parser = argparse.ArgumentParser(description="Download single log artifact")
@@ -54,7 +55,9 @@ def search_for_artifact(
     return None
 
 
-def download_artifact(artifact_name: str, artifact_id: str, token: str, repo: str, output_dir: str) -> str:
+def download_artifact(
+    artifact_name: str, artifact_id: str, token: str, repo: str, output_dir: str
+) -> str:
     """
     Uses GitHub api endpoint to download the given artifact into output_dir.
     Returns the path of the downloaded zip
@@ -84,8 +87,7 @@ def download_artifact(artifact_name: str, artifact_id: str, token: str, repo: st
     return artifact_zip
 
 
-def extract_artifact(artifact_zip: str, outdir: str = "current_logs"
-):
+def extract_artifact(artifact_zip: str, outdir: str = "current_logs"):
     """
     Extracts a given artifact into the outdir.
     """
@@ -120,7 +122,9 @@ def main():
         raise ValueError(f"Could not find artifact {args.name} in {args.repo}")
 
     with TemporaryDirectory() as tmpdir:
-        artifact_zip = download_artifact(args.name, artifact_id, args.token, args.repo, tmpdir)
+        artifact_zip = download_artifact(
+            args.name, artifact_id, args.token, args.repo, tmpdir
+        )
         extract_artifact(artifact_zip, args.outdir)
 
 

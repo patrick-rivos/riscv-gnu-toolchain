@@ -38,4 +38,3 @@ pip install pygithub==1.59.1 requests
 sudo add-apt-repository ppa:git-core/ppa
 sudo apt update
 sudo apt upgrade -y
-
