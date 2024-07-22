@@ -4,7 +4,7 @@ echo $(pwd)
 
 
 while getopts "e:f:hl:t:" opt; do
-  case "$opt" in 
+  case "$opt" in
     e)
       exp_file="$OPTARG"
       echo "exp file is $exp_file"
@@ -56,5 +56,3 @@ if [[ $ret == 1 ]]; then
 else
   exit 1
 fi
-
-

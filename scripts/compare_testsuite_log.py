@@ -5,13 +5,14 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Tuple
 from collections import Counter, defaultdict
 
-compare_urls = defaultdict(lambda : "https://github.com/gcc-mirror/gcc/compare/{}...{}")
+compare_urls = defaultdict(lambda: "https://github.com/gcc-mirror/gcc/compare/{}...{}")
 compare_urls["binutils_"] = "https://github.com/bminor/binutils-gdb/compare/{}...{}"
 compare_urls["coord_"] = "https://gcc.gnu.org/cgit/gcc/log/?qt=range&q={}...{}"
 
-commit_urls = defaultdict(lambda : "https://github.com/gcc-mirror/gcc/commit/{}")
+commit_urls = defaultdict(lambda: "https://github.com/gcc-mirror/gcc/commit/{}")
 commit_urls["binutils_"] = "https://github.com/bminor/binutils-gdb/commit/{}"
 commit_urls["coord_"] = "https://gcc.gnu.org/git/gitweb.cgi?p=gcc.git;h={}"
+
 
 @dataclass
 class LibName:
@@ -23,7 +24,9 @@ class LibName:
     multilib: bool
     other_args: str
 
-    def __init__(self, arch: str, abi: str, model: str, multilib: bool, other_args: str):
+    def __init__(
+        self, arch: str, abi: str, model: str, multilib: bool, other_args: str
+    ):
         self.arch = arch.strip().lower()
         self.abi = abi.strip().lower()
         self.model = model.strip().lower()
@@ -31,7 +34,11 @@ class LibName:
         self.other_args = other_args.strip()
 
     def __str__(self):
-        return " ".join((self.arch, self.abi, self.model)) + (" multilib" if self.multilib else "") + f" {self.other_args}"
+        return (
+            " ".join((self.arch, self.abi, self.model))
+            + (" multilib" if self.multilib else "")
+            + f" {self.other_args}"
+        )
 
     def __hash__(self):
         return hash((self.arch, self.abi, self.model, self.multilib, self.other_args))
@@ -185,10 +192,10 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        '-ccommitted',
-        '--current-hash-committed',
+        "-ccommitted",
+        "--current-hash-committed",
         help="The current hash is an existing GCC hash",
-        action='store_true'
+        action="store_true",
     )
 
     parser.add_argument(
@@ -259,6 +266,7 @@ def classify_by_unique_failure(failure_set: List[str]):
         failure_dictionary[failure_name].append(failure)
     return failure_dictionary
 
+
 def list_difference(a: List[str], b: List[str]):
     count = Counter(a)
     count.subtract(b)
@@ -270,8 +278,10 @@ def list_difference(a: List[str], b: List[str]):
 
     return diff
 
+
 def list_intersect(a: List[str], b: List[str]):
     return list((Counter(a) & Counter(b)).elements())
+
 
 def compare_testsuite_log(previous_log_path: str, current_log_path: str):
     """
@@ -312,9 +322,15 @@ def compare_testsuite_log(previous_log_path: str, current_log_path: str):
             ] = classified_dict
 
     for description in unresolved_descriptions:
-        resolved_set = list_difference(previous_failures[description], current_failures[description])
-        unresolved_set = list_intersect(previous_failures[description], current_failures[description])
-        new_set = list_difference(current_failures[description], previous_failures[description])
+        resolved_set = list_difference(
+            previous_failures[description], current_failures[description]
+        )
+        unresolved_set = list_intersect(
+            previous_failures[description], current_failures[description]
+        )
+        new_set = list_difference(
+            current_failures[description], previous_failures[description]
+        )
         classified_dict = classify_by_unique_failure(resolved_set)
         if len(classified_dict):
             classified_gcc_failures.resolved.setdefault(
@@ -343,12 +359,17 @@ def compare_testsuite_log(previous_log_path: str, current_log_path: str):
     return classified_gcc_failures
 
 
-def gccfailure_to_summary(failure: Dict[LibName, GccFailure], failure_name: str,
-                          previous_hash: str, current_hash: str,
-                          current_hash_committed: bool, prefix: str):
+def gccfailure_to_summary(
+    failure: Dict[LibName, GccFailure],
+    failure_name: str,
+    previous_hash: str,
+    current_hash: str,
+    current_hash_committed: bool,
+    prefix: str,
+):
     tools = ("gcc", "g++", "gfortran")
     result = f"|{failure_name}|{tools[0]}|{tools[1]}|{tools[2]}|Previous Hash|\n"
-    result +="|---|---|---|---|---|\n"
+    result += "|---|---|---|---|---|\n"
     for libname, gccfailure in failure.items():
         result += f"|{libname}|"
         for tool in tools:
@@ -359,36 +380,61 @@ def gccfailure_to_summary(failure: Dict[LibName, GccFailure], failure_name: str,
         if current_hash_committed:
             result += f"[{previous_hash}]({compare_urls[prefix].format(previous_hash, current_hash)})|\n"
         else:
-           result += f"{commit_urls[prefix].format(previous_hash)}|\n"
+            result += f"{commit_urls[prefix].format(previous_hash)}|\n"
     result += "\n"
     return result
 
 
-def failures_to_summary(failures: ClassifedGccFailures, previous_hash: str,
-                        current_hash: str, current_hash_committed: bool, prefix: str):
+def failures_to_summary(
+    failures: ClassifedGccFailures,
+    previous_hash: str,
+    current_hash: str,
+    current_hash_committed: bool,
+    prefix: str,
+):
     result = "# Summary\n"
-    result += gccfailure_to_summary(failures.resolved, "Resolved Failures",
-                                    previous_hash, current_hash,
-                                    current_hash_committed, prefix)
-    result += gccfailure_to_summary(failures.unresolved, "Unresolved Failures",
-                                    previous_hash, current_hash,
-                                    current_hash_committed, prefix)
-    result += gccfailure_to_summary(failures.new, "New Failures", previous_hash,
-                                    current_hash, current_hash_committed, prefix)
+    result += gccfailure_to_summary(
+        failures.resolved,
+        "Resolved Failures",
+        previous_hash,
+        current_hash,
+        current_hash_committed,
+        prefix,
+    )
+    result += gccfailure_to_summary(
+        failures.unresolved,
+        "Unresolved Failures",
+        previous_hash,
+        current_hash,
+        current_hash_committed,
+        prefix,
+    )
+    result += gccfailure_to_summary(
+        failures.new,
+        "New Failures",
+        previous_hash,
+        current_hash,
+        current_hash_committed,
+        prefix,
+    )
     result += "\n"
     return result
 
 
 def failures_to_markdown(
-    failures: ClassifedGccFailures, previous_hash: str, current_hash: str,
-    current_hash_committed: bool, prefix: str
+    failures: ClassifedGccFailures,
+    previous_hash: str,
+    current_hash: str,
+    current_hash_committed: bool,
+    prefix: str,
 ) -> str:
     result = f"""---
 title: {previous_hash}->{current_hash}
 labels: bug
 ---\n"""
-    result += failures_to_summary(failures, previous_hash, current_hash,
-                                  current_hash_committed, prefix)
+    result += failures_to_summary(
+        failures, previous_hash, current_hash, current_hash_committed, prefix
+    )
     result += str(failures)
     return result
 
@@ -426,23 +472,39 @@ def is_result_valid(log_path: str):
                     return False
         return True
 
-def compare_logs(previous_hash: str, previous_log: str, current_hash: str,
-                 current_log: str, output_markdown: str,
-                 current_hash_committed: bool, prefix: str):
+
+def compare_logs(
+    previous_hash: str,
+    previous_log: str,
+    current_hash: str,
+    current_log: str,
+    output_markdown: str,
+    current_hash_committed: bool,
+    prefix: str,
+):
     if not is_result_valid(previous_log):
         raise RuntimeError(f"{previous_log} doesn't include Summary of the testsuite")
     if not is_result_valid(current_log):
         raise RuntimeError(f"{current_log} doesn't include Summary of the testsuite")
     failures = compare_testsuite_log(previous_log, current_log)
-    markdown = failures_to_markdown(failures, previous_hash, current_hash,
-                                    current_hash_committed, prefix)
+    markdown = failures_to_markdown(
+        failures, previous_hash, current_hash, current_hash_committed, prefix
+    )
     with open(output_markdown, "w") as markdown_file:
         markdown_file.write(markdown)
 
 
 def main():
     args = parse_arguments()
-    compare_logs(args.previous_hash, args.previous_log, args.current_hash, args.current_log, args.output_markdown, args.current_hash_committed, args.prefix)
+    compare_logs(
+        args.previous_hash,
+        args.previous_log,
+        args.current_hash,
+        args.current_log,
+        args.output_markdown,
+        args.current_hash_committed,
+        args.prefix,
+    )
 
 
 if __name__ == "__main__":

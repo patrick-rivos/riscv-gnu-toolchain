@@ -6,8 +6,7 @@ import re
 
 def parse_arguments():
     """Parse command line arguments"""
-    parser = argparse.ArgumentParser(
-        description="Download valid log artifacts")
+    parser = argparse.ArgumentParser(description="Download valid log artifacts")
     parser.add_argument(
         "-repo",
         required=True,
@@ -27,14 +26,20 @@ def parse_arguments():
 def filter_issue(issue):
     title_check = issue["title"].split("-")[-1] == "1"
     issue_labels = issue["labels"]
-    filter_labels = ["staging", "bisect", "build-only",
-                     "testsuite-failure", "build-failure", "apply-failure"]
+    filter_labels = [
+        "staging",
+        "bisect",
+        "build-only",
+        "testsuite-failure",
+        "build-failure",
+        "apply-failure",
+    ]
     labels_check = True
     for label in issue_labels:
         if label["name"] in filter_labels:
             labels_check = False
             break
-    if 'pull_request' not in issue.keys() and labels_check and title_check:
+    if "pull_request" not in issue.keys() and labels_check and title_check:
         return True
     return False
 
@@ -70,7 +75,7 @@ def get_comment(repo_name: str, token: str, issue_num: int):
     )
     print(f"getting comments for issue {issue_num}: {response.status_code}")
     comments = json.loads(response.text)
-    assert (len(comments) > 2)
+    assert len(comments) > 2
     return comments[1]
 
 

@@ -50,11 +50,10 @@ class GlibcFailure:
             result += "\n".join(self.fails)
         return result
 
-    def count_failures(
-        self
-    ) -> Tuple[str, str]:
+    def count_failures(self) -> Tuple[str, str]:
         """parse (total failures count, unique failures count)"""
         return (str(len(self.fails)), str(len(set(self.fails))))
+
 
 @dataclass
 class ClassifedGlibcFailures:
@@ -127,10 +126,10 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        '-ccommitted',
-        '--current-hash-committed',
+        "-ccommitted",
+        "--current-hash-committed",
         help="The current hash is an existing GLIBC hash",
-        action='store_true'
+        action="store_true",
     )
 
     return parser.parse_args()
@@ -199,8 +198,10 @@ def list_difference(a: List[str], b: List[str]):
 
     return diff
 
+
 def list_intersect(a: List[str], b: List[str]):
     return list((Counter(a) & Counter(b)).elements())
+
 
 def compare_testsuite_log(previous_log_path: str, current_log_path: str):
     """
@@ -220,26 +221,39 @@ def compare_testsuite_log(previous_log_path: str, current_log_path: str):
 
         previous_fails = set(previous_failures[1])
         current_fails = set(current_failures[1])
-        resolved_failures = (
-            previous_fails - current_fails
-        )
-        unresolved_failures = (
-            previous_fails & current_fails
-        )
+        resolved_failures = previous_fails - current_fails
+        unresolved_failures = previous_fails & current_fails
         new_failures = current_fails - previous_fails
 
-        classified_glibc_failures = ClassifedGlibcFailures({libname: GlibcFailure(list(resolved_failures))}, {libname: GlibcFailure(list(unresolved_failures))}, {libname: GlibcFailure( list(new_failures))})
+        classified_glibc_failures = ClassifedGlibcFailures(
+            {libname: GlibcFailure(list(resolved_failures))},
+            {libname: GlibcFailure(list(unresolved_failures))},
+            {libname: GlibcFailure(list(new_failures))},
+        )
     else:
         # Different libnames, so all fails are unresolved fails
-        classified_glibc_failures = ClassifedGlibcFailures({}, {previous_failures[0].libname: GlibcFailure(previous_failures[1]), current_failures[0].libname: GlibcFailure(current_failures[1])}, {})
+        classified_glibc_failures = ClassifedGlibcFailures(
+            {},
+            {
+                previous_failures[0].libname: GlibcFailure(previous_failures[1]),
+                current_failures[0].libname: GlibcFailure(current_failures[1]),
+            },
+            {},
+        )
 
     return classified_glibc_failures
 
 
-def glibcfailure_to_summary(failure: Dict[LibName, GlibcFailure], failure_name: str, previous_hash: str, current_hash: str, current_hash_committed: bool):
-    tools = ("glibc")
+def glibcfailure_to_summary(
+    failure: Dict[LibName, GlibcFailure],
+    failure_name: str,
+    previous_hash: str,
+    current_hash: str,
+    current_hash_committed: bool,
+):
+    tools = "glibc"
     result = f"|{failure_name}|{tools[0]}|Previous Hash|\n"
-    result +="|---|---|---|\n"
+    result += "|---|---|---|\n"
     for libname, glibcfailure in failure.items():
         result += f"|{libname}|"
         # convert tuple of counts to string
@@ -248,28 +262,56 @@ def glibcfailure_to_summary(failure: Dict[LibName, GlibcFailure], failure_name: 
         if current_hash_committed:
             result += f"[{previous_hash}](https://github.com/bminor/glibc/compare/{previous_hash}...{current_hash})|\n"
         else:
-           result += f"https://github.com/bminor/glibc/commit/{previous_hash}|\n"
+            result += f"https://github.com/bminor/glibc/commit/{previous_hash}|\n"
     result += "\n"
     return result
 
 
-def failures_to_summary(failures: ClassifedGlibcFailures, previous_hash: str, current_hash: str, current_hash_committed: bool):
+def failures_to_summary(
+    failures: ClassifedGlibcFailures,
+    previous_hash: str,
+    current_hash: str,
+    current_hash_committed: bool,
+):
     result = "# Summary\n"
-    result += glibcfailure_to_summary(failures.resolved, "Resolved Failures", previous_hash, current_hash, current_hash_committed)
-    result += glibcfailure_to_summary(failures.unresolved, "Unresolved Failures", previous_hash, current_hash, current_hash_committed)
-    result += glibcfailure_to_summary(failures.new, "New Failures", previous_hash, current_hash, current_hash_committed)
+    result += glibcfailure_to_summary(
+        failures.resolved,
+        "Resolved Failures",
+        previous_hash,
+        current_hash,
+        current_hash_committed,
+    )
+    result += glibcfailure_to_summary(
+        failures.unresolved,
+        "Unresolved Failures",
+        previous_hash,
+        current_hash,
+        current_hash_committed,
+    )
+    result += glibcfailure_to_summary(
+        failures.new,
+        "New Failures",
+        previous_hash,
+        current_hash,
+        current_hash_committed,
+    )
     result += "\n"
     return result
 
 
 def failures_to_markdown(
-    failures: ClassifedGlibcFailures, previous_hash: str, current_hash: str, current_hash_committed: bool
+    failures: ClassifedGlibcFailures,
+    previous_hash: str,
+    current_hash: str,
+    current_hash_committed: bool,
 ) -> str:
     result = f"""---
 title: {previous_hash}->{current_hash}
 labels: bug
 ---\n"""
-    result += failures_to_summary(failures, previous_hash, current_hash, current_hash_committed)
+    result += failures_to_summary(
+        failures, previous_hash, current_hash, current_hash_committed
+    )
     result += str(failures)
     return result
 
@@ -288,20 +330,37 @@ def is_result_valid(log_path: str):
                 return True
         return False
 
-def compare_logs(previous_hash: str, previous_log: str, current_hash: str, current_log: str, output_markdown: str, current_hash_committed: bool):
+
+def compare_logs(
+    previous_hash: str,
+    previous_log: str,
+    current_hash: str,
+    current_log: str,
+    output_markdown: str,
+    current_hash_committed: bool,
+):
     if not is_result_valid(previous_log):
         raise RuntimeError(f"{previous_log} doesn't include Summary of the testsuite")
     if not is_result_valid(current_log):
         raise RuntimeError(f"{current_log} doesn't include Summary of the testsuite")
     failures = compare_testsuite_log(previous_log, current_log)
-    markdown = failures_to_markdown(failures, previous_hash, current_hash, current_hash_committed)
+    markdown = failures_to_markdown(
+        failures, previous_hash, current_hash, current_hash_committed
+    )
     with open(output_markdown, "w") as markdown_file:
         markdown_file.write(markdown)
 
 
 def main():
     args = parse_arguments()
-    compare_logs(args.previous_hash, args.previous_log, args.current_hash, args.current_log, args.output_markdown, args.current_hash_committed)
+    compare_logs(
+        args.previous_hash,
+        args.previous_log,
+        args.current_hash,
+        args.current_log,
+        args.output_markdown,
+        args.current_hash_committed,
+    )
 
 
 if __name__ == "__main__":

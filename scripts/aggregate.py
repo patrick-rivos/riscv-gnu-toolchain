@@ -8,7 +8,7 @@ FAILURES = "./current_logs"
 
 
 def get_additional_failures(file_name: str, failure_name: str, seen_failures: Set[str]):
-    """ Search for build and testsuite failures """
+    """Search for build and testsuite failures"""
     result = f"|{failure_name}|Additional Info|\n"
     result += "|---|---|\n"
     file_path = os.path.join(FAILURES, f"{file_name}")
@@ -29,8 +29,9 @@ def get_additional_failures(file_name: str, failure_name: str, seen_failures: Se
         return result, seen_failures
     return "", seen_failures
 
+
 def build_summary(failures: Dict[str, List[str]], failure_name: str):
-    """ Builds table in summary section """
+    """Builds table in summary section"""
     tools = ("gcc", "g++", "gfortran")
     result = f"|{failure_name}|{tools[0]}|{tools[1]}|{tools[2]}|Previous Hash|\n"
     result += "|---|---|---|---|---|\n"
@@ -38,17 +39,18 @@ def build_summary(failures: Dict[str, List[str]], failure_name: str):
     result += "\n"
     return result
 
+
 def failures_to_summary(failures: Dict[str, List[str]]):
-    """ Builds summary section """
+    """Builds summary section"""
     result = "# Summary\n"
     seen_failures: Set[str] = set()
-    build_failures, seen_failures = get_additional_failures("failed_build.txt",
-                                                            "Build Failures",
-                                                            seen_failures)
+    build_failures, seen_failures = get_additional_failures(
+        "failed_build.txt", "Build Failures", seen_failures
+    )
     result += build_failures
-    testsuite_failures, seen_failures = get_additional_failures("failed_testsuite.txt",
-                                                                "Testsuite Failures",
-                                                                seen_failures)
+    testsuite_failures, seen_failures = get_additional_failures(
+        "failed_testsuite.txt", "Testsuite Failures", seen_failures
+    )
     result += testsuite_failures
 
     result += build_summary(failures, "New Failures")
@@ -59,9 +61,12 @@ def failures_to_summary(failures: Dict[str, List[str]]):
     print(result)
 
     # Add an invalid label when no failures are detected. Something probably went wrong.
-    no_failures = len(build_failures) == 0 and len(testsuite_failures) == 0 and len(failures) == 0
+    no_failures = (
+        len(build_failures) == 0 and len(testsuite_failures) == 0 and len(failures) == 0
+    )
 
     return result, no_failures
+
 
 def assign_labels(file_name: str, label: str):
     """Creates label for issue"""
@@ -70,7 +75,13 @@ def assign_labels(file_name: str, label: str):
         return label
     return ""
 
-def failures_to_markdown(failures: Dict[str, List[str]], current_hash: str, patch_name: str, title_prefix: str):
+
+def failures_to_markdown(
+    failures: Dict[str, List[str]],
+    current_hash: str,
+    patch_name: str,
+    title_prefix: str,
+):
     result = f"""---
 title: {title_prefix} {current_hash if patch_name == "" else patch_name}
 """
@@ -96,6 +107,7 @@ title: {title_prefix} {current_hash if patch_name == "" else patch_name}
 
     return result
 
+
 def parse_arch_info(name: str, target: str):
     """
     Extract libc, arch, abi, multilib from file name
@@ -105,7 +117,10 @@ def parse_arch_info(name: str, target: str):
     parts = parts + target_parts
     return " ".join(parts)
 
-def get_common_intersection(failures: Dict[str, Dict[str, Set[str]]]) -> Tuple[Set[str], int]:
+
+def get_common_intersection(
+    failures: Dict[str, Dict[str, Set[str]]]
+) -> Tuple[Set[str], int]:
     """
     get common failures across all affected targets (ones that appear in the tables)
     """
@@ -116,7 +131,10 @@ def get_common_intersection(failures: Dict[str, Dict[str, Set[str]]]) -> Tuple[S
     intersect: Set[str] = set.intersection(*common)
     return intersect, len(common)
 
-def get_unique_failures(failure_type: str, intersect: Set[str], failures: Dict[str, Dict[str, Set[str]]]):
+
+def get_unique_failures(
+    failure_type: str, intersect: Set[str], failures: Dict[str, Dict[str, Set[str]]]
+):
     """
     get set difference between common failures and failures for target libc/arch/abi
     """
@@ -136,9 +154,10 @@ def get_unique_failures(failure_type: str, intersect: Set[str], failures: Dict[s
                 result += "```\n"
     return result
 
-def additional_failures_to_markdown(failure_type: str,
-                                    failures: Dict[str, Dict[str, Set[str]]],
-                                    num_targets: int):
+
+def additional_failures_to_markdown(
+    failure_type: str, failures: Dict[str, Dict[str, Set[str]]], num_targets: int
+):
     """
     Adds new sections to issue displaying what failures were added/resolved
     """
@@ -153,6 +172,7 @@ def additional_failures_to_markdown(failure_type: str,
     result += get_unique_failures(failure_type, intersect, failures)
     result += "\n"
     return result
+
 
 def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
     """
@@ -184,8 +204,14 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
 
                 cells[1] = cells[1].replace("gc_zba_zbb_zbc_zbs_zfa", " Bitmanip")
                 cells[1] = cells[1].replace("gc_zba_zbb_zbc_zbs", " Bitmanip")
-                cells[1] = cells[1].replace("gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt", " Vector Crypto")
-                cells[1] = cells[1].replace("rv64imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt", "RVA23U64 profile")
+                cells[1] = cells[1].replace(
+                    "gcv_zvbb_zvbc_zvkg_zvkn_zvknc_zvkned_zvkng_zvknha_zvknhb_zvks_zvksc_zvksed_zvksg_zvksh_zvkt",
+                    " Vector Crypto",
+                )
+                cells[1] = cells[1].replace(
+                    "rv64imafdcv_zicond_zawrs_zbc_zvkng_zvksg_zvbb_zvbc_zicsr_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt",
+                    "RVA23U64 profile",
+                )
                 failures[index].append("|".join(cells))
         # begin resolved failures
         resolved: Dict[str, Set[str]] = defaultdict(set)
@@ -216,9 +242,11 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
             if temp_comps[0] == "###":
                 continue
             if line != "\n":
-                if ("internal compiler error" in line or
-                   "Segmentation fault" in line or
-                   "test for excess errors" in line):
+                if (
+                    "internal compiler error" in line
+                    or "Segmentation fault" in line
+                    or "test for excess errors" in line
+                ):
                     unresolved[cur_target].add(line)
         # begin new failures
         new: Dict[str, Set[str]] = defaultdict(set)
@@ -237,6 +265,7 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
                 new[cur_target].add(line)
 
     return failures, resolved, unresolved, new
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Testsuite Compare Options")
@@ -277,35 +306,41 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    failures: Dict[str, List[str]] = { "Resolved": [], "Unresolved": [], "New": [] }
+    failures: Dict[str, List[str]] = {"Resolved": [], "Unresolved": [], "New": []}
     all_resolved: Dict[str, Dict[str, Set[str]]] = {}
     all_unresolved: Dict[str, Dict[str, Set[str]]] = {}
     all_new: Dict[str, Dict[str, Set[str]]] = {}
     for file in os.listdir(SUMMARIES):
-        failures, resolved, unresolved, new = aggregate_summary(failures, os.path.join(SUMMARIES, file))
+        failures, resolved, unresolved, new = aggregate_summary(
+            failures, os.path.join(SUMMARIES, file)
+        )
         all_resolved[file] = resolved
         all_unresolved[file] = unresolved
         all_new[file] = new
 
     print([i.keys() for i in all_new.values()])
-    summary_markdown = failures_to_markdown(failures, args.current_hash, args.patch_name, args.title_prefix)
-    resolved_markdown = additional_failures_to_markdown("Resolved",
-                                                        all_resolved,
-                                                        len(failures['Unresolved']))
-    new_markdown = additional_failures_to_markdown("New", all_new,
-                                                   len(failures['Unresolved']))
+    summary_markdown = failures_to_markdown(
+        failures, args.current_hash, args.patch_name, args.title_prefix
+    )
+    resolved_markdown = additional_failures_to_markdown(
+        "Resolved", all_resolved, len(failures["Unresolved"])
+    )
+    new_markdown = additional_failures_to_markdown(
+        "New", all_new, len(failures["Unresolved"])
+    )
 
     markdown = summary_markdown + new_markdown + resolved_markdown
 
     with open(args.output_markdown, "w") as markdown_file:
         markdown_file.write(markdown)
 
-    unresolved_markdown = additional_failures_to_markdown("Unresolved",
-                                                        all_unresolved,
-                                                        len(failures['Unresolved']))
+    unresolved_markdown = additional_failures_to_markdown(
+        "Unresolved", all_unresolved, len(failures["Unresolved"])
+    )
 
     with open("unresolved_important_failures.md", "w") as markdown_file:
         markdown_file.write(unresolved_markdown)
+
 
 if __name__ == "__main__":
     main()
