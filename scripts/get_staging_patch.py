@@ -93,13 +93,23 @@ def parse_hash_from_body(body: str, hash_type: str):
     return match.split("/")[-1]
 
 
+def parse_run_id_from_body(body: str) -> str:
+    pattern = r"/actions/runs/(\d+)"
+    match = re.search(pattern, body)
+    assert match
+    run_id = match.group(1)
+    print(f"Run ID: {run_id}")
+    return run_id
+
+
 def parse_info(issue, comment):
     issue_body = issue["body"]
     comment_body = comment["body"]
+    run_id = parse_run_id_from_body(issue_body)
     patch_id = parse_patch_id_from_body(issue_body)
     baseline = parse_hash_from_body(comment_body, "Baseline hash")
     tip_of_tree = parse_hash_from_body(comment_body, "Tip of tree hash")
-    return patch_id, baseline, tip_of_tree
+    return run_id, patch_id, baseline, tip_of_tree
 
 
 def get_patch_timestamp(patch_id: str):
@@ -114,8 +124,12 @@ def main():
     issue = get_issue(args.repo, args.token)
     issue_num = issue["number"]
     comment = get_comment(args.repo, args.token, issue_num)
-    patch_id, baseline, tip_of_tree = parse_info(issue, comment)
+
+    run_id, patch_id, baseline, tip_of_tree = parse_info(issue, comment)
     timestamp = get_patch_timestamp(patch_id)
+    with open("run_id.txt", "w") as f:
+        f.write(str(run_id))
+
     with open("patch_id.txt", "w") as f:
         f.write(str(patch_id))
 
