@@ -98,7 +98,7 @@ def build_new_comment(status: Dict[str, str], check: str, baseline: str):
     result += f"Patch(es) were applied to the hash https://github.com/gcc-mirror/gcc/commit/{baseline}. "
     result += "If this patch commit depends on or conflicts with a recently committed patch, then these results may be outdated.\n"
     result += "\n"
-    result += "The following targets are build only targets for comparing build warnings against postcommit:\n"
+    result += "The following targets are build only targets:\n"
     result += "- linux-rv64gc-lp64d-non-multilib\n"
     result += "- newlib-rv64gc-lp64d-non-multilib\n"
     result += "\n"
