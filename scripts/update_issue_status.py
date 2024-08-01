@@ -102,10 +102,10 @@ def build_new_comment(status: Dict[str, str], check: str, baseline: str):
     result += "- linux-rv64gc-lp64d-non-multilib\n"
     result += "- newlib-rv64gc-lp64d-non-multilib\n"
     result += "\n"
-    result += """
-              Please note that any additional commits between the baseline and the current patch could have
-              introduced the build log warnings. If there are no additional commits, then any build log warnings
-              reported are a result of the current patch.\n
+    # result += """
+    #           Please note that any additional commits between the baseline and the current patch could have
+    #           introduced the build log warnings. If there are no additional commits, then any build log warnings
+    #           reported are a result of the current patch.\n
               """
     with open("comment.md", "w") as f:
         f.write(result)
