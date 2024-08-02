@@ -165,11 +165,16 @@ def parse_new_build_warnings_from_directory(
 
 def export_build_warnings(warnings_dict: Dict[str, Set[str]], output: str):
     with open(output, "w") as f:
+        f.write(
+            f"# New build warnings\nA List of all additional build warnings present at this hash\n"
+        )
         for target, warnings in warnings_dict.items():
-            f.write(f"New build warnings from target: {target}\n")
+            if not warnings:
+                continue
+            f.write(f"## {target}\n```\n")
             for warning in warnings:
                 f.write(warning)
-            f.write("==================================================\n")
+            f.write("```\n---\n")
 
 
 def parse_arguments():
