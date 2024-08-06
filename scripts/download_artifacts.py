@@ -98,6 +98,7 @@ def get_weekly_names(prefix: str) -> List[str]:
         "gcv_zvl1024b",
         "gcv_zvl512b",
         "gcv_zvl256b",
+        "gcv_zvl128b",
     ]
     # each extension ends in '_'. Use this since lmul extensions
     # use the same arch extension but the prefix is
