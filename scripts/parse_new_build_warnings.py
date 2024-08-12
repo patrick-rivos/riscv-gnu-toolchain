@@ -168,7 +168,7 @@ def export_build_warnings(warnings_dict: Dict[str, Set[str]], output: str):
         f.write(
             f"# New build warnings\nA List of all additional build warnings present at this hash\n"
         )
-        for target, warnings in sorted(warnings_dict.items(), key=lambda item: item[0]):
+        for target, warnings in sorted(warnings_dict.items()):
             if not warnings:
                 continue
             f.write(f"## {target}\n```\n")
