@@ -55,7 +55,7 @@ def create_gist(input_file: str, token: str) -> str:
     gist = auth_user.create_gist(
         public=False, files={input_file: InputFileContent(content=input_contents)}
     )
-    return gist.url
+    return gist.html_url
 
 
 def write_url(url: str, output_file: str):
