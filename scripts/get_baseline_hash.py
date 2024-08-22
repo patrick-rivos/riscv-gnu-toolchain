@@ -17,13 +17,8 @@ def parse_arguments():
 
 
 def filter_results(issue):
-    issue_labels = issue["labels"]
-    labels_check = True
-    filter_labels = ["build-failure", "testsuite-failure", "bisect"]
-    for label in issue_labels:
-        if label["name"] in filter_labels:
-            labels_check = False
-            break
+    issue_labels = [label["name"] for label in issue["labels"]]
+    labels_check = "valid-baseline" in issue_labels
     title_check = (
         re.search("^Testsuite Status [0-9a-f]{40}$", issue["title"]) is not None
     )  # re.search returns None if pattern not found
