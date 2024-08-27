@@ -20,13 +20,16 @@ def parse_arguments():
         help="Github access token",
     )
 
+
     return parser.parse_args()
 
 
 def filter_issue(issue):
     title_check = issue["title"].split("-")[-1] == "1"
     issue_labels = [label["name"] for label in issue["labels"]]
-    labels_check = "valid-baseline" in issue_labels
+    # Having no labels means no failures and is not a staging run
+    # Allow choosing issues that only have 'linter-failure'
+    labels_check = issue_labels == [] or issue_labels == ['linter-failure']
     if "pull_request" not in issue.keys() and labels_check and title_check:
         return True
     return False

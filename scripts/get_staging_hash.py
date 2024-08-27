@@ -37,7 +37,12 @@ def filter_issue(issue):
         re.search("^Testsuite Status [0-9a-f]{40}$", issue["title"]) is not None
     )  # re.search returns None if pattern not found
     issue_labels = [label["name"] for label in issue["labels"]]
-    labels_check = "valid-baseline" in issue_labels
+    # guaranteed that all issues have at least one label. If there are any
+    # without labels, something went wrong. Allow to choose baseline that
+    # has resolved regressions
+    labels_check = sorted(issue_labels) in [["valid-baseline"],
+                                            ["resolved-regressions", "valid-baseline"],
+                                            ["new-regressions", "resolved-regressions", "valid-baseline"]]
     if "pull_request" not in issue.keys() and labels_check and title_check:
         return True
     return False
