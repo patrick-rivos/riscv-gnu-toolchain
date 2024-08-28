@@ -25,8 +25,20 @@ def parse_arguments():
 
 def filter_issue(issue):
     title_check = issue["title"].split("-")[-1] == "1"
-    issue_labels = [label["name"] for label in issue["labels"]]
-    labels_check = "valid-baseline" in issue_labels
+    issue_labels = issue["labels"]
+    filter_labels = [
+        "staging",
+        "bisect",
+        "build-only",
+        "testsuite-failure",
+        "build-failure",
+        "apply-failure",
+    ]
+    labels_check = True
+    for label in issue_labels:
+        if label["name"] in filter_labels:
+            labels_check = False
+            break
     if "pull_request" not in issue.keys() and labels_check and title_check:
         return True
     return False
