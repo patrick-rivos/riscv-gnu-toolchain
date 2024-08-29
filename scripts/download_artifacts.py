@@ -372,7 +372,7 @@ def download_build_log_artifact(
         print("Missing base hash, skipping downloading the build log artifact")
         return
 
-    target_format_pat = re.compile(r"^gcc-")
+    target_format_pat = re.compile(r"gcc-")
     BUILD_LOG_SUFFIX = "-build-log"
     # Remove the starting gcc- and concatenate with the suffix
     artifact_name = target_format_pat.sub(
