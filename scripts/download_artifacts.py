@@ -88,7 +88,12 @@ def get_weekly_names(prefix: str) -> List[str]:
     zve_
     rvx_zvl_
     rvx_zvl_lmulx_
+    checking_
     """
+
+    if prefix == "checking_":
+        return ["checking_gcc-linux-rv64gcv_zicond-lp64d-{}-multilib"]
+
     # don't test newlib with weekly runs
     libc = [f"{prefix}gcc-linux"]
     arch = ["rv32{}-ilp32d-{}", "rv64{}-lp64d-{}"]
