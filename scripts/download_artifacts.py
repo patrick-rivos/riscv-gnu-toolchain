@@ -108,6 +108,7 @@ def get_weekly_names(prefix: str) -> List[str]:
     # each extension ends in '_'. Use this since lmul extensions
     # use the same arch extension but the prefix is
     # currently structured as rvx_zvl_lmulx_
+    is_lmul_prefix = "lmul" in prefix
     comps = prefix.split("_")
     prefix_arch = ""
 
@@ -117,9 +118,20 @@ def get_weekly_names(prefix: str) -> List[str]:
         prefix = comps[1]
         prefix_arch = comps[0]
 
-    multilib_arch_extensions = [
-        ext for ext in possible_arch_extensions if prefix in ext
-    ]
+    if is_lmul_prefix:
+        multilib_arch_extensions = [
+            ext for ext in possible_arch_extensions if prefix in ext
+        ]
+    else:
+        # Non lmul zvl runs do not run 128 since that's the default and is
+        # caught by the run-frequent runs. However, it would cause a false
+        # build-failure on the zvl runs because it can't find the gcv_zvl128b
+        # binary
+        multilib_arch_extensions = [
+            ext
+            for ext in possible_arch_extensions
+            if prefix in ext and "128" not in ext
+        ]
     print("prefix arch:", prefix_arch)
 
     # now have weekly runners rv32 zvl multilib variants
