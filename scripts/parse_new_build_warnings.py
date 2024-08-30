@@ -164,10 +164,23 @@ def parse_new_build_warnings_from_directory(
 
 
 def export_build_warnings(warnings_dict: Dict[str, Set[str]], output: str):
+    """Export the build warnings to a specified output file
+    Simply print New build warnings doesn't exist if warnings_dict is empty
+    """
+
+    def is_warnings_dict_empty(warnings_dict: Dict[str, Set[str]]):
+        for _, warnings in warnings_dict.items():
+            if warnings:
+                return False
+            return True
+
     with open(output, "w") as f:
-        f.write(
-            f"# New build warnings\nA List of all additional build warnings present at this hash\n"
-        )
+        if is_warnings_dict_empty(warnings_dict):
+            comment = "New build warnings doesn't exist"
+            f.write(comment)
+            return
+        comment = "# New build warnings\nA List of all additional build warnings present at this hash\n"
+        f.write(comment)
         for target, warnings in sorted(warnings_dict.items()):
             if not warnings:
                 continue
