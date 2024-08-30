@@ -7,7 +7,7 @@ import sys
 scripts_path = Path(__file__).parent.parent.parent.parent / "scripts"
 sys.path.append(str(scripts_path))
 
-from parse_new_build_warnings import parse_new_build_warnings, construct_warning_set, parse_new_build_warnings_from_directory, parse_target, POST_COMMIT, PRE_COMMIT
+from parse_new_build_warnings import parse_new_build_warnings, construct_warning_set, parse_new_build_warnings_from_directory, parse_target, POST_COMMIT, PRE_COMMIT, export_build_warnings
 
 @pytest.fixture
 def build_warning_string_1()->str:
@@ -155,8 +155,6 @@ def test_pre_commit_parse_new_build_warnings_from_directory(build_warnings_direc
         print("\n\nnew_warnings: ", new_warnings[target])
         assert(new_warnings[target] == warning_set)
 
-
-
 def test_post_commit_parse_new_build_warnings_from_directory(build_warnings_directory_1, build_warnings_directory_2):
     old_build_dir, old_a, old_b = build_warnings_directory_1
     new_build_dir, _, _ = build_warnings_directory_2
@@ -182,3 +180,17 @@ def test_post_commit_parse_new_build_warnings_from_directory(build_warnings_dire
         print("expected: ", warning_set)
         print("\n\nnew_warnings: ", new_warnings[target])
         assert(new_warnings[target] == warning_set)
+
+def test_export_empty_build_warnings():
+    empty_warnings_dict = {"foo": set()}
+    with NamedTemporaryFile() as tmp:
+        export_build_warnings(empty_warnings_dict, tmp.name)
+        with open(tmp.name, 'r') as f:
+            assert(f.read() == "New build warnings doesn't exist")
+
+def test_export_build_warnings():
+    warnings_dict = {"foo": set("bar\n")}
+    with NamedTemporaryFile() as tmp:
+        export_build_warnings(warnings_dict, tmp.name)
+        with open(tmp.name, 'r') as f:
+            assert(f.readline() == "# New build warnings\n")
