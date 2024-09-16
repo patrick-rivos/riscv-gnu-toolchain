@@ -246,6 +246,8 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
                     "internal compiler error" in line
                     or "Segmentation fault" in line
                     or "test for excess errors" in line
+                    or "execution test" in line
+                    or "execute" in line.split(" ")[2:]
                 ):
                     unresolved[cur_target].add(line)
         # begin new failures
