@@ -220,7 +220,7 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
     """
     # Weekly arch extensions included since rv64gcv_zv* doesn't
     # exist without a prefix
-    if prefix == "" or prefix == "coord_":
+    if prefix == "" or prefix == "coord_" or prefix == "release_14_":
         return get_frequent_names(prefix)
     elif prefix == "binutils_":
         return get_binutils_names(prefix)
