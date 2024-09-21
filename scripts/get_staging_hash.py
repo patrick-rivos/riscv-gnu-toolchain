@@ -37,7 +37,7 @@ def filter_issue(issue):
         re.search("^Testsuite Status [0-9a-f]{40}$", issue["title"]) is not None
     )  # re.search returns None if pattern not found
     issue_labels = issue["labels"]
-    filter_labels = ["staging", "bisect", "coord", "invalid"]
+    filter_labels = ["staging", "bisect", "coord", "invalid", "release-14"]
     labels_check = True
     for label in issue_labels:
         if label["name"] in filter_labels:
