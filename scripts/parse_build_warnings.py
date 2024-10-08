@@ -1,4 +1,4 @@
-from typing import Dict, Set
+from typing import Dict, Set, Tuple
 from pathlib import Path
 import re
 import argparse
@@ -44,14 +44,17 @@ class WarningParser:
         return temp
 
 
-def parse_new_build_warnings(old_build_path: str, new_build_path: str) -> Set[str]:
+def parse_build_warnings(
+    old_build_path: str, new_build_path: str
+) -> Tuple[Set[str], Set[str]]:
     """Construct a set of new warnings that are not present in the old build warning"""
     new_build_warnings = construct_warning_set(new_build_path)
-    new_warnings = remove_duplicate_warnings(new_build_warnings, old_build_path)
-    return new_warnings
+    old_build_warnings = construct_warning_set(old_build_path)
+    resolved_warnings = old_build_warnings - new_build_warnings
+    new_warnings = new_build_warnings - old_build_warnings
+    return new_warnings, resolved_warnings
 
 
-# TODO: Combine ConstructWarningSet and RemoveDuplicateWarnings and apply observer pattern
 def construct_warning_set(build_path: str) -> Set[str]:
     """Iterate through each warning from the build file and construct a set"""
     path = Path(build_path)
@@ -74,33 +77,6 @@ def construct_warning_set(build_path: str) -> Set[str]:
     parsed = parser.flush()
     AddToSet(parsed)
     return build_warnings
-
-
-def remove_duplicate_warnings(
-    new_build_warnings: Set[str], old_build_path: str
-) -> Set[str]:
-    """Iterate through each warning from the old build file and remove them from the set"""
-    path = Path(old_build_path)
-    # validate the path
-    if not path.exists:
-        raise ValueError(f"{old_build_path} doesn't exist")
-    if len(new_build_warnings) == 0:
-        return new_build_warnings
-
-    def RemoveFromSet(msg: str):
-        if msg != "":
-            new_build_warnings.discard(msg)
-
-    parser = WarningParser()
-    with open(old_build_path, "r") as file:
-        for line in file:
-            parsed = parser.parse(line)
-            # if the following line is a start of the new warning, parser emits the parsed warning message
-            RemoveFromSet(parsed)
-    # If new warning line is not given, the last message cannot be flushed automatically
-    parsed = parser.flush()
-    RemoveFromSet(parsed)
-    return new_build_warnings
 
 
 def parse_target(file_name: str) -> str:
@@ -127,9 +103,9 @@ def convert_pre_to_post_format(file_name: str):
     return "-".join(parts)
 
 
-def parse_new_build_warnings_from_directory(
+def parse_build_warnings_from_directory(
     old_build_directory: str, new_build_directory: str, repo: str
-) -> Dict[str, Set[str]]:
+) -> Tuple[Dict[str, Set[str]], Dict[str, Set[str]]]:
     """Iterate through new build logs in the new_build_directory to compare with the old build logs from old_build_directory
     After constructing a set of new warnings for each build log, the set of new warnings is printed out to the output file
     """
@@ -148,6 +124,7 @@ def parse_new_build_warnings_from_directory(
         new_build_counterpart[hashless] = file
 
     new_warnings = dict()
+    resolved_warnings = dict()
     for new_build_file in new_build_path.iterdir():
         # Pre-commit build log files have a different format from post-commit build log files
         new_build_file_name = new_build_file.name
@@ -157,13 +134,15 @@ def parse_new_build_warnings_from_directory(
         old_build_file = new_build_counterpart[hashless]
         if old_build_file == "":
             raise RuntimeError(f"Older build for {new_build_file} doesn't exist")
-        new_warnings[hashless] = parse_new_build_warnings(
+        new_warnings[hashless], resolved_warnings[hashless] = parse_build_warnings(
             old_build_file, new_build_file
         )
-    return new_warnings
+    return new_warnings, resolved_warnings
 
 
-def export_build_warnings(warnings_dict: Dict[str, Set[str]], output: str):
+def export_build_warnings(
+    warnings_dict: Dict[str, Set[str]], output: str, warning_type: str
+):
     """Export the build warnings to a specified output file
     Simply print New build warnings doesn't exist if warnings_dict is empty
     """
@@ -176,16 +155,16 @@ def export_build_warnings(warnings_dict: Dict[str, Set[str]], output: str):
 
     with open(output, "w") as f:
         if is_warnings_dict_empty(warnings_dict):
-            comment = "New build warnings doesn't exist"
+            comment = f"{warning_type} doesn't exist"
             f.write(comment)
             return
-        comment = "# New build warnings\nA List of all additional build warnings present at this hash\n"
+        comment = f"# {warning_type}\nA List of build warnings present at this hash\n"
         f.write(comment)
         for target, warnings in sorted(warnings_dict.items()):
             if not warnings:
                 continue
             f.write(f"## {target}\n```\n")
-            for warning in warnings:
+            for warning in sorted(warnings):
                 f.write(warning)
             f.write("```\n---\n")
 
@@ -206,10 +185,16 @@ def parse_arguments():
         help="Directory that only consists of new build's stderr.logs",
     )
     parser.add_argument(
-        "--output",
+        "--new-warnings-output",
         required=True,
         type=str,
-        help="Path to the output file that will store all warnings",
+        help="Path to the output file that will store all new warnings",
+    )
+    parser.add_argument(
+        "--resolved-warnings-output",
+        required=True,
+        type=str,
+        help="Path to the output file that will store all resolved warnings",
     )
     parser.add_argument(
         "--repo",
@@ -223,10 +208,13 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    new_warnings = parse_new_build_warnings_from_directory(
+    new_warnings, resolved_warnings = parse_build_warnings_from_directory(
         args.old_dir, args.new_dir, args.repo
     )
-    export_build_warnings(new_warnings, args.output)
+    export_build_warnings(new_warnings, args.new_warnings_output, "New build warnings")
+    export_build_warnings(
+        resolved_warnings, args.resolved_warnings_output, "Resolved build warnings"
+    )
 
 
 if __name__ == "__main__":
