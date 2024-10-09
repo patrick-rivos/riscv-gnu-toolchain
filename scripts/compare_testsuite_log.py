@@ -140,7 +140,9 @@ class ClassifedGccFailures:
 
     def __str__(self):
         result = self.failure_dict_to_string(self.resolved, "Resolved Failures")
-        result += self.failure_dict_to_string(self.unresolved, "Remaining Preexisting Failures")
+        result += self.failure_dict_to_string(
+            self.unresolved, "Remaining Preexisting Failures"
+        )
         result += self.failure_dict_to_string(self.new, "New Failures")
         return result
 
