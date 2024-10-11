@@ -151,7 +151,7 @@ def export_build_warnings(
         for _, warnings in warnings_dict.items():
             if warnings:
                 return False
-            return True
+        return True
 
     with open(output, "w") as f:
         if is_warnings_dict_empty(warnings_dict):
