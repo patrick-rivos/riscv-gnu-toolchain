@@ -55,7 +55,7 @@ def failures_to_summary(failures: Dict[str, List[str]]):
 
     result += build_summary(failures, "New Failures")
     result += build_summary(failures, "Resolved Failures")
-    result += build_summary(failures, "Unresolved Failures")
+    result += build_summary(failures, "Remaining Preexisting Failures")
     result += "\n"
 
     print(result)
@@ -218,7 +218,7 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
         cur_target = None
         while True:
             line = f.readline()
-            if not line or line.startswith("# Unresolved Failures"):
+            if not line or line.startswith("# Remaining Preexisting Failures"):
                 break
             temp_comps = line.split(" ")
             if temp_comps[0] == "##":
@@ -228,7 +228,7 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
                 continue
             if line != "\n":
                 resolved[cur_target].add(line)
-        # begin unresolved failures
+        # begin Remaining Preexisting Failures
         unresolved: Dict[str, Set[str]] = defaultdict(set)
         cur_target = None
         while True:
