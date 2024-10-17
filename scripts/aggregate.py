@@ -308,7 +308,7 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    failures: Dict[str, List[str]] = {"Resolved": [], "Unresolved": [], "New": []}
+    failures: Dict[str, List[str]] = {"Resolved": [], "Remaining Preexisting": [], "New": []}
     all_resolved: Dict[str, Dict[str, Set[str]]] = {}
     all_unresolved: Dict[str, Dict[str, Set[str]]] = {}
     all_new: Dict[str, Dict[str, Set[str]]] = {}
@@ -325,10 +325,10 @@ def main():
         failures, args.current_hash, args.patch_name, args.title_prefix
     )
     resolved_markdown = additional_failures_to_markdown(
-        "Resolved", all_resolved, len(failures["Unresolved"])
+        "Resolved", all_resolved, len(failures["Remaining Preexisting"])
     )
     new_markdown = additional_failures_to_markdown(
-        "New", all_new, len(failures["Unresolved"])
+        "New", all_new, len(failures["Remaining Preexisting"])
     )
 
     markdown = summary_markdown + new_markdown + resolved_markdown
@@ -337,7 +337,7 @@ def main():
         markdown_file.write(markdown)
 
     unresolved_markdown = additional_failures_to_markdown(
-        "Unresolved", all_unresolved, len(failures["Unresolved"])
+        "Remaining Preexisting", all_unresolved, len(failures["Remaining Preexisting"])
     )
 
     with open("unresolved_important_failures.md", "w") as markdown_file:
