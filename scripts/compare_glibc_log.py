@@ -74,9 +74,7 @@ class ClassifedGlibcFailures:
 
     def __str__(self):
         result = self.failure_dict_to_string(self.resolved, "Resolved Failures")
-        result += self.failure_dict_to_string(
-            self.unresolved, "Remaining Preexisting Failures"
-        )
+        result += self.failure_dict_to_string(self.unresolved, "Unresolved Failures")
         result += self.failure_dict_to_string(self.new, "New Failures")
         return result
 
@@ -285,7 +283,7 @@ def failures_to_summary(
     )
     result += glibcfailure_to_summary(
         failures.unresolved,
-        "Remaining Preexisting Failures",
+        "Unresolved Failures",
         previous_hash,
         current_hash,
         current_hash_committed,
