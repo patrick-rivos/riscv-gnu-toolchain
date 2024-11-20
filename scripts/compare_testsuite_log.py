@@ -141,7 +141,7 @@ class ClassifedGccFailures:
     def __str__(self):
         result = self.failure_dict_to_string(self.resolved, "Resolved Failures")
         result += self.failure_dict_to_string(
-            self.unresolved, "Remaining_Preexisting Failures"
+            self.unresolved, "Remaining Preexisting Failures"
         )
         result += self.failure_dict_to_string(self.new, "New Failures")
         return result
@@ -405,7 +405,7 @@ def failures_to_summary(
     )
     result += gccfailure_to_summary(
         failures.unresolved,
-        "Remaining_Preexisting Failures",
+        "Remaining Preexisting Failures",
         previous_hash,
         current_hash,
         current_hash_committed,

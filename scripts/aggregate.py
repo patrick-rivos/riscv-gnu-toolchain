@@ -55,7 +55,7 @@ def failures_to_summary(failures: Dict[str, List[str]]):
 
     result += build_summary(failures, "New Failures")
     result += build_summary(failures, "Resolved Failures")
-    result += build_summary(failures, "Remaining_Preexisting Failures")
+    result += build_summary(failures, "Remaining Preexisting Failures")
     result += "\n"
 
     print(result)
@@ -218,7 +218,7 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
         cur_target = None
         while True:
             line = f.readline()
-            if not line or line.startswith("# Remaining_Preexisting Failures"):
+            if not line or line.startswith("# Remaining Preexisting Failures"):
                 break
             temp_comps = line.split(" ")
             if temp_comps[0] == "##":
@@ -228,7 +228,7 @@ def aggregate_summary(failures: Dict[str, List[str]], file_name: str):
                 continue
             if line != "\n":
                 resolved[cur_target].add(line)
-        # begin Remaining_Preexisting Failures
+        # begin Remaining Preexisting Failures
         unresolved: Dict[str, Set[str]] = defaultdict(set)
         cur_target = None
         while True:
@@ -308,7 +308,7 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    failures: Dict[str, List[str]] = {"Resolved": [], "Remaining_Preexisting": [], "New": []}
+    failures: Dict[str, List[str]] = {"Resolved": [], "Remaining Preexisting": [], "New": []}
     all_resolved: Dict[str, Dict[str, Set[str]]] = {}
     all_unresolved: Dict[str, Dict[str, Set[str]]] = {}
     all_new: Dict[str, Dict[str, Set[str]]] = {}
@@ -325,10 +325,10 @@ def main():
         failures, args.current_hash, args.patch_name, args.title_prefix
     )
     resolved_markdown = additional_failures_to_markdown(
-        "Resolved", all_resolved, len(failures["Remaining_Preexisting"])
+        "Resolved", all_resolved, len(failures["Remaining Preexisting"])
     )
     new_markdown = additional_failures_to_markdown(
-        "New", all_new, len(failures["Remaining_Preexisting"])
+        "New", all_new, len(failures["Remaining Preexisting"])
     )
 
     markdown = summary_markdown + new_markdown + resolved_markdown
@@ -337,7 +337,7 @@ def main():
         markdown_file.write(markdown)
 
     unresolved_markdown = additional_failures_to_markdown(
-        "Remaining_Preexisting", all_unresolved, len(failures["Remaining_Preexisting"])
+        "Remaining Preexisting", all_unresolved, len(failures["Remaining Preexisting"])
     )
 
     with open("unresolved_important_failures.md", "w") as markdown_file:
