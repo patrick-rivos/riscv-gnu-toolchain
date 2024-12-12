@@ -111,7 +111,7 @@ def interesting_patch(patch: Dict[str, Any]):
 def parse_patches(
     patches: List[Dict[str, Any]],
     patch_id: Union[None, str] = None,
-    all_patches: bool = False
+    all_patches: bool = False,
 ):
     riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
