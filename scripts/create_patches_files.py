@@ -108,7 +108,11 @@ def interesting_patch(patch: Dict[str, Any]):
     )
 
 
-def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = None, all_patches: bool = False):
+def parse_patches(
+    patches: List[Dict[str, Any]],
+    patch_id: Union[None, str] = None,
+    all_patches: bool = False
+):
     riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     riscv_patchworks_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
@@ -184,8 +188,8 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
     patchworks_links = [item for sublist in patchworks_links for item in sublist]
 
     if all_patches:
-        assert(len(riscv_download_links) == len(all_download_links))
-        assert(len(riscv_patchworks_links) == len(all_patchworks_links))
+        assert len(riscv_download_links) == len(all_download_links)
+        assert len(riscv_patchworks_links) == len(all_patchworks_links)
 
     for patch_links in riscv_title_patch_links:
         assert any(
@@ -312,7 +316,9 @@ def get_patch_info(url: str, all_patches: bool):
     return parse_patches(patches, all_patches=all_patches)
 
 
-def get_multiple_patches(start: str, end: str, backup: str, project: int, all_patches: bool):
+def get_multiple_patches(
+    start: str, end: str, backup: str, project: int, all_patches: bool
+):
     """Get all patches within a timeframe"""
     url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&project={}&since={}&before={}&per_page=100"
 
