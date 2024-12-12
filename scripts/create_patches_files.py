@@ -54,6 +54,12 @@ def parse_arguments():
         default=6,
         help="Project number to pull from",
     )
+    parser.add_argument(
+        "-all-patches",
+        "--all-patches",
+        action="store_true",
+        help="Run on all patches",
+    )
     return parser.parse_args()
 
 
@@ -102,7 +108,7 @@ def interesting_patch(patch: Dict[str, Any]):
     )
 
 
-def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = None):
+def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = None, all_patches: bool = False):
     riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
     riscv_patchworks_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
@@ -134,7 +140,7 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
             )
             all_patchworks_links[found_series].append(prev_patchworks_link)
 
-        if patch_id is None and interesting_patch(patch):
+        if patch_id is None and (interesting_patch(patch) or all_patches):
             print(f"Patch {patch['name']} is an interesting patch")
             riscv_download_links[found_series].append(
                 all_download_links[found_series][-1]
@@ -145,7 +151,8 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
 
         # Old check, used for asserts
         if patch_id is None and (
-            "risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower()
+            ("risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower())
+            or all_patches
         ):
             riscv_title_patch_links.append(all_download_links[found_series][-1])
             riscv_title_patchworks_links.append(all_patchworks_links[found_series][-1])
@@ -175,6 +182,10 @@ def parse_patches(patches: List[Dict[str, Any]], patch_id: Union[None, str] = No
     download_links = [item for sublist in download_links for item in sublist]
     patchworks_links = list(riscv_patchworks_links.values())
     patchworks_links = [item for sublist in patchworks_links for item in sublist]
+
+    if all_patches:
+        assert(len(riscv_download_links) == len(all_download_links))
+        assert(len(riscv_patchworks_links) == len(all_patchworks_links))
 
     for patch_links in riscv_title_patch_links:
         assert any(
@@ -211,8 +222,8 @@ def get_single_patch_info(url: str, patch_id: Union[str, None] = None):
             make_api_request(f"https://patchwork.sourceware.org/api/1.3/patches/{pid}")
             for pid in patch_ids
         ]
-        return parse_patches(patches, patch_id)
-    return parse_patches([patches], patch_id)
+        return parse_patches(patches, patch_id=patch_id)
+    return parse_patches([patches], patch_id=patch_id)
 
 
 ## Single patch ID
@@ -290,7 +301,7 @@ def make_api_request_and_get_headers(url: str):
     return r.headers, patches
 
 
-def get_patch_info(url: str):
+def get_patch_info(url: str, all_patches: bool):
     patches: List[Dict[str, Any]] = []
     for page_num in range(1, 10):
         headers, page = make_api_request_and_get_headers(url + f"&page={page_num}")
@@ -298,15 +309,17 @@ def get_patch_info(url: str):
         if 'rel="next"' not in headers["Link"]:
             break
 
-    return parse_patches(patches)
+    return parse_patches(patches, all_patches=all_patches)
 
 
-def get_multiple_patches(start: str, end: str, backup: str, project: int):
+def get_multiple_patches(start: str, end: str, backup: str, project: int, all_patches: bool):
     """Get all patches within a timeframe"""
-    url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&project={}&since={}&before={}"
+    url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&project={}&since={}&before={}&per_page=100"
+
+    print(all_patches)
 
     series_name, series_url, download_links, patchworks_links = get_patch_info(
-        url.format(project, start, end)
+        url.format(project, start, end), all_patches
     )
 
     (
@@ -314,7 +327,7 @@ def get_multiple_patches(start: str, end: str, backup: str, project: int):
         _early_series_url,
         early_download_links,
         early_patchworks_links,
-    ) = get_patch_info(url.format(project, backup, start))
+    ) = get_patch_info(url.format(project, backup, start), all_patches)
 
     print("creating download links")
     new_download_links = get_overlap_dict(download_links, early_download_links)
@@ -332,7 +345,9 @@ def main():
         get_patches_file(args.patches_file)
     else:
         print(f"project: {args.project}")
-        get_multiple_patches(args.start, args.end, args.backup, args.project)
+        get_multiple_patches(
+            args.start, args.end, args.backup, args.project, args.all_patches
+        )
 
 
 if __name__ == "__main__":
