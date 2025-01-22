@@ -33,8 +33,11 @@ wget https://bootstrap.pypa.io/get-pip.py
 sudo python3 get-pip.py
 pip install -U pyopenssl cryptography
 pip install pygithub==1.59.1 requests
+############################################################################################################
+# Note sometimes this doesn't actually work properly. Need to run `sudo apt install python3-pip` again to fix
+############################################################################################################
 
 # for precommit-runners (need git --drop-empty)
-sudo add-apt-repository ppa:git-core/ppa
+sudo add-apt-repository -y ppa:git-core/ppa
 sudo apt update
 sudo apt upgrade -y
