@@ -167,6 +167,23 @@ def get_binutils_names(prefix: str) -> List[str]:
     return multilib_names
 
 
+def get_glibc_names(prefix: str) -> List[str]:
+    """
+    Generates all permutaions of target artifact logs for
+    glibc runs
+    """
+    assert prefix == "glibc_"
+
+    multilib_names = [
+        "glibc_gcc-linux-rv64gc-lp64d-{}-multilib",
+        "glibc_gcc-linux-rv32gc-ilp32d-{}-multilib",
+        "glibc_gcc-newlib-rv64gc-lp64d-{}-multilib",
+        "glibc_gcc-newlib-rv32gc-ilp32d-{}-multilib",
+    ]
+
+    return multilib_names
+
+
 def get_frequent_names(prefix: str) -> List[str]:
     """
     Generates all permutaions of target artifact logs for
@@ -224,6 +241,8 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
         return get_frequent_names(prefix)
     elif prefix == "binutils_":
         return get_binutils_names(prefix)
+    elif prefix == "glibc_":
+        return get_glibc_names(prefix)
     else:
         return get_weekly_names(prefix)
 
@@ -425,9 +444,14 @@ def download_all_artifacts(
     issue_commits = issue_hashes(repo_name, token)
 
     # sort most recent issue commit hashes by topological order
-    prev_commits = gcc_hashes(
-        current_hash, issue_commits, "binutils" if prefix == "binutils_" else "gcc"
-    )
+    if prefix == "binutils_":
+        project = "binutils"
+    elif prefix == "glibc_":
+        project = "glibc"
+    else:
+        project = "gcc"
+
+    prev_commits = gcc_hashes(current_hash, issue_commits, project)
 
     artifact_name_templates = get_possible_artifact_names(prefix)
     print(artifact_name_templates)
