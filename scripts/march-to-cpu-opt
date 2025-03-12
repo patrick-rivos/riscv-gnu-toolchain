@@ -22,6 +22,12 @@ QEMU_EXT_OPTS = {
     "zdinx": "zdinx=true",
     "zicond": "zicond=true",
     "zvbb": "zvbb=true",
+    "zvfh": "zvfh=true",
+    "zvfhmin": "zvfhmin=true",
+    "zvkb": "zvkb=true",
+    "zvkg": "zvkg=true",
+    "zvkn": "zvkn=true",
+    "zvkned": "zvkned=true",
 }
 
 SPIKE_EXT_NOT_ALLOWED = [
