@@ -132,14 +132,18 @@ def main():
         with open("runs.log", "w") as f:
             f.write(json.dumps(runs[:10], indent=4))
         run_index = find_run_index(runs, args.run_id)
-        assert run_index is not None, f"{args.run_id} is not found in list of the 100 most recent runs"
+        assert (
+            run_index is not None
+        ), f"{args.run_id} is not found in list of the 100 most recent runs"
         write_run_id(runs, args.run_id, run_index)
         assert str(runs[run_index]["id"]) == str(args.run_id)
         # The created_at has an extra Z at the end of the isoformat-ed
         # timestamp this causes the output timestamp to have an additional
         # +00:00 appended to the rounded timestamps which breaks
         # create_patches_files.py api request
-        write_timestamps(runs[run_index]["created_at"][:-1], runs[run_index + 1]["created_at"][:-1])
+        write_timestamps(
+            runs[run_index]["created_at"][:-1], runs[run_index + 1]["created_at"][:-1]
+        )
     else:
         write_timestamps(args.timestamp)
 
