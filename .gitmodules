@@ -11,11 +11,11 @@
 	url = https://sourceware.org/git/glibc.git
 [submodule "dejagnu"]
 	path = dejagnu
-	url = https://git.linaro.org/toolchain/dejagnu.git
+	url = https://git.savannah.gnu.org/git/dejagnu.git
 	branch = dejagnu-1.6.3
 [submodule "newlib"]
 	path = newlib
-	url = https://git.linaro.org/toolchain/newlib.git
+	url =  https://github.com/bminor/newlib.git
 	branch = master
 [submodule "gdb"]
 	path = gdb
