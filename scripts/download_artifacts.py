@@ -238,10 +238,10 @@ def get_possible_artifact_names(prefix: str) -> List[str]:
     # Weekly arch extensions included since rv64gcv_zv* doesn't
     # exist without a prefix
     frequent_prefix = [
-            "",
-            "coord_",
-            "release_14_",
-            "release_15_",
+        "",
+        "coord_",
+        "release_14_",
+        "release_15_",
     ]
     if prefix in frequent_prefix:
         return get_frequent_names(prefix)

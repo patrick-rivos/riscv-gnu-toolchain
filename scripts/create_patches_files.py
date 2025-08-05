@@ -104,7 +104,9 @@ def check_series_is_interesting(patch: Dict[str, Any]):
     print(f"series_mbox link: {patch['series'][0]['mbox']}")
     print(f"'riscv' in series_mbox check: {'riscv' in series_mbox}")
     print(f"'risc-v' in series_mbox check: {'risc-v' in series_mbox}")
-    print(f"'patchworks-ci@rivosinc.com' in series_mbox check: {'patchworks-ci@rivosinc.com' in series_mbox}")
+    print(
+        f"'patchworks-ci@rivosinc.com' in series_mbox check: {'patchworks-ci@rivosinc.com' in series_mbox}"
+    )
     return (
         "riscv" in series_mbox
         or "risc-v" in series_mbox
@@ -124,7 +126,9 @@ def interesting_patch(patch: Dict[str, Any]):
     print(f"patch mbox link: {patch['mbox']}")
     print(f"'riscv' in patch_mbox check: {'riscv' in patch_mbox}")
     print(f"'risc-v' in patch_mbox check: {'risc-v' in patch_mbox}")
-    print(f"'patchworks-ci@rivosinc.com' in patch_mbox check: {'patchworks-ci@rivosinc.com' in patch_mbox}")
+    print(
+        f"'patchworks-ci@rivosinc.com' in patch_mbox check: {'patchworks-ci@rivosinc.com' in patch_mbox}"
+    )
     if "404: file not found - patchwork" in patch_mbox:
         # Skip for now. Will require more work to ensure that the correct link
         # is used. Since interesting_patch is called by parse_patches, by
@@ -261,7 +265,13 @@ def parse_patches(
     print(f"riscv_download_links: {json.dumps(riscv_download_links, indent=4)}\n")
     print(f"riscv_patchworks_links: {json.dumps(riscv_patchworks_links, indent=4)}\n")
     print(f"riscv_patch_check_links: {json.dumps(riscv_patch_check_links, indent=4)}\n")
-    return series_name, series_url, riscv_download_links, riscv_patchworks_links, riscv_patch_check_links
+    return (
+        series_name,
+        series_url,
+        riscv_download_links,
+        riscv_patchworks_links,
+        riscv_patch_check_links,
+    )
 
 
 def make_api_request(url: str):
@@ -297,8 +307,8 @@ def get_single_patch_info(url: str, patch_id: Union[str, None] = None):
 def get_single_patch(patch_id: str):
     url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch_id}"
 
-    series_name, series_url, download_links, patchwork_links, _patch_check_links = get_single_patch_info(
-        url, patch_id
+    series_name, series_url, download_links, patchwork_links, _patch_check_links = (
+        get_single_patch_info(url, patch_id)
     )
 
     print("creating download links for single patch")
@@ -347,7 +357,7 @@ def get_patches_file(file_path: str):
 def get_overlap_dict(
     download: Dict[str, List[List[str]]],
     early: Dict[str, List[List[str]]],
-    early_patch_check_links: Dict[str, List[List[str]]]
+    early_patch_check_links: Dict[str, List[List[str]]],
 ):
     print("checking for overlap between early and download")
     print(f"early: {json.dumps(early, indent=4)}\n")
@@ -365,18 +375,28 @@ def get_overlap_dict(
     else:
         print("No overlap found. Checking if earlier patches were run")
         for series, links in early_patch_check_links.items():
-            for index, link in enumerate(links[-1]): # links[-1] contains all of links for the series
+            for index, link in enumerate(
+                links[-1]
+            ):  # links[-1] contains all of links for the series
                 check = make_api_request(link.strip())
                 if check == [] or "toolchain-ci" not in json.dumps(check):
-                    print(f"Early patch has not been run. Including in download, {early[series][index]}")
+                    print(
+                        f"Early patch has not been run. Including in download, {early[series][index]}"
+                    )
                     if series not in download:
                         download[series] = []
                     download[series].append(early[series][index])
                 else:
-                    print(f"Early patch has been run. Skipping {early[series][-1][index].strip()}")
-                    print(f"check == []: {check == []}, 'toolchain-ci' in json.dumps(check): {'toolchain-ci' in json.dumps(check)}")
+                    print(
+                        f"Early patch has been run. Skipping {early[series][-1][index].strip()}"
+                    )
+                    print(
+                        f"check == []: {check == []}, 'toolchain-ci' in json.dumps(check): {'toolchain-ci' in json.dumps(check)}"
+                    )
 
-    print(f"after checking overlapping values, download: {json.dumps(download, indent=4)}\n")
+    print(
+        f"after checking overlapping values, download: {json.dumps(download, indent=4)}\n"
+    )
     return download
 
 
@@ -407,8 +427,8 @@ def get_multiple_patches(
 
     print(all_patches)
 
-    series_name, series_url, download_links, patchworks_links, _patch_check_links = get_patch_info(
-        url.format(project, start, end), all_patches
+    series_name, series_url, download_links, patchworks_links, _patch_check_links = (
+        get_patch_info(url.format(project, start, end), all_patches)
     )
 
     print(f"parsed information for {start} -> {end}")
@@ -433,7 +453,9 @@ def get_multiple_patches(
     print(f"early_patch_check_links: {json.dumps(early_patch_check_links, indent=4)}\n")
 
     print("creating download links for multiple patches")
-    new_download_links = get_overlap_dict(download_links, early_download_links, early_patch_check_links)
+    new_download_links = get_overlap_dict(
+        download_links, early_download_links, early_patch_check_links
+    )
     if len(series_name) == 0 and len(new_download_links) != 0:
         # start -> end period has no patches, but backup -> start period does and since
         # len(new_download_links) != 0, we know that the previous patches were not run
@@ -444,7 +466,9 @@ def get_multiple_patches(
         print(f"series_url: {json.dumps(series_url, indent=4)}\n")
     create_files(series_name, series_url, new_download_links, "./patch_urls")
     print("creating patchworks links for multiple patches")
-    new_patchworks_links = get_overlap_dict(patchworks_links, early_patchworks_links, early_patch_check_links)
+    new_patchworks_links = get_overlap_dict(
+        patchworks_links, early_patchworks_links, early_patch_check_links
+    )
     create_files(series_name, series_url, new_patchworks_links, "./patchworks_metadata")
 
 
