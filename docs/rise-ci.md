@@ -29,18 +29,17 @@ maintained under RISE ownership without depending on a personal repository.
    ```
 
 3. Commit and merge the toolchain change, then record the published commit SHA.
-4. Only after that commit is available, update both CI repositories so their
-   `riscv-gnu-toolchain` gitlink points to that SHA and `.gitmodules` uses
+4. Once that commit is available, update each CI repository that consumes the
+   change so its `riscv-gnu-toolchain` gitlink points to that SHA and `.gitmodules` uses
    `https://github.com/riseproject-dev/riscv-gnu-toolchain-ci.git`.
-5. Run submodule sync and initialization checks in both CI repositories.
-6. Merge and release in dependency order: this repository first, post-commit
-   CI second, and pre-commit CI last. Do not publish a parent CI update before
-   its referenced toolchain commit is reachable.
+5. Run submodule sync and initialization checks in each affected CI repository.
+6. For a change that affects both services, release post-commit CI first so it
+   can establish the baseline used by pre-commit CI. A change confined to
+   pre-commit Patchwork filtering only requires a gitlink update in
+   `gcc-precommit-ci`.
 
 Pull-request validation does not need production baseline artifacts or a
-cross-repository token. Some patch-discovery tests read public Patchwork data;
-for an offline run, add
-`--ignore=test/pytests/test_scripts/test_create_patches_files.py`.
+cross-repository token. Patch selection tests use local fixtures.
 
 After post-commit CI has published a valid baseline and retained artifacts,
 maintainers can manually dispatch `Pre-Pull-Request` with
@@ -96,10 +95,16 @@ HTTP status before writing an archive.
 
 ## Patchwork Filtering
 
-Patch discovery continues to read the GCC project on Patchwork. The scripts
-always match RISC-V terms in patch bodies. If maintainers need mailbox-based
-matching, configure `PATCHWORK_FILTER_EMAILS` as a comma-separated list in the
-workflow environment or repository variables.
+Patch discovery, manual IDs, ID files and nightly recovery accept Sourceware
+GCC project patches with an explicit target tag (for example, `[PATCH,RISC-V]`
+or a subject starting with `RISC-V:`, `RISCV`, or `GCC/RISC-V:` after any
+bracketed tags), or whose diff changes a target directory listed in
+`scripts/riscv_patch_scope.py`. A comparison such as `AArch64: Fix costs as
+on RISC-V` in a patch that only touches AArch64 is outside the CI scope.
+They do not use submitter addresses or arbitrary words in the mail body.
+Selected patches include preceding members of the same series as prerequisites.
+The override workflow can validate an ID using
+`python scripts/riscv_patch_scope.py PATCH_ID`.
 
 Overlap recovery only trusts checks from `PATCHWORK_CHECK_USERNAME` in the
 `toolchain-ci-rise-` context namespace. A pending check from this service means

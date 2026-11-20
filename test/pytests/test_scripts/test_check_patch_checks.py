@@ -61,9 +61,13 @@ def test_patch_discovery_follows_next_page_until_link_is_absent(monkeypatch, tmp
         calls.append(url)
         if len(calls) == 1:
             return {"Link": '<https://patchwork.example/page/2>; rel="next"'}, [
-                {"id": 1}
+                {"id": 1, "project": {"id": 6}, "name": "RISC-V: change"}
             ]
-        return {}, [{"id": 2}]
+        return {}, [
+            {"id": 2, "project": {"id": 6}, "name": "RISCV: change"},
+            {"id": 3, "project": {"id": 6}, "name": "generic", "diff": None},
+            {"id": 4, "project": {"id": 7}, "name": "RISC-V"},
+        ]
 
     monkeypatch.setattr("check_patch_checks.make_api_request", fake_request)
     monkeypatch.setattr("check_patch_checks.check_patch", lambda _patch, _user: True)
@@ -72,6 +76,7 @@ def test_patch_discovery_follows_next_page_until_link_is_absent(monkeypatch, tmp
 
     assert len(calls) == 2
     assert "page=2" in calls[1]
+    assert "q=" not in calls[0]
     assert (tmp_path / "patch_numbers_to_run.txt").read_text() == "1 2"
 
 

@@ -3,29 +3,12 @@
 import argparse
 import json
 import os
-from collections import defaultdict
 from pathlib import Path
-from typing import DefaultDict, Dict, List, Any, Tuple, Union
+from typing import Dict, List, Any
+
 import requests
 
-
-def patchwork_filter_emails() -> List[str]:
-    return [
-        email.strip().lower()
-        for email in os.environ.get("PATCHWORK_FILTER_EMAILS", "").split(",")
-        if email.strip()
-    ]
-
-
-def mbox_is_interesting(mbox: str) -> bool:
-    filter_emails = patchwork_filter_emails()
-    for email in filter_emails:
-        print(f"'{email}' in mbox check: {email in mbox}")
-    return (
-        "riscv" in mbox
-        or "risc-v" in mbox
-        or any(email in mbox for email in filter_emails)
-    )
+from riscv_patch_scope import API, GCC_PROJECT, is_gcc_riscv_patch, patch_detail
 
 
 def has_rise_check(checks: List[Dict[str, Any]]) -> bool:
@@ -84,411 +67,107 @@ def parse_arguments():
         "--project",
         metavar="<int>",
         type=int,
-        default=6,
+        default=GCC_PROJECT,
+        choices=[GCC_PROJECT],
         help="Project number to pull from",
     )
-    parser.add_argument(
-        "-all-patches",
-        "--all-patches",
-        action="store_true",
-        help="Run on all patches",
-    )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.patch_id is None and args.patches_file is None:
+        if not all((args.backup, args.start, args.end)):
+            parser.error(
+                "provide -patch, -file, or a complete -backup/-start/-end window"
+            )
+    return args
 
 
-def create_files(
-    series_name: Dict[str, str],
-    series_url: Dict[str, str],
-    download_links: Dict[str, List[List[str]]],
-    outdir: str,
-):
-    # Create possible missing output file directory
-    outdir_path = Path(outdir)
-    outdir_path.mkdir(parents=True, exist_ok=True)
-
-    artifact_names: List[str] = []
-    for series_number, links_list in download_links.items():
-        for links in links_list:
-            fname = f"{series_number}-{series_name[series_number]}-{len(links)}"
-            artifact_names.append(fname)
-            with open(os.path.join(outdir, fname), "w") as f:
-                if outdir == "./patchworks_metadata":
-                    _pname, url, pid = links[-1].split("\t")
-                    f.write(f"Applied patches: 1 -> {len(links)}\n")
-                    f.write(f"Associated series: {series_url[series_number]}\n")
-                    f.write(f"Last patch applied: {url}\n")
-                    f.write(f"{pid}")
-                else:
-                    f.writelines(links)
-
-    with open("./artifact_names.txt", "w") as f:
-        f.write(str(artifact_names))
+def request_page(url, params=None):
+    response = requests.get(url, params=params, timeout=60)
+    response.raise_for_status()
+    return response
 
 
-def check_series_is_interesting(patch: Dict[str, Any]):
-    """
-    Grep the series mbox file for key terms/email addresses when
-    the individual patch mbox is not found.
-    """
-    r = requests.get(patch["series"][0]["mbox"], timeout=300)  # 5 minutes
-    r.encoding = r.apparent_encoding
-    series_mbox = r.text.lower()
-    print(f"series_mbox link: {patch['series'][0]['mbox']}")
-    print(f"'riscv' in series_mbox check: {'riscv' in series_mbox}")
-    print(f"'risc-v' in series_mbox check: {'risc-v' in series_mbox}")
-    return mbox_is_interesting(series_mbox)
+def window_patches(start, end):
+    url = f"{API}/patches/"
+    params = {
+        "order": "date",
+        "project": GCC_PROJECT,
+        "since": start,
+        "before": end,
+        "per_page": 100,
+    }
+    while url:
+        response = request_page(url, params)
+        yield from response.json()
+        url = response.links.get("next", {}).get("url")
+        params = None
 
 
-def interesting_patch(patch: Dict[str, Any]):
-    """Grep the patch mbox file for key terms/email addresses."""
-    r = requests.get(patch["mbox"], timeout=300)  # 5 minutes
-    # https://stackoverflow.com/questions/44203397/python-requests-get-returns-improperly-decoded-text-instead-of-utf-8/52615216#52615216
-    r.encoding = r.apparent_encoding
-    patch_mbox = r.text.lower()
-
-    # Search for riscv, risc-v, or configured Patchwork filter mailboxes.
-    # mbox is already lowercased
-    print(f"patch mbox link: {patch['mbox']}")
-    print(f"'riscv' in patch_mbox check: {'riscv' in patch_mbox}")
-    print(f"'risc-v' in patch_mbox check: {'risc-v' in patch_mbox}")
-    if "404: file not found - patchwork" in patch_mbox:
-        # Skip for now. Will require more work to ensure that the correct link
-        # is used. Since interesting_patch is called by parse_patches, by
-        # returning the check_series_is_interesting result, we then need to
-        # change the links in parse_patches to use the series mbox link.
-        # The assert will also make it more apparent that something went wrong.
-        assert False, f"Patch mbox link {patch['mbox']} not found."
-        return check_series_is_interesting(patch)
-    else:
-        return mbox_is_interesting(patch_mbox)
+def selected_patches(current, overlap=()):
+    """Current-window candidates plus older candidates that CI missed."""
+    seen = set()
+    for patches, check_overlap in ((current, False), (overlap, True)):
+        for patch in patches:
+            if patch["id"] in seen:
+                continue
+            seen.add(patch["id"])
+            if not is_gcc_riscv_patch(patch):
+                continue
+            if check_overlap and has_rise_check(request_page(patch["checks"]).json()):
+                continue
+            yield patch
 
 
-def parse_patches(
-    patches: List[Dict[str, Any]],
-    patch_id: Union[None, str] = None,
-    all_patches: bool = False,
-):
-    riscv_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
-    all_download_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
-    riscv_patchworks_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
-    all_patchworks_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
-
-    # these patch check links are primarily used for identifying patches that for
-    # some reason did not run during their corresponding patchwork run and are found
-    # during the backup -> start period. If this is the case, we need to check
-    # to see if the found patches have already been tested in the start -> end period.
-    # If they have, we can skip them.
-    riscv_patch_check_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
-    all_patch_check_links: DefaultDict[str, List[List[str]]] = defaultdict(list)
-
-    series_name: Dict[str, str] = {}
-    series_url: Dict[str, str] = {}
-
-    # Used for asserts
-    riscv_title_patch_links: List[List[str]] = []
-    riscv_title_patchworks_links: List[List[str]] = []
-
+def write_patch_files(patches):
+    urls = Path("patch_urls")
+    metadata = Path("patchworks_metadata")
+    urls.mkdir(exist_ok=True)
+    metadata.mkdir(exist_ok=True)
+    names = []
+    series_cache = {}
     for patch in patches:
-        assert len(patch["series"]) == 1
-        found_series = patch["series"][0]["id"]
-        print(f"currently parsing:\n\t{patch['series'][0]}")
-
-        if len(all_download_links[found_series]) == 0:
-            all_download_links[found_series].append([patch["mbox"] + "\n"])
-            all_patchworks_links[found_series].append(
-                [f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n"]
-            )
-            all_patch_check_links[found_series].append([patch["checks"] + "\n"])
+        # Ask Patchwork for the full ordered series, even when the polling
+        # window starts halfway through it. Only the selected patch gets a job.
+        if not patch.get("series"):
+            raise ValueError(f"No series for Patchwork patch {patch['id']}")
+        series_id = patch["series"][0]["id"]
+        if series_id not in series_cache:
+            series_cache[series_id] = request_page(f"{API}/series/{series_id}/").json()
+        series = series_cache[series_id]
+        prefix = []
+        for member in series["patches"]:
+            prefix.append(member["mbox"])
+            if member["id"] == patch["id"]:
+                break
         else:
-            prev_download_link = list(all_download_links[found_series][-1])
-            prev_download_link.append(patch["mbox"] + "\n")
-            all_download_links[found_series].append(prev_download_link)
-            prev_patchworks_link = list(all_patchworks_links[found_series][-1])
-            prev_patchworks_link.append(
-                f"{patch['name']}\t{patch['web_url']}\t{patch['id']}\n"
-            )
-            all_patchworks_links[found_series].append(prev_patchworks_link)
-            prev_patch_check_link = list(all_patch_check_links[found_series][-1])
-            prev_patch_check_link.append(patch["checks"] + "\n")
-            all_patch_check_links[found_series].append(prev_patch_check_link)
-
-        if patch_id is None and (interesting_patch(patch) or all_patches):
-            print(f"Patch {patch['name']} is an interesting patch")
-            riscv_download_links[found_series].append(
-                all_download_links[found_series][-1]
-            )
-            riscv_patchworks_links[found_series].append(
-                all_patchworks_links[found_series][-1]
-            )
-            riscv_patch_check_links[found_series].append(
-                all_patch_check_links[found_series][-1]
-            )
-
-        # Old check, used for asserts
-        if patch_id is None and (
-            ("risc-v" in patch["name"].lower() or "riscv" in patch["name"].lower())
-            or all_patches
-        ):
-            riscv_title_patch_links.append(all_download_links[found_series][-1])
-            riscv_title_patchworks_links.append(all_patchworks_links[found_series][-1])
-
-        if patch_id is not None and patch["id"] == patch_id:
-            print(f"Patch {patch['name']} is the specified patch")
-            riscv_download_links[found_series].append(
-                all_download_links[found_series][-1]
-            )
-            riscv_patchworks_links[found_series].append(
-                all_patchworks_links[found_series][-1]
-            )
-            riscv_patch_check_links[found_series].append(
-                all_patch_check_links[found_series][-1]
-            )
-
-        if found_series not in series_name:
-            if patch["series"][0]["name"] is None:
-                series_name[found_series] = "unknown"
-            else:
-                series_name[found_series] = "".join(
-                    letter
-                    for letter in patch["series"][0]["name"]
-                    if letter.isalnum() or letter == " "
-                ).replace(" ", "_")
-            series_url[found_series] = patch["series"][0]["web_url"]
-
-    # flatten link values and assert the lists are the same
-    download_links = list(riscv_download_links.values())
-    download_links = [item for sublist in download_links for item in sublist]
-    patchworks_links = list(riscv_patchworks_links.values())
-    patchworks_links = [item for sublist in patchworks_links for item in sublist]
-    patch_check_links = list(riscv_patch_check_links.values())
-    patch_check_links = [item for sublist in patch_check_links for item in sublist]
-
-    if all_patches:
-        assert len(riscv_download_links) == len(all_download_links)
-        assert len(riscv_patchworks_links) == len(all_patchworks_links)
-        assert len(riscv_patch_check_links) == len(all_patch_check_links)
-
-    for patch_links in riscv_title_patch_links:
-        assert any(
-            patch_links == links for links in download_links
-        ), f"Expected match (risc-v/riscv in title): {patch_links} not in links: {download_links}"
-    for patch_links in riscv_title_patchworks_links:
-        assert any(
-            patch_links == links for links in patchworks_links
-        ), f"Expected match (risc-v/riscv in title): {patch_links} not in patchworks links: {patchworks_links}"
-
-    print(f"Returning the following dictionaries:")
-    print(f"series_name: {json.dumps(series_name, indent=4)}\n")
-    print(f"series_url: {json.dumps(series_url, indent=4)}\n")
-    print(f"riscv_download_links: {json.dumps(riscv_download_links, indent=4)}\n")
-    print(f"riscv_patchworks_links: {json.dumps(riscv_patchworks_links, indent=4)}\n")
-    print(f"riscv_patch_check_links: {json.dumps(riscv_patch_check_links, indent=4)}\n")
-    return (
-        series_name,
-        series_url,
-        riscv_download_links,
-        riscv_patchworks_links,
-        riscv_patch_check_links,
-    )
-
-
-def make_api_request(url: str):
-    print(url)
-    r = requests.get(url)
-    print(r.status_code)
-    patches = json.loads(r.text)
-    return patches
-
-
-def get_single_patch_info(url: str, patch_id: Union[str, None] = None):
-    patches = make_api_request(url)
-
-    # Check for dependencies
-    patch_id = patches["id"]
-    series_url = (
-        f"https://patchwork.sourceware.org/api/1.3/series/{patches['series'][0]['id']}"
-    )
-    series_info = make_api_request(series_url)
-    if series_info["received_total"] > 1:
-        patch_ids = [patch["id"] for patch in series_info["patches"]]
-        patches = [
-            make_api_request(f"https://patchwork.sourceware.org/api/1.3/patches/{pid}")
-            for pid in patch_ids
-        ]
-        return parse_patches(patches, patch_id=patch_id)
-    return parse_patches([patches], patch_id=patch_id)
-
-
-## Single patch ID
-
-
-def get_single_patch(patch_id: str):
-    url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch_id}"
-
-    series_name, series_url, download_links, patchwork_links, _patch_check_links = (
-        get_single_patch_info(url, patch_id)
-    )
-
-    print("creating download links for single patch")
-    create_files(series_name, series_url, download_links, "./patch_urls")
-    print("creating patchworks links for single patch")
-    create_files(series_name, series_url, patchwork_links, "./patchworks_metadata")
-
-
-## File full of patch IDs
-
-
-def get_patches_file(file_path: str):
-    patch_nums = None
-    with open(file_path, "r") as f:
-        patch_nums = f.read().strip().split(" ")
-
-    print(patch_nums)
-
-    super_series_name: Dict[str, str] = {}
-    super_series_url: Dict[str, str] = {}
-    super_download_links: Dict[str, List[List[str]]] = {}
-    super_patchwork_links: Dict[str, List[List[str]]] = {}
-    for patch in patch_nums:
-        url = f"https://patchwork.sourceware.org/api/1.3/patches/{patch}"
-        series_name, series_url, download_links, patchwork_links, _patch_check_links = (
-            get_single_patch_info(url)
+            raise ValueError(f"Patch {patch['id']} is absent from series {series_id}")
+        series_name = series["name"] or "unknown"
+        series_name = "".join(
+            c for c in series_name if c.isalnum() or c == " "
+        ).replace(" ", "_")
+        name = f"{series_id}-{series_name}-{len(prefix)}"
+        names.append(name)
+        (urls / name).write_text("".join(link + "\n" for link in prefix))
+        (metadata / name).write_text(
+            f"Applied patches: 1 -> {len(prefix)}\n"
+            f"Associated series: {series['web_url']}\n"
+            f"Last patch applied: {patch['web_url']}\n{patch['id']}"
         )
-        super_series_name.update(series_name)
-        super_series_url.update(series_url)
-        super_download_links.update(download_links)
-        super_patchwork_links.update(patchwork_links)
-
-    print("creating download links for provided patches file")
-    create_files(
-        super_series_name, super_series_url, super_download_links, "./patch_urls"
-    )
-    print("creating patchworks links for provided patches file")
-    create_files(
-        super_series_name,
-        super_series_url,
-        super_patchwork_links,
-        "./patchworks_metadata",
-    )
-
-
-def get_overlap_dict(
-    download: Dict[str, List[List[str]]],
-    early: Dict[str, List[List[str]]],
-    early_patch_check_links: Dict[str, List[List[str]]],
-):
-    print("checking for overlap between early and download")
-    print(f"early: {json.dumps(early, indent=4)}\n")
-    print(f"download: {json.dumps(download, indent=4)}\n")
-    print(f"early_patch_check_links: {json.dumps(early_patch_check_links, indent=4)}\n")
-    overlap = set(early.keys()).intersection(set(download.keys()))
-    print(f"overlap: {overlap}")
-    for series, links in early_patch_check_links.items():
-        if series in overlap:
-            download[series] = [
-                list(early[series][-1]) + list(val) for val in download[series]
-            ]
-        else:
-            # Each candidate contains its prerequisites followed by the patch
-            # being tested. Only that last patch's checks decide whether to rerun
-            # this candidate; prerequisites need not themselves be interesting.
-            for candidate, check_links in zip(early[series], links, strict=True):
-                check = make_api_request(check_links[-1].strip())
-                if not has_rise_check(check):
-                    print(
-                        f"Early patch has not been run. Including in download, {candidate}"
-                    )
-                    if series not in download:
-                        download[series] = []
-                    download[series].append(candidate)
-                else:
-                    print(f"Early patch has been run. Skipping {candidate[-1].strip()}")
-
-    print(
-        f"after checking overlapping values, download: {json.dumps(download, indent=4)}\n"
-    )
-    return download
-
-
-def make_api_request_and_get_headers(url: str):
-    print(url)
-    r = requests.get(url)
-    print(r.status_code)
-    patches = json.loads(r.text)
-    return r.headers, patches
-
-
-def get_patch_info(url: str, all_patches: bool):
-    patches: List[Dict[str, Any]] = []
-    for page_num in range(1, 10):
-        headers, page = make_api_request_and_get_headers(url + f"&page={page_num}")
-        patches += page
-        if 'rel="next"' not in headers.get("Link", ""):
-            break
-
-    return parse_patches(patches, all_patches=all_patches)
-
-
-def get_multiple_patches(
-    start: str, end: str, backup: str, project: int, all_patches: bool
-):
-    """Get all patches within a timeframe"""
-    url = "https://patchwork.sourceware.org/api/1.3/patches/?order=date&project={}&since={}&before={}&per_page=100"
-
-    print(all_patches)
-
-    series_name, series_url, download_links, patchworks_links, _patch_check_links = (
-        get_patch_info(url.format(project, start, end), all_patches)
-    )
-
-    print(f"parsed information for {start} -> {end}")
-    print(f"series_name: {json.dumps(series_name, indent=4)}\n")
-    print(f"series_url: {json.dumps(series_url, indent=4)}\n")
-    print(f"download_links: {json.dumps(download_links, indent=4)}\n")
-    print(f"patchworks_links: {json.dumps(patchworks_links, indent=4)}\n")
-
-    (
-        _early_series_name,
-        _early_series_url,
-        early_download_links,
-        early_patchworks_links,
-        early_patch_check_links,
-    ) = get_patch_info(url.format(project, backup, start), all_patches)
-
-    print(f"parsed information for {backup} -> {start}")
-    print(f"early_series_name: {json.dumps(_early_series_name, indent=4)}\n")
-    print(f"early_series_url: {json.dumps(_early_series_url, indent=4)}\n")
-    print(f"early_download_links: {json.dumps(early_download_links, indent=4)}\n")
-    print(f"early_patchworks_links: {json.dumps(early_patchworks_links, indent=4)}\n")
-    print(f"early_patch_check_links: {json.dumps(early_patch_check_links, indent=4)}\n")
-
-    print("creating download links for multiple patches")
-    new_download_links = get_overlap_dict(
-        download_links, early_download_links, early_patch_check_links
-    )
-    # Recovery can add older series even while this window has unrelated patches.
-    # Keep metadata for both windows, preferring current information on overlap.
-    series_name = {**_early_series_name, **series_name}
-    series_url = {**_early_series_url, **series_url}
-    create_files(series_name, series_url, new_download_links, "./patch_urls")
-    print("creating patchworks links for multiple patches")
-    new_patchworks_links = get_overlap_dict(
-        patchworks_links, early_patchworks_links, early_patch_check_links
-    )
-    create_files(series_name, series_url, new_patchworks_links, "./patchworks_metadata")
+    Path("artifact_names.txt").write_text(json.dumps(names))
 
 
 def main():
     args = parse_arguments()
     if args.patch_id is not None:
-        get_single_patch(args.patch_id)
+        patches = selected_patches([patch_detail(args.patch_id)])
     elif args.patches_file is not None:
-        get_patches_file(args.patches_file)
+        ids = Path(args.patches_file).read_text().split()
+        patches = selected_patches(patch_detail(patch_id) for patch_id in ids)
     else:
-        print(f"project: {args.project}")
-        get_multiple_patches(
-            args.start, args.end, args.backup, args.project, args.all_patches
+        patches = selected_patches(
+            window_patches(args.start, args.end),
+            window_patches(args.backup, args.start),
         )
+    write_patch_files(patches)
 
 
 if __name__ == "__main__":

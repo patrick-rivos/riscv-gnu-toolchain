@@ -1,8 +1,9 @@
 import argparse
-import json
 import os
 
 import requests
+
+from riscv_patch_scope import GCC_PROJECT, is_gcc_riscv_patch
 
 
 PATCHWORK_TEST_CONTEXT = "toolchain-ci-rise-test"
@@ -30,8 +31,9 @@ def parse_arguments():
 
 def make_api_request(url):
     print(url)
-    r = requests.get(url)
-    return r.headers, json.loads(r.text)
+    response = requests.get(url, timeout=60)
+    response.raise_for_status()
+    return response.headers, response.json()
 
 
 def get_patchwork_check_username():
@@ -81,7 +83,7 @@ def get_patches(start: str, end: str):
     page_num = 1
     patches = []
     while True:
-        url = f"https://patchwork.sourceware.org/api/1.3/patches/?order=date&q=RISC-V&project=6&since={start}&before={end}&page={page_num}"
+        url = f"https://patchwork.sourceware.org/api/1.3/patches/?order=date&project={GCC_PROJECT}&since={start}&before={end}&page={page_num}"
         headers, page = make_api_request(url)
         patches += page
         if 'rel="next"' not in headers.get("Link", ""):
@@ -91,7 +93,9 @@ def get_patches(start: str, end: str):
     print([patch["id"] for patch in patches])
 
     to_run = [
-        str(patch["id"]) for patch in patches if check_patch(patch, check_username)
+        str(patch["id"])
+        for patch in patches
+        if is_gcc_riscv_patch(patch) and check_patch(patch, check_username)
     ]
     print(to_run)
     if to_run:
